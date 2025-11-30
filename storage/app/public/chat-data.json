@@ -1,0 +1,180 @@
+{
+  "conversations": [
+    {
+      "id": 0,
+      "name": "Game Market Store",
+      "avatar": "https://ui-avatars.com/api/?name=Game+Market+Store&background=ef4444&color=fff",
+      "lastMessage": "hello how are you today sir is there sun in your mounth",
+      "timestamp": "17m",
+      "unread": true,
+      "status": "offline",
+      "messages": [
+        {
+          "type": "system",
+          "content": "<strong>saminia laamari</strong> started a chat for: <strong>Best Offers Mega Colector V🔥467 Skins🔥Lunox Legend🔥Fanny Mikasaa🔥Lance Kishin🔥Valir Gold Saint Seiya🔥CHOU KOF🔥Colector Valir x Arlot🔥Acces Full🔥Cheapest and Safe Account #<a href='#' class='text-blue-500 hover:underline'>2592919</a></strong>",
+          "timestamp": "20m"
+        },
+        {
+          "type": "system",
+          "content": "Product link: <a href='#' class='text-blue-500 hover:underline'>https://gameboost.com/mobile-legends/accounts/best-offers-mega-colector-v467-skinslunox-legendfanny-mikasaalance-kishinva</a>",
+          "timestamp": "20m"
+        },
+        {
+          "type": "user",
+          "content": "hello how are you today sir is there sun in your mounth",
+          "timestamp": "20m",
+          "read": false
+        },
+        {
+          "type": "seller",
+          "content": "Hello! I'm doing great, thank you! How can I help you today?",
+          "timestamp": "18m",
+          "avatar": "https://ui-avatars.com/api/?name=Game+Market+Store&background=ef4444&color=fff"
+        },
+        {
+          "type": "user",
+          "content": "I'm interested in this account. Can you tell me more about it?",
+          "timestamp": "15m",
+          "read": true
+        },
+        {
+          "type": "seller",
+          "content": "Sure! This account has 467 skins, including rare collectors. It comes with full access and the original email can be changed. Would you like to see some screenshots?",
+          "timestamp": "12m",
+          "avatar": "https://ui-avatars.com/api/?name=Game+Market+Store&background=ef4444&color=fff"
+        },
+        {
+          "type": "user",
+          "content": "Yes, please share some screenshots. Also, what's the win rate on this account?",
+          "timestamp": "10m",
+          "read": true
+        },
+        {
+          "type": "seller",
+          "content": "The win rate is 65%. I'll send you some screenshots right away!",
+          "timestamp": "8m",
+          "avatar": "https://ui-avatars.com/api/?name=Game+Market+Store&background=ef4444&color=fff"
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "name": "Elite Seller",
+      "avatar": "https://ui-avatars.com/api/?name=Elite+Seller&background=3b82f6&color=fff",
+      "lastMessage": "Thank you for your purchase!",
+      "timestamp": "2h",
+      "unread": false,
+      "status": "online",
+      "messages": [
+        {
+          "type": "system",
+          "content": "<strong>saminia laamari</strong> started a chat for: <strong>Premium MLBB Account #<a href='#' class='text-blue-500 hover:underline'>123456</a></strong>",
+          "timestamp": "2h"
+        },
+        {
+          "type": "seller",
+          "content": "Thank you for your purchase! Your account details have been sent to your email.",
+          "timestamp": "2h",
+          "avatar": "https://ui-avatars.com/api/?name=Elite+Seller&background=3b82f6&color=fff"
+        },
+        {
+          "type": "user",
+          "content": "Great! I received it. Everything looks good.",
+          "timestamp": "1h",
+          "read": true
+        },
+        {
+          "type": "seller",
+          "content": "Awesome! If you need any help or have questions, feel free to ask. Enjoy your new account!",
+          "timestamp": "45m",
+          "avatar": "https://ui-avatars.com/api/?name=Elite+Seller&background=3b82f6&color=fff"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Premium Accounts",
+      "avatar": "https://ui-avatars.com/api/?name=Premium+Accounts&background=10b981&color=fff",
+      "lastMessage": "The account details have been sent",
+      "timestamp": "1d",
+      "unread": false,
+      "status": "offline",
+      "messages": [
+        {
+          "type": "system",
+          "content": "<strong>saminia laamari</strong> started a chat for: <strong>Legendary Account #<a href='#' class='text-blue-500 hover:underline'>789012</a></strong>",
+          "timestamp": "1d"
+        },
+        {
+          "type": "seller",
+          "content": "The account details have been sent to your email. Please check and let me know if you need any assistance.",
+          "timestamp": "1d",
+          "avatar": "https://ui-avatars.com/api/?name=Premium+Accounts&background=10b981&color=fff"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Gaming Pro Store",
+      "avatar": "https://ui-avatars.com/api/?name=Gaming+Pro+Store&background=f59e0b&color=fff",
+      "lastMessage": "Is this account still available?",
+      "timestamp": "3h",
+      "unread": true,
+      "status": "online",
+      "messages": [
+        {
+          "type": "system",
+          "content": "<strong>saminia laamari</strong> started a chat for: <strong>Epic MLBB Account #<a href='#' class='text-blue-500 hover:underline'>456789</a></strong>",
+          "timestamp": "3h"
+        },
+        {
+          "type": "user",
+          "content": "Is this account still available?",
+          "timestamp": "3h",
+          "read": false
+        },
+        {
+          "type": "seller",
+          "content": "Yes, it's still available! Would you like to know more details about it?",
+          "timestamp": "2h",
+          "avatar": "https://ui-avatars.com/api/?name=Gaming+Pro+Store&background=f59e0b&color=fff"
+        },
+        {
+          "type": "user",
+          "content": "What heroes and skins are included?",
+          "timestamp": "1h",
+          "read": false
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Account Hub",
+      "avatar": "https://ui-avatars.com/api/?name=Account+Hub&background=8b5cf6&color=fff",
+      "lastMessage": "Can you provide more information?",
+      "timestamp": "5h",
+      "unread": false,
+      "status": "offline",
+      "messages": [
+        {
+          "type": "system",
+          "content": "<strong>saminia laamari</strong> started a chat for: <strong>Collector Account #<a href='#' class='text-blue-500 hover:underline'>321654</a></strong>",
+          "timestamp": "5h"
+        },
+        {
+          "type": "user",
+          "content": "Can you provide more information?",
+          "timestamp": "5h",
+          "read": true
+        },
+        {
+          "type": "seller",
+          "content": "Of course! This account includes 200+ skins, all heroes unlocked, and comes with full access. The rank is Mythic and win rate is 70%.",
+          "timestamp": "4h",
+          "avatar": "https://ui-avatars.com/api/?name=Account+Hub&background=8b5cf6&color=fff"
+        }
+      ]
+    }
+  ]
+}
+
