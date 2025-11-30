@@ -27,13 +27,33 @@ class ChargilyService
         Log::info('ChargilyService::createCheckout - Initiating checkout', [
             'order_id' => $params['metadata']['order_id'] ?? null,
             'amount' => $params['amount'] ?? null,
+            'api_key_loaded' => !empty($this->apiKey),
+            'api_key_prefix' => substr($this->apiKey, 0, 10) . '...',
+            'base_url' => $this->baseUrl,
+            'mode' => config('chargily.mode'),
         ]);
 
         try {
-            $response = Http::withHeaders([
+            $headers = [
                 'Authorization' => 'Bearer ' . $this->apiKey,
                 'Content-Type' => 'application/json',
-            ])->post($this->baseUrl . '/checkouts', $params);
+            ];
+
+            Log::debug('ChargilyService::createCheckout - Request details', [
+                'url' => $this->baseUrl . '/checkouts',
+                'headers' => [
+                    'Authorization' => 'Bearer ' . substr($this->apiKey, 0, 20) . '...',
+                    'Content-Type' => 'application/json',
+                ],
+                'body' => $params,
+            ]);
+
+            $response = Http::withHeaders($headers)->post($this->baseUrl . '/checkouts', $params);
+
+            Log::debug('ChargilyService::createCheckout - Response status', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
 
             if ($response->successful()) {
                 $data = $response->json();
