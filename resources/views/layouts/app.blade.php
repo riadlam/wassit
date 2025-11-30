@@ -102,6 +102,21 @@
                 e.preventDefault();
                 e.stopPropagation();
                 
+                // Check if user is authenticated
+                const isAuthenticated = {{ auth()->check() ? 'true' : 'false' }};
+                
+                if (!isAuthenticated) {
+                    // Show login modal for unauthenticated users
+                    if (window.Alpine && window.Alpine.store) {
+                        window.Alpine.store('authModal').open = true;
+                        window.Alpine.store('authModal').mode = 'login';
+                    } else {
+                        // Fallback: dispatch event for Alpine to listen to
+                        window.dispatchEvent(new CustomEvent('open-login-modal', {bubbles: true, cancelable: true}));
+                    }
+                    return;
+                }
+                
                 const accountId = buyBtn.dataset.accountId;
                 const btnText = buyBtn.querySelector('.buy-btn-text');
                 const btnLoading = buyBtn.querySelector('.buy-btn-loading');
