@@ -112,40 +112,33 @@
     <!-- Account Card Buy Button Handler -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Mobile sticky Buy Now button logic
+            // Mobile sticky Buy Now button logic - for main account only
             const stickyBuyBtn = document.getElementById('sticky-buy-now-btn');
-            let currentBuyBtn = null;
+            
+            // Look for the main account buy button (the one with id or closest to fast-checkout-sticky container)
+            const getMainBuyBtn = function() {
+                const fastCheckoutBtn = document.querySelector('#buy-account-btn');
+                return fastCheckoutBtn;
+            };
             
             const checkVisibility = function() {
-                // Find the first visible buy button
-                const allBuyBtns = document.querySelectorAll('.account-buy-btn');
-                let foundVisibleBtn = null;
+                const mainBuyBtn = getMainBuyBtn();
+                if (!mainBuyBtn || !stickyBuyBtn) return;
                 
-                allBuyBtns.forEach(btn => {
-                    const rect = btn.getBoundingClientRect();
-                    const isInViewport = rect.top < window.innerHeight && rect.bottom > 0;
-                    if (isInViewport && !foundVisibleBtn) {
-                        foundVisibleBtn = btn;
-                    }
-                });
+                const rect = mainBuyBtn.getBoundingClientRect();
+                const isInViewport = rect.top < window.innerHeight && rect.bottom > 0;
                 
-                currentBuyBtn = foundVisibleBtn;
-                
-                if (!stickyBuyBtn) return;
-                
-                if (currentBuyBtn) {
+                if (isInViewport) {
                     // Button is visible, hide sticky
                     stickyBuyBtn.classList.add('hidden');
                 } else {
-                    // No button visible, show sticky if there are any buttons on page
-                    if (allBuyBtns.length > 0) {
-                        stickyBuyBtn.classList.remove('hidden');
-                    }
+                    // Button is not visible, show sticky
+                    stickyBuyBtn.classList.remove('hidden');
                 }
                 
-                console.log('Sticky button check:', {
-                    totalButtons: allBuyBtns.length,
-                    visibleButton: !!currentBuyBtn,
+                console.log('Sticky main button check:', {
+                    mainButtonFound: !!mainBuyBtn,
+                    inViewport: isInViewport,
                     stickyVisible: !stickyBuyBtn?.classList.contains('hidden')
                 });
             };
@@ -155,18 +148,18 @@
             window.addEventListener('scroll', checkVisibility);
             window.addEventListener('resize', checkVisibility);
             
-            // Handle sticky button clicks (same as regular button)
+            // Handle sticky button clicks - trigger the main account button
             if (stickyBuyBtn) {
                 stickyBuyBtn.addEventListener('click', function(e) {
                     e.preventDefault();
                     e.stopPropagation();
                     
-                    // Find any buy button and click it
-                    const mainBuyBtn = document.querySelector('.account-buy-btn');
+                    const mainBuyBtn = getMainBuyBtn();
                     if (mainBuyBtn) {
                         mainBuyBtn.click();
+                        console.log('Sticky button clicked, triggered main buy button');
                     } else {
-                        console.error('No buy button found to click');
+                        console.error('Main buy button not found');
                     }
                 });
             }
