@@ -60,7 +60,7 @@ class CheckoutController extends Controller
             
             // If user is authenticated, verify they own the order (only if buyer_id is set)
             // Unauthenticated users can access to enter their details
-            if (Auth::check() && $order->buyer_id && Auth::id() !== $order->buyer_id) {
+            if (Auth::check() && $order->buyer_id && (int)Auth::id() !== (int)$order->buyer_id) {
                 Log::warning('CheckoutController@show - Unauthorized access attempt', [
                     'order_id' => $order->id,
                     'order_buyer_id' => $order->buyer_id,
