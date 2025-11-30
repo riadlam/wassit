@@ -70,5 +70,13 @@ Route::post('/orders/create/{account_id}', [App\Http\Controllers\OrderController
 // Checkout route (must come before catch-all route)
 Route::get('/checkout/{encryptedOrderId}', [App\Http\Controllers\CheckoutController::class, 'show'])->name('checkout.show');
 
+// Payment routes
+Route::post('/payment/initiate/{encryptedOrderId}', [App\Http\Controllers\PaymentController::class, 'initiatePayment'])->name('payment.initiate');
+Route::get('/payment/success/{encryptedOrderId}', [App\Http\Controllers\PaymentController::class, 'paymentSuccess'])->name('payment.success');
+Route::get('/payment/failure/{encryptedOrderId}', [App\Http\Controllers\PaymentController::class, 'paymentFailure'])->name('payment.failure');
+
+// Webhook routes (public, no auth required)
+Route::post('/webhook/baridimob', [App\Http\Controllers\WebhookController::class, 'chargilyWebhook'])->name('webhook.chargily');
+
 // Account details route (catch-all must be last)
 Route::get('/{slug}/accounts/{id}', [App\Http\Controllers\AccountController::class, 'show'])->name('accounts.show');

@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Storage;
     <!-- Header -->
     @include('components.header')
     
-    <div class="pt-16 pb-20 sm:pb-8">
+    <div class="pt-16 pb-20 sm:pb-8" x-data="checkoutPageData()">
         <div class="grid relative grid-cols-1 gap-x-16 mx-auto max-w-7xl lg:grid-cols-2 lg:px-8 lg:pt-16">
             <h4 class="sr-only">Checkout</h4>
             
@@ -249,9 +249,17 @@ use Illuminate\Support\Facades\Storage;
                         <!-- Pay Now Button (Desktop) -->
                         <button type="button" class="w-full items-center justify-center transition-colors focus:outline focus:outline-offset-2 focus-visible:outline outline-none disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden font-medium active:translate-y-px whitespace-nowrap text-white focus:outline-primary py-3 sm:py-3.5 px-5 text-sm sm:text-base font-semibold mt-6 rounded-lg hidden sm:flex hover:brightness-110" 
                                 style="background-color: #dc2626; box-shadow: 0 4px 14px 0 rgba(220, 38, 38, 0.3);"
-                                @click="alert('Payment integration coming soon!')">
-                            Pay Now
-                            <i class="ml-2 fas fa-arrow-right"></i>
+                                @click="handlePayment()"
+                                :disabled="isProcessing"
+                                x-ref="payButton">
+                            <span x-show="!isProcessing">
+                                Pay Now
+                                <i class="ml-2 fas fa-arrow-right"></i>
+                            </span>
+                            <span x-show="isProcessing" class="flex items-center gap-2">
+                                <i class="fas fa-spinner fa-spin"></i>
+                                Processing...
+                            </span>
                         </button>
                     </div>
                 </div>
@@ -262,8 +270,16 @@ use Illuminate\Support\Facades\Storage;
         <div class="fixed bottom-0 left-0 right-0 flex justify-center w-full px-4 py-3 border-t gap-x-2.5 sm:hidden z-50" style="background-color: #0e1015; border-color: #2d2c31; backdrop-filter: blur-xl; box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);">
             <button type="button" class="inline-flex items-center justify-center transition-colors focus:outline focus:outline-offset-2 focus-visible:outline outline-none disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden font-medium active:translate-y-px whitespace-nowrap text-white focus:outline-primary py-3 px-5 text-sm font-semibold rounded-lg flex-1 hover:brightness-110" 
                     style="background-color: #dc2626; box-shadow: 0 4px 14px 0 rgba(220, 38, 38, 0.3);"
-                    @click="alert('Payment integration coming soon!')">
-                Pay Now <span class="mx-1.5"> · </span> {{ number_format($total, 0, '.', '') }} DZD
+                    @click="handlePayment()"
+                    :disabled="isProcessing"
+                    x-ref="payButtonMobile">
+                <span x-show="!isProcessing">
+                    Pay Now <span class="mx-1.5"> · </span> {{ number_format($total, 0, '.', '') }} DZD
+                </span>
+                <span x-show="isProcessing" class="flex items-center gap-2">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    Processing...
+                </span>
             </button>
         </div>
     </div>
@@ -291,6 +307,56 @@ use Illuminate\Support\Facades\Storage;
         }
     }
 </style>
+@endpush
+
+@push('scripts')
+<script>
+    function checkoutPageData() {
+        return {
+            selectedPayment: 'algerie-poste',
+            isProcessing: false,
+            encryptedOrderId: '{{ $encryptedOrderId }}',
+            
+            handlePayment() {
+                this.isProcessing = true;
+                
+                // Only Barid Jazair (edahabia) is supported
+                if (this.selectedPayment !== 'algerie-poste') {
+                    alert('This payment method is not yet available');
+                    this.isProcessing = false;
+                    return;
+                }
+                
+                // Initiate payment
+                fetch('{{ route('payment.initiate', $encryptedOrderId) }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    },
+                    body: JSON.stringify({
+                        payment_method: 'edahabia',
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.checkout_url) {
+                        // Redirect to Chargily checkout
+                        window.location.href = data.checkout_url;
+                    } else {
+                        alert(data.message || 'Failed to initiate payment. Please try again.');
+                        this.isProcessing = false;
+                    }
+                })
+                .catch(error => {
+                    console.error('Payment error:', error);
+                    alert('An error occurred while processing your payment. Please try again.');
+                    this.isProcessing = false;
+                });
+            }
+        };
+    }
+</script>
 @endpush
 @endsection
 

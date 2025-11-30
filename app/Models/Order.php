@@ -13,6 +13,18 @@ class Order extends Model
         'account_id',
         'amount_dzd',
         'status',
+        'chargily_checkout_id',
+        'chargily_payment_id',
+        'paid_at',
+        'metadata',
+    ];
+
+    protected $casts = [
+        'buyer_id' => 'int',
+        'seller_id' => 'int',
+        'account_id' => 'int',
+        'paid_at' => 'datetime',
+        'metadata' => 'array',
     ];
 
     /**
