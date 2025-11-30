@@ -108,13 +108,24 @@
                 
                 if (!isAuthenticated) {
                     // Show login modal for unauthenticated users
-                    if (window.Alpine && window.Alpine.store) {
-                        window.Alpine.store('authModal').open = true;
-                        window.Alpine.store('authModal').mode = 'login';
-                    } else {
-                        // Fallback: dispatch event for Alpine to listen to
-                        window.dispatchEvent(new CustomEvent('open-login-modal', {bubbles: true, cancelable: true}));
+                    console.log('User not authenticated, showing login modal');
+                    
+                    // Try multiple methods to trigger modal
+                    // Method 1: Alpine store
+                    if (window.Alpine) {
+                        try {
+                            window.Alpine.store('authModal').open = true;
+                            window.Alpine.store('authModal').mode = 'login';
+                            console.log('Modal triggered via Alpine store');
+                        } catch (err) {
+                            console.error('Failed to trigger via Alpine store:', err);
+                        }
                     }
+                    
+                    // Method 2: Window event
+                    window.dispatchEvent(new CustomEvent('open-login-modal', {bubbles: true, cancelable: true}));
+                    console.log('Modal event dispatched');
+                    
                     return;
                 }
                 
