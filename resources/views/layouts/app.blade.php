@@ -71,6 +71,23 @@
     <!-- Footer -->
     @include('components.footer')
     
+    <!-- Sticky Mobile Buy Now Button -->
+    <button 
+        id="sticky-buy-now-btn"
+        type="button" 
+        class="hidden md:hidden fixed bottom-0 left-0 right-0 z-50 w-full account-buy-btn-sticky inline-flex items-center justify-center transition-colors focus:outline focus:outline-offset-2 focus-visible:outline outline-none disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden font-medium active:translate-y-px whitespace-nowrap bg-red-600 hover:bg-red-700 text-white shadow-lg focus:outline-red-600 py-3 px-4 text-sm rounded-none"
+        style="border-top: 1px solid #2d2c31;"
+    >
+        <span class="buy-btn-text">Buy Now</span>
+        <i class="buy-btn-loading ml-2 hidden" style="display: none;">
+            <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+        </i>
+        <i class="ml-1 fa-solid fa-chevron-right buy-btn-icon"></i>
+    </button>
+    
     <!-- Auth Modal (Global) -->
     @include('components.auth-modal')
     
@@ -95,6 +112,40 @@
     <!-- Account Card Buy Button Handler -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Mobile sticky Buy Now button logic
+            const stickyBuyBtn = document.getElementById('sticky-buy-now-btn');
+            const checkVisibility = function() {
+                const mainBuyBtn = document.querySelector('.account-buy-btn');
+                if (!mainBuyBtn || !stickyBuyBtn) return;
+                
+                const rect = mainBuyBtn.getBoundingClientRect();
+                const isInViewport = rect.top < window.innerHeight && rect.bottom > 0;
+                
+                if (isInViewport) {
+                    stickyBuyBtn.classList.add('hidden');
+                } else {
+                    stickyBuyBtn.classList.remove('hidden');
+                }
+            };
+            
+            // Check visibility on load and scroll
+            checkVisibility();
+            window.addEventListener('scroll', checkVisibility);
+            window.addEventListener('resize', checkVisibility);
+            
+            // Handle sticky button clicks (same as regular button)
+            if (stickyBuyBtn) {
+                stickyBuyBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    const mainBuyBtn = document.querySelector('.account-buy-btn');
+                    if (mainBuyBtn) {
+                        mainBuyBtn.click();
+                    }
+                });
+            }
+            
             // Handle buy button clicks for account cards from any location (slider, related accounts, etc.)
             document.addEventListener('click', async function(e) {
                 const buyBtn = e.target.closest('.account-buy-btn');
