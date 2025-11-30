@@ -75,7 +75,7 @@
     <button 
         id="sticky-buy-now-btn"
         type="button" 
-        class="hidden md:hidden fixed bottom-0 left-0 right-0 z-50 w-full account-buy-btn-sticky inline-flex items-center justify-center transition-colors focus:outline focus:outline-offset-2 focus-visible:outline outline-none disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden font-medium active:translate-y-px whitespace-nowrap bg-red-600 hover:bg-red-700 text-white shadow-lg focus:outline-red-600 py-3 px-4 text-sm rounded-none"
+        class="md:hidden fixed bottom-0 left-0 right-0 z-50 w-full account-buy-btn-sticky inline-flex items-center justify-center transition-colors focus:outline focus:outline-offset-2 focus-visible:outline outline-none disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden font-medium active:translate-y-px whitespace-nowrap bg-red-600 hover:bg-red-700 text-white shadow-lg focus:outline-red-600 py-3 px-4 text-sm rounded-none"
         style="border-top: 1px solid #2d2c31;"
     >
         <span class="buy-btn-text">Buy Now</span>
@@ -114,22 +114,44 @@
         document.addEventListener('DOMContentLoaded', function() {
             // Mobile sticky Buy Now button logic
             const stickyBuyBtn = document.getElementById('sticky-buy-now-btn');
+            let currentBuyBtn = null;
+            
             const checkVisibility = function() {
-                const mainBuyBtn = document.querySelector('.account-buy-btn');
-                if (!mainBuyBtn || !stickyBuyBtn) return;
+                // Find the first visible buy button
+                const allBuyBtns = document.querySelectorAll('.account-buy-btn');
+                let foundVisibleBtn = null;
                 
-                const rect = mainBuyBtn.getBoundingClientRect();
-                const isInViewport = rect.top < window.innerHeight && rect.bottom > 0;
+                allBuyBtns.forEach(btn => {
+                    const rect = btn.getBoundingClientRect();
+                    const isInViewport = rect.top < window.innerHeight && rect.bottom > 0;
+                    if (isInViewport && !foundVisibleBtn) {
+                        foundVisibleBtn = btn;
+                    }
+                });
                 
-                if (isInViewport) {
+                currentBuyBtn = foundVisibleBtn;
+                
+                if (!stickyBuyBtn) return;
+                
+                if (currentBuyBtn) {
+                    // Button is visible, hide sticky
                     stickyBuyBtn.classList.add('hidden');
                 } else {
-                    stickyBuyBtn.classList.remove('hidden');
+                    // No button visible, show sticky if there are any buttons on page
+                    if (allBuyBtns.length > 0) {
+                        stickyBuyBtn.classList.remove('hidden');
+                    }
                 }
+                
+                console.log('Sticky button check:', {
+                    totalButtons: allBuyBtns.length,
+                    visibleButton: !!currentBuyBtn,
+                    stickyVisible: !stickyBuyBtn?.classList.contains('hidden')
+                });
             };
             
             // Check visibility on load and scroll
-            checkVisibility();
+            setTimeout(checkVisibility, 100);
             window.addEventListener('scroll', checkVisibility);
             window.addEventListener('resize', checkVisibility);
             
@@ -139,9 +161,12 @@
                     e.preventDefault();
                     e.stopPropagation();
                     
+                    // Find any buy button and click it
                     const mainBuyBtn = document.querySelector('.account-buy-btn');
                     if (mainBuyBtn) {
                         mainBuyBtn.click();
+                    } else {
+                        console.error('No buy button found to click');
                     }
                 });
             }
