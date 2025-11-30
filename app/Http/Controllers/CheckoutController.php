@@ -34,8 +34,9 @@ class CheckoutController extends Controller
                 }
             }
             
-            // If user is authenticated, verify they own the order
-            if (Auth::check() && $order->buyer_id !== Auth::id()) {
+            // If user is authenticated, verify they own the order (only if buyer_id is set)
+            // Unauthenticated users can access to enter their details
+            if (Auth::check() && $order->buyer_id && Auth::id() !== $order->buyer_id) {
                 abort(403, 'Unauthorized access to this order.');
             }
             
