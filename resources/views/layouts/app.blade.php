@@ -63,10 +63,16 @@
         }
         /* Sticky button styles */
         #sticky-buy-now-btn {
-            display: none;
+            display: none !important;
         }
         #sticky-buy-now-btn:not(.hidden) {
             display: inline-flex !important;
+        }
+        /* Only show on mobile (screens smaller than 768px) */
+        @media (min-width: 768px) {
+            #sticky-buy-now-btn {
+                display: none !important;
+            }
         }
         @media (max-width: 767px) {
             #sticky-buy-now-btn {
@@ -98,7 +104,7 @@
     <button 
         id="sticky-buy-now-btn"
         type="button" 
-        class="hidden md:hidden fixed bottom-0 left-0 right-0 z-50 w-full account-buy-btn-sticky inline-flex items-center justify-center transition-colors focus:outline focus:outline-offset-2 focus-visible:outline outline-none disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden font-medium active:translate-y-px whitespace-nowrap bg-red-600 hover:bg-red-700 text-white shadow-lg focus:outline-red-600 py-3 px-4 text-sm rounded-none"
+        class="hidden fixed bottom-0 left-0 right-0 z-50 w-full account-buy-btn-sticky inline-flex items-center justify-center transition-colors focus:outline focus:outline-offset-2 focus-visible:outline outline-none disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden font-medium active:translate-y-px whitespace-nowrap bg-red-600 hover:bg-red-700 text-white shadow-lg focus:outline-red-600 py-3 px-4 text-sm rounded-none"
         style="border-top: 1px solid #2d2c31;"
     >
         <span class="buy-btn-text">Buy Now</span>
