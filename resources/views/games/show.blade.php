@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Storage;
             if ($game->slug === 'mlbb') {
                 $gameBanner = Storage::url('home_page/mlbbbanner.webp');
             }
-            $defaultBanner = Storage::url('home_page/degaultbanner.webp');
+            $defaultBanner = 'https://wassit.diaszone.com/storage/home_page/degaultbanner.webp';
             $initialBanner = $gameBanner ?: $defaultBanner;
         @endphp
         <div class="absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-500 ease-in-out" style="background-image: url('{{ $initialBanner }}'); opacity: 1;"></div>

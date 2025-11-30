@@ -3,7 +3,7 @@
 @section('content')
     <!-- Full Screen Background Image -->
     <div id="background-image" class="fixed inset-0 z-0 pointer-events-none">
-        <div class="absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-500 ease-in-out" style="background-image: url('{{ asset('storage/home_page/degaultbanner.webp') }}'); opacity: 1;"></div>
+        <div class="absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-500 ease-in-out" style="background-image: url('https://wassit.diaszone.com/storage/home_page/degaultbanner.webp'); opacity: 1;"></div>
         <div class="absolute inset-0" style="background-color:rgba(14, 16, 21, 0.95);"></div>
     </div>
     

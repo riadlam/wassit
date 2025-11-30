@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Storage;
 @section('content')
     <!-- Full Screen Background Image -->
     <div id="background-image" class="absolute inset-0 z-0 pointer-events-none min-h-screen">
-        <div class="absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-500 ease-in-out" style="background-image: url('{{ Storage::url('home_page/degaultbanner.webp') }}'); opacity: 1;"></div>
+        <div class="absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-500 ease-in-out" style="background-image: url('https://wassit.diaszone.com/storage/home_page/degaultbanner.webp'); opacity: 1;"></div>
         <div class="absolute inset-0" style="background: linear-gradient(to bottom, rgba(15, 17, 27, 0.85) 0%, rgba(15, 17, 27, 0.92) 50%, rgba(15, 17, 27, 0.98) 100%);"></div>
     </div>
     
