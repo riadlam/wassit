@@ -175,105 +175,6 @@ use Illuminate\Support\Facades\Storage;
                     </div>
                 </div>
 
-                <!-- Platform Filter -->
-                <div class="relative min-w-[125px] flex-grow md:flex-grow-0" x-data="{ 
-                    platformOpen: false, 
-                    selectedPlatform: (() => {
-                        const urlParams = new URLSearchParams(window.location.search);
-                        const platformParam = urlParams.get('filter[platform]');
-                        if (platformParam) {
-                            const platformMap = {
-                                'android': '{{ __('messages.android') }}',
-                                'ios': '{{ __('messages.ios') }}',
-                                'both': '{{ __('messages.both') }}'
-                            };
-                            return platformMap[platformParam] || platformParam;
-                        }
-                        return '';
-                    })()
-                }" @click.away="platformOpen = false">
-                    <button 
-                        type="button" 
-                        @click="platformOpen = !platformOpen"
-                        class="custom-dropdown-button items-center focus:outline focus:outline-offset-2 focus-visible:outline disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden font-medium active:translate-y-px whitespace-nowrap py-3 sm:py-2.5 text-sm outline-none flex justify-between w-full h-[42px] px-4 group"
-                        :class="platformOpen ? 'active' : ''"
-                    >
-                        <div class="flex items-center pr-2 truncate gap-x-2">
-                            <i class="text-base fa-solid fa-trophy custom-dropdown-icon"></i>
-                            <span x-text="selectedPlatform || '{{ __('messages.platform') }}'" class="font-medium"></span>
-                        </div>
-                        <i class="text-xs fa-solid fa-caret-down" style="color: rgba(255, 255, 255, 0.7); transition: transform 0.2s;" :style="platformOpen ? 'transform: rotate(180deg);' : ''"></i>
-                    </button>
-                    <div 
-                        x-show="platformOpen"
-                        x-transition:enter="transition ease-out duration-100"
-                        x-transition:enter-start="opacity-0 scale-95"
-                        x-transition:enter-end="opacity-100 scale-100"
-                        x-transition:leave="transition ease-in duration-75"
-                        x-transition:leave-start="opacity-100 scale-100"
-                        x-transition:leave-end="opacity-0 scale-95"
-                        class="custom-dropdown-menu absolute z-50 mt-1 w-full"
-                        x-init="$watch('platformOpen', (value) => {
-                            if (value) {
-                                $nextTick(() => {
-                                    setTimeout(() => {
-                                        const dropdown = $el;
-                                        // Reset styles first
-                                        dropdown.style.left = '0';
-                                        dropdown.style.right = 'auto';
-                                        // Get position after reset
-                                        const rect = dropdown.getBoundingClientRect();
-                                        const viewportWidth = window.innerWidth;
-                                        const dropdownWidth = rect.width;
-                                        const leftPosition = rect.left;
-                                        
-                                        // Check if it would overflow on the right
-                                        if (leftPosition + dropdownWidth > viewportWidth) {
-                                            dropdown.style.right = '0';
-                                            dropdown.style.left = 'auto';
-                                        } else {
-                                            dropdown.style.left = '0';
-                                            dropdown.style.right = 'auto';
-                                        }
-                                    }, 10);
-                                });
-                            }
-                        })"
-                        x-cloak
-                    >
-                        <div class="py-1">
-                            <button 
-                                @click="selectedPlatform = ''; platformOpen = false; $dispatch('platform-changed', '')"
-                                class="custom-dropdown-item block w-full text-left px-4 py-2.5 text-sm"
-                                :class="selectedPlatform === '' ? 'active' : ''"
-                            >
-                                {{ __('messages.all_platforms') }}
-                            </button>
-                            <button 
-                                @click="selectedPlatform = '{{ __('messages.android') }}'; platformOpen = false; $dispatch('platform-changed', 'android')"
-                                class="custom-dropdown-item block w-full text-left px-4 py-2.5 text-sm"
-                                :class="selectedPlatform === '{{ __('messages.android') }}' ? 'active' : ''"
-                            >
-                                {{ __('messages.android') }}
-                            </button>
-                            <button 
-                                @click="selectedPlatform = '{{ __('messages.ios') }}'; platformOpen = false; $dispatch('platform-changed', 'ios')"
-                                class="custom-dropdown-item block w-full text-left px-4 py-2.5 text-sm"
-                                :class="selectedPlatform === '{{ __('messages.ios') }}' ? 'active' : ''"
-                            >
-                                {{ __('messages.ios') }}
-                            </button>
-                            <button 
-                                @click="selectedPlatform = '{{ __('messages.both') }}'; platformOpen = false; $dispatch('platform-changed', 'both')"
-                                class="custom-dropdown-item block w-full text-left px-4 py-2.5 text-sm"
-                                :class="selectedPlatform === '{{ __('messages.both') }}' ? 'active' : ''"
-                            >
-                                {{ __('messages.both') }}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- Price Range Filter -->
                 <div class="relative min-w-[200px] flex-grow md:flex-grow-0" x-data="{ 
                     priceOpen: false, 
@@ -392,7 +293,7 @@ use Illuminate\Support\Facades\Storage;
                         :class="priceOpen ? 'active' : ''"
                     >
                         <div class="flex items-center pr-2 truncate gap-x-2">
-                            <i class="text-base fa-solid fa-dollar-sign custom-dropdown-icon"></i>
+                            <i class="text-base fa-solid fa-coins custom-dropdown-icon"></i>
                             <span class="font-medium" x-text="priceFrom && priceTo ? priceFrom + ' - ' + priceTo + ' DZD' : (priceFrom ? priceFrom + '+ DZD' : '{{ __('messages.price_range') }}')"></span>
                         </div>
                         <i class="text-xs fa-solid fa-caret-down" style="color: rgba(255, 255, 255, 0.7); transition: transform 0.2s;" :style="priceOpen ? 'transform: rotate(180deg);' : ''"></i>
@@ -1029,16 +930,6 @@ use Illuminate\Support\Facades\Storage;
                         </div>
                     </template>
                     
-                    <!-- Platform Filter Tag -->
-                    <template x-if="filters.platform">
-                        <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium text-white" style="background-color: #3b82f6; border: 1px solid #2563eb;">
-                            <span x-text="'Platform: ' + filters.platform"></span>
-                            <button @click="clearPlatformFilter()" class="ml-1 hover:opacity-80 transition-opacity" title="Remove filter">
-                                <i class="fa-solid fa-times text-xs"></i>
-                            </button>
-                        </div>
-                    </template>
-                    
                     <!-- Price Filter Tag -->
                     <template x-if="filters.price">
                         <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium text-white" style="background-color: #10b981; border: 1px solid #059669;">
@@ -1368,7 +1259,6 @@ use Illuminate\Support\Facades\Storage;
             searchQuery: '',
             filters: {
                 collection: '',
-                platform: '',
                 price: '',
                 skins: '',
                 winRate: '',
@@ -1385,7 +1275,6 @@ use Illuminate\Support\Facades\Storage;
             hasAppliedFilters() {
                 return this.searchQuery ||
                        this.filters.collection ||
-                       this.filters.platform ||
                        this.filters.price ||
                        this.filters.winRate ||
                        this.filters.level;
@@ -1403,11 +1292,6 @@ use Illuminate\Support\Facades\Storage;
             
             clearCollectionFilter() {
                 this.filters.collection = '';
-                this.applyFilters();
-            },
-            
-            clearPlatformFilter() {
-                this.filters.platform = '';
                 this.applyFilters();
             },
             
@@ -1429,7 +1313,6 @@ use Illuminate\Support\Facades\Storage;
             clearAllFilters() {
                 this.searchQuery = '';
                 this.filters.collection = '';
-                this.filters.platform = '';
                 this.filters.price = '';
                 this.filters.skins = '';
                 this.filters.winRate = '';
@@ -1449,11 +1332,6 @@ use Illuminate\Support\Facades\Storage;
                 // Add collection filter
                 if (this.filters.collection) {
                     params.append('filter[collection]', this.filters.collection);
-                }
-                
-                // Add platform filter
-                if (this.filters.platform) {
-                    params.append('filter[platform]', this.filters.platform);
                 }
                 
                 // Add price filter
@@ -1690,7 +1568,6 @@ use Illuminate\Support\Facades\Storage;
                 const urlParams = new URLSearchParams(window.location.search);
                 const searchParam = urlParams.get('filter[search]');
                 const collectionParam = urlParams.get('filter[collection]');
-                const platformParam = urlParams.get('filter[platform]');
                 const priceParam = urlParams.get('filter[price]');
                 const winRateParam = urlParams.get('filter[win_rate]');
                 const levelParam = urlParams.get('filter[level]');
@@ -1700,9 +1577,6 @@ use Illuminate\Support\Facades\Storage;
                 }
                 if (collectionParam) {
                     this.filters.collection = collectionParam;
-                }
-                if (platformParam) {
-                    this.filters.platform = platformParam;
                 }
                 if (priceParam) {
                     this.filters.price = priceParam;
@@ -1724,12 +1598,6 @@ use Illuminate\Support\Facades\Storage;
                 // Listen for collection dropdown changes
                 this.$el.addEventListener('collection-changed', (e) => {
                     this.filters.collection = e.detail || '';
-                    this.applyFilters();
-                });
-                
-                // Listen for platform dropdown changes
-                this.$el.addEventListener('platform-changed', (e) => {
-                    this.filters.platform = e.detail || '';
                     this.applyFilters();
                 });
                 
