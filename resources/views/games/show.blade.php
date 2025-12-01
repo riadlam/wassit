@@ -398,30 +398,35 @@ use Illuminate\Support\Facades\Storage;
                     skinsOpen: false,
                     selectedSkins: [],
                     expandedRoles: {},
-                    roles: {
-                        'assassin': {
-                            name: '{{ __('messages.assassin') }}',
-                            heroes: ['Ling', 'Hayabusa', 'Lancelot', 'Gusion', 'Selena']
-                        },
-                        'tank': {
-                            name: '{{ __('messages.tank') }}',
-                            heroes: ['Tigreal', 'Gatotkaca', 'Khufra', 'Atlas', 'Belerick']
-                        },
-                        'support': {
-                            name: '{{ __('messages.support') }}',
-                            heroes: ['Angela', 'Rafaela', 'Estes', 'Diggie', 'Floryn']
-                        },
-                        'marksman': {
-                            name: '{{ __('messages.marksman') }}',
-                            heroes: ['Layla', 'Miya', 'Clint', 'Wanwan', 'Claude']
+                    expandedHeroes: {},
+                    categories: [],
+                    loading: false,
+                    async init() {
+                        await this.loadSkinsData();
+                    },
+                    async loadSkinsData() {
+                        this.loading = true;
+                        try {
+                            const response = await fetch('/storage/mlbbskins.json');
+                            if (!response.ok) throw new Error('Failed to load skins data');
+                            const data = await response.json();
+                            this.categories = data.categories || [];
+                        } catch (error) {
+                            console.error('Error loading skins data:', error);
+                            this.categories = [];
+                        } finally {
+                            this.loading = false;
                         }
                     },
-                    skinTiers: ['{{ __('messages.elite') }}', '{{ __('messages.epic') }}', '{{ __('messages.legend') }}', '{{ __('messages.collector') }}'],
-                    toggleRole(roleKey) {
-                        this.expandedRoles[roleKey] = !this.expandedRoles[roleKey];
+                    toggleRole(roleIndex) {
+                        this.expandedRoles[roleIndex] = !this.expandedRoles[roleIndex];
                     },
-                    toggleSkin(roleKey, hero, tier) {
-                        const key = `${roleKey}-${hero}-${tier}`;
+                    toggleHero(roleIndex, heroIndex) {
+                        const key = `${roleIndex}-${heroIndex}`;
+                        this.expandedHeroes[key] = !this.expandedHeroes[key];
+                    },
+                    toggleSkin(roleIndex, heroIndex, skinIndex, skinName) {
+                        const key = `${roleIndex}-${heroIndex}-${skinIndex}`;
                         const index = this.selectedSkins.indexOf(key);
                         if (index > -1) {
                             this.selectedSkins.splice(index, 1);
@@ -429,8 +434,8 @@ use Illuminate\Support\Facades\Storage;
                             this.selectedSkins.push(key);
                         }
                     },
-                    isSkinSelected(roleKey, hero, tier) {
-                        const key = `${roleKey}-${hero}-${tier}`;
+                    isSkinSelected(roleIndex, heroIndex, skinIndex) {
+                        const key = `${roleIndex}-${heroIndex}-${skinIndex}`;
                         return this.selectedSkins.includes(key);
                     },
                     getSelectedCount() {
@@ -439,9 +444,25 @@ use Illuminate\Support\Facades\Storage;
                     clearSkins() {
                         this.selectedSkins = [];
                         this.expandedRoles = {};
+                        this.expandedHeroes = {};
                     },
                     applySkinsFilter() {
-                        this.$dispatch('skins-changed', this.selectedSkins.join(','));
+                        // Build filter string: role-hero-skin format
+                        const filterValues = this.selectedSkins.map(key => {
+                            const [roleIndex, heroIndex, skinIndex] = key.split('-');
+                            const category = this.categories[roleIndex];
+                            if (!category) return '';
+                            const hero = category.heroes[heroIndex];
+                            if (!hero) return '';
+                            const skin = hero.skins[skinIndex];
+                            if (!skin) return '';
+                            // Format: role-hero-skin (lowercase, spaces replaced with hyphens)
+                            const roleName = category.name.toLowerCase().replace(/\s+/g, '-');
+                            const heroName = hero.hero.toLowerCase().trim().replace(/\s+/g, '-');
+                            const skinName = skin.toLowerCase().trim().replace(/\s+/g, '-');
+                            return `${roleName}-${heroName}-${skinName}`;
+                        }).filter(v => v);
+                        this.$dispatch('skins-changed', filterValues.join(','));
                         this.skinsOpen = false;
                     }
                 }" @click.away="skinsOpen = false">
@@ -508,38 +529,57 @@ use Illuminate\Support\Facades\Storage;
                                 </button>
                             </div>
                             
+                            <!-- Loading State -->
+                            <div x-show="loading" class="text-center py-8">
+                                <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
+                                <p class="text-gray-400 text-sm mt-2">Loading skins...</p>
+                            </div>
+                            
                             <!-- Roles Accordion -->
-                            <div class="space-y-2">
-                                <template x-for="(role, roleKey) in roles" :key="roleKey">
+                            <div class="space-y-2" x-show="!loading && categories.length > 0">
+                                <template x-for="(category, roleIndex) in categories" :key="roleIndex">
                                     <div class="border rounded-md" style="border-color: #2d2c31; background-color: #1b1a1e;">
                                         <!-- Role Header -->
                                         <button 
-                                            @click="toggleRole(roleKey)"
+                                            @click="toggleRole(roleIndex)"
                                             class="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-white hover:bg-opacity-50 transition-colors"
                                             style="background-color: rgba(27, 26, 30, 0.5);"
                                         >
-                                            <span x-text="role.name"></span>
-                                            <i class="fa-solid fa-chevron-down text-xs transition-transform" :class="expandedRoles[roleKey] ? 'rotate-180' : ''"></i>
+                                            <span x-text="category.name"></span>
+                                            <i class="fa-solid fa-chevron-down text-xs transition-transform" :class="expandedRoles[roleIndex] ? 'rotate-180' : ''"></i>
                                         </button>
                                         
                                         <!-- Heroes List -->
                                         <div 
-                                            x-show="expandedRoles[roleKey]"
+                                            x-show="expandedRoles[roleIndex]"
                                             x-collapse
                                             class="px-4 pb-3 space-y-3"
                                         >
-                                            <template x-for="hero in role.heroes" :key="hero">
+                                            <template x-for="(hero, heroIndex) in category.heroes" :key="heroIndex">
                                                 <div>
-                                                    <div class="text-xs font-medium text-gray-300 mb-2" x-text="hero"></div>
-                                                    <div class="flex flex-wrap gap-2">
-                                                        <template x-for="tier in skinTiers" :key="tier">
+                                                    <!-- Hero Header (Clickable to expand/collapse skins) -->
+                                                    <button
+                                                        @click="toggleHero(roleIndex, heroIndex)"
+                                                        class="w-full flex items-center justify-between text-xs font-medium text-gray-300 mb-2 hover:text-white transition-colors"
+                                                    >
+                                                        <span x-text="hero.hero" class="capitalize"></span>
+                                                        <i class="fa-solid fa-chevron-down text-xs transition-transform ml-2" :class="expandedHeroes[`${roleIndex}-${heroIndex}`] ? 'rotate-180' : ''"></i>
+                                                    </button>
+                                                    
+                                                    <!-- Skins List -->
+                                                    <div 
+                                                        x-show="expandedHeroes[`${roleIndex}-${heroIndex}`]"
+                                                        x-collapse
+                                                        class="flex flex-wrap gap-2 ml-2"
+                                                    >
+                                                        <template x-for="(skin, skinIndex) in hero.skins" :key="skinIndex">
                                                             <button
-                                                                @click="toggleSkin(roleKey, hero, tier)"
+                                                                @click="toggleSkin(roleIndex, heroIndex, skinIndex, skin)"
                                                                 class="px-3 py-1.5 text-xs rounded-md transition-all border"
-                                                                :class="isSkinSelected(roleKey, hero, tier) ? 'bg-red-600 border-red-600 text-white' : 'bg-transparent border-gray-600 text-gray-300 hover:border-red-500 hover:text-white'"
+                                                                :class="isSkinSelected(roleIndex, heroIndex, skinIndex) ? 'bg-red-600 border-red-600 text-white' : 'bg-transparent border-gray-600 text-gray-300 hover:border-red-500 hover:text-white'"
                                                             >
-                                                                <i class="fa-solid" :class="isSkinSelected(roleKey, hero, tier) ? 'fa-check-circle' : 'fa-circle'"></i>
-                                                                <span class="ml-1.5" x-text="tier"></span>
+                                                                <i class="fa-solid" :class="isSkinSelected(roleIndex, heroIndex, skinIndex) ? 'fa-check-circle' : 'fa-circle'"></i>
+                                                                <span class="ml-1.5" x-text="skin"></span>
                                                             </button>
                                                         </template>
                                                     </div>
@@ -550,8 +590,13 @@ use Illuminate\Support\Facades\Storage;
                                 </template>
                             </div>
                             
+                            <!-- Empty State -->
+                            <div x-show="!loading && categories.length === 0" class="text-center py-8">
+                                <p class="text-gray-400 text-sm">No skins data available</p>
+                            </div>
+                            
                             <!-- Action Buttons -->
-                            <div class="flex items-center gap-2 mt-4 pt-4 border-t" style="border-color: #2d2c31;">
+                            <div class="flex items-center gap-2 mt-4 pt-4 border-t" style="border-color: #2d2c31;" x-show="!loading">
                                 <button 
                                     @click="applySkinsFilter()"
                                     class="flex-1 px-4 py-2 text-sm font-medium text-white rounded-md transition-colors"
@@ -952,9 +997,19 @@ use Illuminate\Support\Facades\Storage;
                     
                     <!-- Level Filter Tag -->
                     <template x-if="filters.level">
-                        <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium text-white" style="background-color: #ec4899; border: 1px solid #db2777;">
+                        <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium text-white" style="background-color: #8b5cf6; border: 1px solid #7c3aed;">
                             <span x-text="'Level: ' + filters.level"></span>
                             <button @click="clearLevelFilter()" class="ml-1 hover:opacity-80 transition-opacity" title="Remove filter">
+                                <i class="fa-solid fa-times text-xs"></i>
+                            </button>
+                        </div>
+                    </template>
+                    
+                    <!-- Skins Filter Tag -->
+                    <template x-if="filters.skins">
+                        <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium text-white" style="background-color: #ec4899; border: 1px solid #db2777;">
+                            <span x-text="'Skins: ' + (filters.skins.split(',').length) + ' selected'"></span>
+                            <button @click="clearSkinsFilter()" class="ml-1 hover:opacity-80 transition-opacity" title="Remove filter">
                                 <i class="fa-solid fa-times text-xs"></i>
                             </button>
                         </div>
@@ -1277,7 +1332,8 @@ use Illuminate\Support\Facades\Storage;
                        this.filters.collection ||
                        this.filters.price ||
                        this.filters.winRate ||
-                       this.filters.level;
+                       this.filters.level ||
+                       this.filters.skins;
             },
             
             clearSearchFilter() {
@@ -1310,13 +1366,18 @@ use Illuminate\Support\Facades\Storage;
                 this.applyFilters();
             },
             
+            clearSkinsFilter() {
+                this.filters.skins = '';
+                this.applyFilters();
+            },
+            
             clearAllFilters() {
                 this.searchQuery = '';
                 this.filters.collection = '';
                 this.filters.price = '';
-                this.filters.skins = '';
                 this.filters.winRate = '';
                 this.filters.level = '';
+                this.filters.skins = '';
                 this.applyFilters();
             },
             
@@ -1349,10 +1410,10 @@ use Illuminate\Support\Facades\Storage;
                     params.append('filter[level]', this.filters.level);
                 }
                 
-                // Skip skins filter for now (will implement later)
-                // if (this.filters.skins) {
-                //     params.append('filter[skins]', this.filters.skins);
-                // }
+                // Add skins filter
+                if (this.filters.skins) {
+                    params.append('filter[skins]', this.filters.skins);
+                }
                 
                 this.isLoading = true;
                 const queryString = params.toString();
@@ -1607,11 +1668,11 @@ use Illuminate\Support\Facades\Storage;
                     this.applyFilters();
                 });
                 
-                // Listen for skins filter changes (skip for now)
-                // this.$el.addEventListener('skins-changed', (e) => {
-                //     this.filters.skins = e.detail || '';
-                //     this.applyFilters();
-                // });
+                // Listen for skins filter changes
+                this.$el.addEventListener('skins-changed', (e) => {
+                    this.filters.skins = e.detail || '';
+                    this.applyFilters();
+                });
                 
                 // Listen for additional filters changes
                 this.$el.addEventListener('additional-filters-changed', (e) => {

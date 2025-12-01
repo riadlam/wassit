@@ -192,15 +192,32 @@ class GameController extends Controller
                         $skinFilters = explode(',', $value);
                         $query->where(function($q) use ($skinFilters) {
                             foreach ($skinFilters as $skinFilter) {
-                                // Format: role-hero-tier (e.g., assassin-Ling-Elite)
+                                // Format: role-hero-skin (e.g., assassin-ling-aoen-of-twilight)
                                 $parts = explode('-', $skinFilter);
-                                if (count($parts) === 3) {
-                                    [$role, $hero, $tier] = $parts;
-                                    $q->orWhereHas('attributes', function($attrQuery) use ($hero, $tier) {
-                                        // Search for hero name and tier in attributes
-                                        $attrQuery->where(function($subQuery) use ($hero, $tier) {
-                                            $subQuery->where('attribute_key', 'like', "%{$hero}%")
-                                                    ->where('attribute_value', 'like', "%{$tier}%");
+                                if (count($parts) >= 3) {
+                                    // Reconstruct skin name (may contain multiple hyphens)
+                                    $role = $parts[0];
+                                    $hero = $parts[1];
+                                    $skinName = implode('-', array_slice($parts, 2));
+                                    // Also try with spaces for matching
+                                    $skinNameWithSpaces = str_replace('-', ' ', $skinName);
+                                    $heroWithSpaces = str_replace('-', ' ', $hero);
+                                    
+                                    $q->orWhereHas('attributes', function($attrQuery) use ($hero, $heroWithSpaces, $skinName, $skinNameWithSpaces) {
+                                        // Search for skin name in attribute values (skins might be stored in various formats)
+                                        $attrQuery->where(function($subQuery) use ($hero, $heroWithSpaces, $skinName, $skinNameWithSpaces) {
+                                            // Try matching skin name directly
+                                            $subQuery->where('attribute_value', 'like', "%{$skinName}%")
+                                                    ->orWhere('attribute_value', 'like', "%{$skinNameWithSpaces}%")
+                                                    // Also try matching hero name + skin name
+                                                    ->orWhere(function($q2) use ($hero, $heroWithSpaces, $skinName, $skinNameWithSpaces) {
+                                                        $q2->where('attribute_key', 'like', "%{$hero}%")
+                                                           ->where('attribute_value', 'like', "%{$skinName}%");
+                                                    })
+                                                    ->orWhere(function($q3) use ($hero, $heroWithSpaces, $skinName, $skinNameWithSpaces) {
+                                                        $q3->where('attribute_key', 'like', "%{$heroWithSpaces}%")
+                                                           ->where('attribute_value', 'like', "%{$skinNameWithSpaces}%");
+                                                    });
                                         });
                                     });
                                 }
