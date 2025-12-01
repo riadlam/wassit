@@ -1546,6 +1546,12 @@ use Illuminate\Support\Facades\Storage;
                         tierDisplay = 'Account Details';
                     }
                     
+                    // Build tier image URL
+                    let tierImageHtml = '';
+                    if (collectionTier) {
+                        tierImageHtml = `<img src="/storage/mlbb_skins_rank/${collectionTier}.webp" alt="${collectionTier}" class="object-contain" style="width: 33.6px; height: 33.6px;" onerror="this.style.display='none';">`;
+                    }
+                    
                     // Build attributes list - no formatting with commas
                     const attributesList = [];
                     if (attributes['skins_count']) {
@@ -1588,6 +1594,7 @@ use Illuminate\Support\Facades\Storage;
                                 <!-- Collection Tier/Skins Section -->
                                 <div class="pt-1.5">
                                     <div class="flex items-center gap-x-2">
+                                        ${tierImageHtml}
                                         <div class="truncate">
                                             <p class="font-semibold leading-6 truncate text-white" style="font-size: 0.85rem;">
                                                 ${tierDisplay}
