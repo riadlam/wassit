@@ -1543,6 +1543,49 @@ use Illuminate\Support\Facades\Storage;
                 }
             },
             
+            initializeSkinsFromUrl(skinsParam) {
+                // Convert URL format (role-hero-skin) to internal format (hero::skin)
+                if (!skinsParam || !this.categories.length) return;
+                
+                const skinFilters = skinsParam.split(',');
+                skinFilters.forEach(skinFilter => {
+                    skinFilter = skinFilter.trim();
+                    if (!skinFilter) return;
+                    
+                    const parts = skinFilter.split('-');
+                    if (parts.length >= 3) {
+                        const role = parts[0];
+                        const hero = parts[1];
+                        const skinName = parts.slice(2).join('-');
+                        
+                        // Find matching hero and skin in categories
+                        for (const category of this.categories) {
+                            if (category.name.toLowerCase().replace(/\s+/g, '-') === role) {
+                                for (const categoryHero of category.heroes) {
+                                    if (categoryHero.hero.toLowerCase().trim().replace(/\s+/g, '-') === hero) {
+                                        for (const skin of categoryHero.skins) {
+                                            if (skin.toLowerCase().trim().replace(/\s+/g, '-') === skinName) {
+                                                // Add to selected skins
+                                                const heroNameLower = categoryHero.hero.trim().toLowerCase();
+                                                const skinNameLower = skin.trim().toLowerCase();
+                                                const key = `${heroNameLower}::${skinNameLower}`;
+                                                
+                                                if (!this.selectedSkins.includes(key)) {
+                                                    this.selectedSkins.push(key);
+                                                }
+                                                break;
+                                            }
+                                        }
+                                        break;
+                                    }
+                                }
+                                break;
+                            }
+                        }
+                    }
+                });
+            },
+            
             updateAccountsGrid(accounts) {
                 const gridContainer = document.querySelector('[data-accounts-grid]');
                 if (!gridContainer) return;
@@ -1743,6 +1786,7 @@ use Illuminate\Support\Facades\Storage;
                 const priceParam = urlParams.get('filter[price]');
                 const winRateParam = urlParams.get('filter[win_rate]');
                 const levelParam = urlParams.get('filter[level]');
+                const skinsParam = urlParams.get('filter[skins]');
 
                 if (searchParam) {
                     this.searchQuery = searchParam;
@@ -1758,6 +1802,12 @@ use Illuminate\Support\Facades\Storage;
                 }
                 if (levelParam) {
                     this.filters.level = levelParam;
+                }
+                if (skinsParam) {
+                    this.filters.skins = skinsParam;
+                    
+                    // Initialize selected skins state from URL parameter
+                    this.initializeSkinsFromUrl(skinsParam);
                 }
                 
                 // Watch for filter changes

@@ -82,6 +82,52 @@ class GameController extends Controller
                         $query->where('price_dzd', '>=', $min);
                     }
                 }),
+                // Skins filter - searches in account attributes (IMPROVED)
+                AllowedFilter::callback('skins', function ($query, $value) {
+                    if ($value) {
+                        $skinFilters = explode(',', $value);
+                        $query->where(function($q) use ($skinFilters) {
+                            foreach ($skinFilters as $skinFilter) {
+                                $skinFilter = trim($skinFilter);
+                                if (empty($skinFilter)) continue;
+                                
+                                // Format: role-hero-skin (e.g., assassin-ling-aoen-of-twilight)
+                                $parts = explode('-', $skinFilter);
+                                if (count($parts) >= 3) {
+                                    // Reconstruct skin name (may contain multiple hyphens)
+                                    $role = $parts[0];
+                                    $hero = $parts[1];
+                                    $skinName = implode('-', array_slice($parts, 2));
+                                    
+                                    // Convert back to spaces for matching (most common storage format)
+                                    $heroWithSpaces = str_replace('-', ' ', $hero);
+                                    $skinNameWithSpaces = str_replace('-', ' ', $skinName);
+                                    
+                                    $q->orWhereHas('attributes', function($attrQuery) use ($hero, $heroWithSpaces, $skinName, $skinNameWithSpaces) {
+                                        $attrQuery->where(function($subQuery) use ($hero, $heroWithSpaces, $skinName, $skinNameWithSpaces) {
+                                            // Try matching skin name directly
+                                            $subQuery->where('attribute_value', 'like', "%{$skinName}%")
+                                                    ->orWhere('attribute_value', 'like', "%{$skinNameWithSpaces}%")
+                                                    // Also try matching hero name + skin name
+                                                    ->orWhere(function($q2) use ($hero, $heroWithSpaces, $skinName, $skinNameWithSpaces) {
+                                                        $q2->where('attribute_key', 'like', "%{$hero}%")
+                                                           ->where('attribute_value', 'like', "%{$skinName}%");
+                                                    })
+                                                    ->orWhere(function($q3) use ($hero, $heroWithSpaces, $skinName, $skinNameWithSpaces) {
+                                                        $q3->where('attribute_key', 'like', "%{$heroWithSpaces}%")
+                                                           ->where('attribute_value', 'like', "%{$skinNameWithSpaces}%");
+                                                    })
+                                                    ->orWhere(function($q4) use ($heroWithSpaces, $skinNameWithSpaces) {
+                                                        // Check if the entire hero-skin combination exists as attribute value
+                                                        $q4->where('attribute_value', 'like', "%{$heroWithSpaces} {$skinNameWithSpaces}%");
+                                                    });
+                                        });
+                                    });
+                                }
+                            }
+                        });
+                    }
+                }),
                 // Win Rate filter - searches in account attributes
                 AllowedFilter::callback('win_rate', function ($query, $value) {
                     if ($value && strpos($value, '-') !== false) {
@@ -136,7 +182,10 @@ class GameController extends Controller
         $game = Game::where('slug', $slug)->firstOrFail();
         
         // Build query with Spatie Query Builder
-        $accounts = QueryBuilder::for(AccountForSale::class)
+        // Check if there are filter parameters in the request
+        $hasFilters = $request->has('filter');
+        
+        $queryBuilder = QueryBuilder::for(AccountForSale::class)
             ->where('game_id', $game->id)
             ->where('status', 'available')
             ->with(['seller.user', 'attributes', 'images'])
@@ -186,12 +235,15 @@ class GameController extends Controller
                         $query->where('price_dzd', '>=', $min);
                     }
                 }),
-                // Skins filter - searches in account attributes
+                // Skins filter - searches in account attributes (IMPROVED)
                 AllowedFilter::callback('skins', function ($query, $value) {
                     if ($value) {
                         $skinFilters = explode(',', $value);
                         $query->where(function($q) use ($skinFilters) {
                             foreach ($skinFilters as $skinFilter) {
+                                $skinFilter = trim($skinFilter);
+                                if (empty($skinFilter)) continue;
+                                
                                 // Format: role-hero-skin (e.g., assassin-ling-aoen-of-twilight)
                                 $parts = explode('-', $skinFilter);
                                 if (count($parts) >= 3) {
@@ -199,12 +251,12 @@ class GameController extends Controller
                                     $role = $parts[0];
                                     $hero = $parts[1];
                                     $skinName = implode('-', array_slice($parts, 2));
-                                    // Also try with spaces for matching
-                                    $skinNameWithSpaces = str_replace('-', ' ', $skinName);
+                                    
+                                    // Convert back to spaces for matching (most common storage format)
                                     $heroWithSpaces = str_replace('-', ' ', $hero);
+                                    $skinNameWithSpaces = str_replace('-', ' ', $skinName);
                                     
                                     $q->orWhereHas('attributes', function($attrQuery) use ($hero, $heroWithSpaces, $skinName, $skinNameWithSpaces) {
-                                        // Search for skin name in attribute values (skins might be stored in various formats)
                                         $attrQuery->where(function($subQuery) use ($hero, $heroWithSpaces, $skinName, $skinNameWithSpaces) {
                                             // Try matching skin name directly
                                             $subQuery->where('attribute_value', 'like', "%{$skinName}%")
@@ -217,6 +269,10 @@ class GameController extends Controller
                                                     ->orWhere(function($q3) use ($hero, $heroWithSpaces, $skinName, $skinNameWithSpaces) {
                                                         $q3->where('attribute_key', 'like', "%{$heroWithSpaces}%")
                                                            ->where('attribute_value', 'like', "%{$skinNameWithSpaces}%");
+                                                    })
+                                                    ->orWhere(function($q4) use ($heroWithSpaces, $skinNameWithSpaces) {
+                                                        // Check if the entire hero-skin combination exists as attribute value
+                                                        $q4->where('attribute_value', 'like', "%{$heroWithSpaces} {$skinNameWithSpaces}%");
                                                     });
                                         });
                                     });
@@ -245,6 +301,13 @@ class GameController extends Controller
                         });
                     }
                 }),
+                // Rank filter - searches in account attributes
+                AllowedFilter::callback('rank', function ($query, $value) {
+                    $query->whereHas('attributes', function($q) use ($value) {
+                        $q->where('attribute_key', 'rank')
+                          ->where('attribute_value', 'like', "%{$value}%");
+                    });
+                }),
                 // Verified seller filter
                 AllowedFilter::callback('verified', function ($query, $value) {
                     if ($value) {
@@ -265,8 +328,10 @@ class GameController extends Controller
                 'created_at',
                 AllowedSort::field('title'),
             ])
-            ->defaultSort('-created_at')
-            ->get();
+            ->defaultSort('-created_at');
+        
+        // Get accounts (QueryBuilder will automatically apply any filters from the request)
+        $accounts = $queryBuilder->get();
         
         return view('games.show', [
             'game' => $game,
