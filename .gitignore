@@ -22,6 +22,7 @@ Homestead.yaml
 Thumbs.db
 /public/hot
 /public/storage
+!/public/storage/mlbbskins.json
 /storage/*.key
 /storage/pail
 /vendor

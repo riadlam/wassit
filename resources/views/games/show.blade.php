@@ -410,7 +410,34 @@ use Illuminate\Support\Facades\Storage;
                             const response = await fetch('/storage/mlbbskins.json');
                             if (!response.ok) throw new Error('Failed to load skins data');
                             const data = await response.json();
-                            this.categories = data.categories || [];
+                            
+                            // Sort categories alphabetically by name
+                            let categories = (data.categories || []).sort((a, b) => {
+                                return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+                            });
+                            
+                            // Sort heroes within each category alphabetically
+                            categories = categories.map(category => {
+                                const sortedHeroes = (category.heroes || []).sort((a, b) => {
+                                    const heroA = (a.hero || '').trim().toLowerCase();
+                                    const heroB = (b.hero || '').trim().toLowerCase();
+                                    return heroA.localeCompare(heroB, undefined, { sensitivity: 'base' });
+                                });
+                                
+                                // Sort skins within each hero alphabetically
+                                const heroesWithSortedSkins = sortedHeroes.map(hero => {
+                                    const sortedSkins = (hero.skins || []).sort((a, b) => {
+                                        const skinA = (a || '').trim().toLowerCase();
+                                        const skinB = (b || '').trim().toLowerCase();
+                                        return skinA.localeCompare(skinB, undefined, { sensitivity: 'base' });
+                                    });
+                                    return { ...hero, skins: sortedSkins };
+                                });
+                                
+                                return { ...category, heroes: heroesWithSortedSkins };
+                            });
+                            
+                            this.categories = categories;
                         } catch (error) {
                             console.error('Error loading skins data:', error);
                             this.categories = [];
