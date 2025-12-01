@@ -302,7 +302,7 @@
                                 expandedRoles: {},
                                 expandedHeroes: {},
                                 selectedSkins: [],
-                                existingHighlightedSkins: @js($attributesMap['highlighted_skins'] ?? ''),
+                                existingHighlightedSkins: {!! json_encode($attributesMap['highlighted_skins'] ?? '') !!},
                                 async init() {
                                     await this.loadSkinsData();
                                     // Load existing skins after categories are loaded
