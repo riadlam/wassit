@@ -85,6 +85,7 @@ return [
     'marksman' => 'Tireur',
     'elite' => 'Élite',
     'collector' => 'Collectionneur',
+    'collection' => 'Collection',
     'expert_collector' => 'Expert Collectionneur',
     'renowned_collector' => 'Collectionneur Renommé',
     'exalted_collector' => 'Collectionneur Exalté',

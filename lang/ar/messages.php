@@ -85,6 +85,7 @@ return [
     'marksman' => 'رامي',
     'elite' => 'نخبة',
     'collector' => 'جامع',
+    'collection' => 'المجموعة',
     'expert_collector' => 'جامع خبير',
     'renowned_collector' => 'جامع مشهور',
     'exalted_collector' => 'جامع فائق',
