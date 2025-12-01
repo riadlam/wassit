@@ -89,7 +89,7 @@ use Illuminate\Support\Facades\Storage;
                             <i class="text-base fa-solid fa-gem custom-dropdown-icon"></i>
                             <span x-text="selectedCollection || '{{ __('messages.collection') }}'" class="font-medium"></span>
                         </div>
-                        <i class="text-xs fa-solid fa-caret-down" style="color: rgba(255, 255, 255, 0.7); transition: transform 0.2s;" :style="rankOpen ? 'transform: rotate(180deg);' : ''"></i>
+                        <i class="text-xs fa-solid fa-caret-down" style="color: rgba(255, 255, 255, 0.7); transition: transform 0.2s;" :style="collectionOpen ? 'transform: rotate(180deg);' : ''"></i>
                     </button>
                     <div 
                         x-show="collectionOpen"
