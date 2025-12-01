@@ -294,6 +294,317 @@
                                 </div>
                             </div>
                             
+                            <!-- Highlighted Skins Section -->
+                            <div class="mb-8" x-data="{
+                                categories: [],
+                                loading: false,
+                                searchQuery: '',
+                                expandedRoles: {},
+                                expandedHeroes: {},
+                                selectedSkins: [],
+                                existingHighlightedSkins: @js($attributesMap['highlighted_skins'] ?? ''),
+                                async init() {
+                                    await this.loadSkinsData();
+                                    // Load existing skins after categories are loaded
+                                    this.$nextTick(() => {
+                                        this.loadExistingSkins();
+                                    });
+                                },
+                                async loadSkinsData() {
+                                    this.loading = true;
+                                    try {
+                                        const response = await fetch('/storage/mlbbskins.json');
+                                        if (!response.ok) throw new Error('Failed to load skins data');
+                                        const data = await response.json();
+                                        
+                                        // Sort categories alphabetically
+                                        let categories = (data.categories || []).sort((a, b) => {
+                                            return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+                                        });
+                                        
+                                        // Sort heroes and skins alphabetically
+                                        categories = categories.map(category => {
+                                            const sortedHeroes = (category.heroes || []).sort((a, b) => {
+                                                const heroA = (a.hero || '').trim().toLowerCase();
+                                                const heroB = (b.hero || '').trim().toLowerCase();
+                                                return heroA.localeCompare(heroB, undefined, { sensitivity: 'base' });
+                                            });
+                                            
+                                            const heroesWithSortedSkins = sortedHeroes.map(hero => {
+                                                const sortedSkins = (hero.skins || []).sort((a, b) => {
+                                                    const skinA = (a || '').trim().toLowerCase();
+                                                    const skinB = (b || '').trim().toLowerCase();
+                                                    return skinA.localeCompare(skinB, undefined, { sensitivity: 'base' });
+                                                });
+                                                return { ...hero, skins: sortedSkins };
+                                            });
+                                            
+                                            return { ...category, heroes: heroesWithSortedSkins };
+                                        });
+                                        
+                                        this.categories = categories;
+                                    } catch (error) {
+                                        console.error('Error loading skins data:', error);
+                                        this.categories = [];
+                                    } finally {
+                                        this.loading = false;
+                                    }
+                                },
+                                loadExistingSkins() {
+                                    if (!this.existingHighlightedSkins || !this.categories.length) return;
+                                    
+                                    // Parse existing skins: format is "Hero - Skin|Hero - Skin|..."
+                                    const skinsList = this.existingHighlightedSkins.split('|').filter(s => s.trim());
+                                    
+                                    skinsList.forEach(skinText => {
+                                        const [heroName, ...skinParts] = skinText.split(' - ');
+                                        if (!heroName || !skinParts.length) return;
+                                        
+                                        const skinName = skinParts.join(' - ').trim();
+                                        const heroNameTrimmed = heroName.trim();
+                                        
+                                        // Find matching skin in categories
+                                        this.categories.forEach((category, roleIndex) => {
+                                            category.heroes.forEach((hero, heroIndex) => {
+                                                if (hero.hero.trim().toLowerCase() === heroNameTrimmed.toLowerCase()) {
+                                                    hero.skins.forEach((skin, skinIndex) => {
+                                                        if (skin.trim().toLowerCase() === skinName.toLowerCase()) {
+                                                            const key = `${roleIndex}-${heroIndex}-${skinIndex}`;
+                                                            if (!this.selectedSkins.includes(key)) {
+                                                                this.selectedSkins.push(key);
+                                                            }
+                                                        }
+                                                    });
+                                                }
+                                            });
+                                        });
+                                    });
+                                    
+                                    this.updateHiddenInputs();
+                                },
+                                toggleRole(roleIndex) {
+                                    this.expandedRoles[roleIndex] = !this.expandedRoles[roleIndex];
+                                },
+                                toggleHero(roleIndex, heroIndex) {
+                                    const key = `${roleIndex}-${heroIndex}`;
+                                    this.expandedHeroes[key] = !this.expandedHeroes[key];
+                                },
+                                toggleSkin(roleIndex, heroIndex, skinIndex, skinName) {
+                                    const key = `${roleIndex}-${heroIndex}-${skinIndex}`;
+                                    const index = this.selectedSkins.indexOf(key);
+                                    if (index > -1) {
+                                        this.selectedSkins.splice(index, 1);
+                                    } else {
+                                        this.selectedSkins.push(key);
+                                    }
+                                    this.updateHiddenInputs();
+                                },
+                                isSkinSelected(roleIndex, heroIndex, skinIndex) {
+                                    const key = `${roleIndex}-${heroIndex}-${skinIndex}`;
+                                    return this.selectedSkins.includes(key);
+                                },
+                                getSelectedCount() {
+                                    return this.selectedSkins.length;
+                                },
+                                getSelectedSkinsList() {
+                                    return this.selectedSkins.map(key => {
+                                        const [roleIndex, heroIndex, skinIndex] = key.split('-');
+                                        const category = this.categories[roleIndex];
+                                        if (!category) return null;
+                                        const hero = category.heroes[heroIndex];
+                                        if (!hero) return null;
+                                        const skin = hero.skins[skinIndex];
+                                        if (!skin) return null;
+                                        return `${hero.hero.trim()} - ${skin.trim()}`;
+                                    }).filter(v => v);
+                                },
+                                updateHiddenInputs() {
+                                    // Update hidden input with selected skins
+                                    const hiddenInput = document.getElementById('highlighted_skins_input');
+                                    if (hiddenInput) {
+                                        const skinsList = this.getSelectedSkinsList();
+                                        hiddenInput.value = skinsList.join('|');
+                                    }
+                                },
+                                clearAllSkins() {
+                                    this.selectedSkins = [];
+                                    this.expandedRoles = {};
+                                    this.expandedHeroes = {};
+                                    this.updateHiddenInputs();
+                                },
+                                filteredCategories() {
+                                    if (!this.searchQuery) return this.categories;
+                                    const query = this.searchQuery.toLowerCase();
+                                    return this.categories.map(category => {
+                                        const filteredHeroes = category.heroes.map(hero => {
+                                            const matchingSkins = hero.skins.filter(skin => 
+                                                skin.toLowerCase().includes(query) || 
+                                                hero.hero.toLowerCase().includes(query) ||
+                                                category.name.toLowerCase().includes(query)
+                                            );
+                                            if (matchingSkins.length > 0) {
+                                                return { ...hero, skins: matchingSkins };
+                                            }
+                                            return null;
+                                        }).filter(h => h);
+                                        if (filteredHeroes.length > 0) {
+                                            return { ...category, heroes: filteredHeroes };
+                                        }
+                                        return null;
+                                    }).filter(c => c);
+                                }
+                            }">
+                                <h2 class="text-xl font-semibold text-white mb-6 flex items-center justify-between">
+                                    <div class="flex items-center">
+                                        <i class="fa-solid fa-star mr-3 text-red-600"></i>
+                                        Highlighted Skins
+                                    </div>
+                                    <div class="flex items-center gap-3">
+                                        <span class="text-sm text-gray-400" x-show="getSelectedCount() > 0">
+                                            <span x-text="getSelectedCount()"></span> selected
+                                        </span>
+                                        <button 
+                                            type="button"
+                                            @click="clearAllSkins()"
+                                            x-show="getSelectedCount() > 0"
+                                            class="text-xs text-gray-400 hover:text-red-500 transition-colors"
+                                        >
+                                            Clear All
+                                        </button>
+                                    </div>
+                                </h2>
+                                
+                                <!-- Search Bar -->
+                                <div class="mb-4">
+                                    <div class="relative">
+                                        <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                                        <input 
+                                            type="text" 
+                                            x-model="searchQuery"
+                                            placeholder="Search by hero name, skin name, or role..."
+                                            class="w-full pl-10 pr-4 py-2.5 rounded-md text-sm text-white placeholder:text-gray-500 focus:ring-2 focus:ring-red-500 focus:outline-none transition-all" 
+                                            style="background-color: #1b1a1e; border: 1px solid #2d2c31;"
+                                        >
+                                    </div>
+                                </div>
+                                
+                                <!-- Loading State -->
+                                <div x-show="loading" class="text-center py-12">
+                                    <div class="inline-block animate-spin rounded-full h-10 w-10 border-b-2 border-red-600"></div>
+                                    <p class="text-gray-400 text-sm mt-3">Loading skins data...</p>
+                                </div>
+                                
+                                <!-- Skins Selection -->
+                                <div x-show="!loading" class="space-y-3 max-h-[600px] overflow-y-auto pr-2" style="scrollbar-width: thin; scrollbar-color: #2d2c31 #1b1a1e;">
+                                    <template x-for="(category, roleIndex) in filteredCategories()" :key="roleIndex">
+                                        <div class="border rounded-lg overflow-hidden" style="border-color: #2d2c31; background-color: #1b1a1e;">
+                                            <!-- Role Header -->
+                                            <button 
+                                                type="button"
+                                                @click="toggleRole(roleIndex)"
+                                                class="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-white hover:bg-opacity-50 transition-colors"
+                                                style="background-color: rgba(27, 26, 30, 0.7);"
+                                            >
+                                                <div class="flex items-center gap-2">
+                                                    <i class="fa-solid fa-chevron-down text-xs transition-transform" :class="expandedRoles[roleIndex] ? 'rotate-180' : ''"></i>
+                                                    <span x-text="category.name"></span>
+                                                </div>
+                                                <span class="text-xs text-gray-400" x-text="category.heroes.length + ' heroes'"></span>
+                                            </button>
+                                            
+                                            <!-- Heroes List -->
+                                            <div 
+                                                x-show="expandedRoles[roleIndex]"
+                                                x-collapse
+                                                class="px-4 pb-3 space-y-2"
+                                            >
+                                                <template x-for="(hero, heroIndex) in category.heroes" :key="heroIndex">
+                                                    <div class="border rounded-md mt-2" style="border-color: #2d2c31; background-color: rgba(27, 26, 30, 0.3);">
+                                                        <!-- Hero Header -->
+                                                        <button 
+                                                            type="button"
+                                                            @click="toggleHero(roleIndex, heroIndex)"
+                                                            class="w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-gray-300 hover:text-white transition-colors"
+                                                        >
+                                                            <span x-text="hero.hero" class="capitalize"></span>
+                                                            <div class="flex items-center gap-2">
+                                                                <span class="text-xs text-gray-500" x-text="hero.skins.length + ' skins'"></span>
+                                                                <i class="fa-solid fa-chevron-down text-xs transition-transform" :class="expandedHeroes[`${roleIndex}-${heroIndex}`] ? 'rotate-180' : ''"></i>
+                                                            </div>
+                                                        </button>
+                                                        
+                                                        <!-- Skins List -->
+                                                        <div 
+                                                            x-show="expandedHeroes[`${roleIndex}-${heroIndex}`]"
+                                                            x-collapse
+                                                            class="px-3 pb-2 flex flex-wrap gap-2"
+                                                        >
+                                                            <template x-for="(skin, skinIndex) in hero.skins" :key="skinIndex">
+                                                                <button
+                                                                    type="button"
+                                                                    @click="toggleSkin(roleIndex, heroIndex, skinIndex, skin)"
+                                                                    class="px-3 py-1.5 text-xs rounded-md transition-all border"
+                                                                    :class="isSkinSelected(roleIndex, heroIndex, skinIndex) ? 'bg-red-600 border-red-600 text-white' : 'bg-transparent border-gray-600 text-gray-300 hover:border-red-500 hover:text-white'"
+                                                                >
+                                                                    <i class="fa-solid mr-1.5" :class="isSkinSelected(roleIndex, heroIndex, skinIndex) ? 'fa-check-circle' : 'fa-circle'"></i>
+                                                                    <span x-text="skin"></span>
+                                                                </button>
+                                                            </template>
+                                                        </div>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </div>
+                                    </template>
+                                    
+                                    <!-- Empty State -->
+                                    <div x-show="!loading && filteredCategories().length === 0" class="text-center py-12">
+                                        <i class="fa-solid fa-search text-4xl text-gray-600 mb-3"></i>
+                                        <p class="text-gray-400">No skins found matching your search</p>
+                                    </div>
+                                </div>
+                                
+                                <!-- Selected Skins Preview -->
+                                <div x-show="getSelectedCount() > 0" class="mt-4 p-4 rounded-lg" style="background-color: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3);">
+                                    <h3 class="text-sm font-semibold text-white mb-2">Selected Skins (<span x-text="getSelectedCount()"></span>)</h3>
+                                    <div class="flex flex-wrap gap-2">
+                                        <template x-for="(skinText, index) in getSelectedSkinsList()" :key="index">
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs text-white" style="background-color: rgba(239, 68, 68, 0.2);">
+                                                <span x-text="skinText"></span>
+                                                <button 
+                                                    type="button"
+                                                    @click="
+                                                        const skinParts = skinText.split(' - ');
+                                                        const heroName = skinParts[0].trim();
+                                                        const skinName = skinParts[1].trim();
+                                                        selectedSkins = selectedSkins.filter(key => {
+                                                            const [r, h, s] = key.split('-');
+                                                            const cat = categories[r];
+                                                            if (!cat) return true;
+                                                            const hero = cat.heroes[h];
+                                                            if (!hero) return true;
+                                                            return !(hero.hero.trim() === heroName && hero.skins[s]?.trim() === skinName);
+                                                        });
+                                                        updateHiddenInputs();
+                                                    "
+                                                    class="hover:text-red-400 transition-colors"
+                                                >
+                                                    <i class="fa-solid fa-times text-xs"></i>
+                                                </button>
+                                            </span>
+                                        </template>
+                                    </div>
+                                </div>
+                                
+                                <!-- Hidden Input for Form Submission -->
+                                <input 
+                                    type="hidden" 
+                                    id="highlighted_skins_input" 
+                                    name="attributes[highlighted_skins]"
+                                    value="{{ $attributesMap['highlighted_skins'] ?? '' }}"
+                                >
+                            </div>
+                            
                             <!-- Images Section -->
                             <div class="mb-8">
                                 <h2 class="text-xl font-semibold text-white mb-6 flex items-center">
