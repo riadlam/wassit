@@ -295,165 +295,7 @@
                             </div>
                             
                             <!-- Highlighted Skins Section -->
-                            <div class="mb-8" x-data="{
-                                categories: [],
-                                loading: false,
-                                searchQuery: '',
-                                expandedRoles: {},
-                                expandedHeroes: {},
-                                selectedSkins: [],
-                                existingHighlightedSkins: {!! json_encode($attributesMap['highlighted_skins'] ?? '') !!},
-                                async init() {
-                                    await this.loadSkinsData();
-                                    // Load existing skins after categories are loaded
-                                    this.$nextTick(() => {
-                                        this.loadExistingSkins();
-                                    });
-                                },
-                                async loadSkinsData() {
-                                    this.loading = true;
-                                    try {
-                                        const response = await fetch('/storage/mlbbskins.json');
-                                        if (!response.ok) throw new Error('Failed to load skins data');
-                                        const data = await response.json();
-                                        
-                                        // Sort categories alphabetically
-                                        let categories = (data.categories || []).sort((a, b) => {
-                                            return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
-                                        });
-                                        
-                                        // Sort heroes and skins alphabetically
-                                        categories = categories.map(category => {
-                                            const sortedHeroes = (category.heroes || []).sort((a, b) => {
-                                                const heroA = (a.hero || '').trim().toLowerCase();
-                                                const heroB = (b.hero || '').trim().toLowerCase();
-                                                return heroA.localeCompare(heroB, undefined, { sensitivity: 'base' });
-                                            });
-                                            
-                                            const heroesWithSortedSkins = sortedHeroes.map(hero => {
-                                                const sortedSkins = (hero.skins || []).sort((a, b) => {
-                                                    const skinA = (a || '').trim().toLowerCase();
-                                                    const skinB = (b || '').trim().toLowerCase();
-                                                    return skinA.localeCompare(skinB, undefined, { sensitivity: 'base' });
-                                                });
-                                                return { ...hero, skins: sortedSkins };
-                                            });
-                                            
-                                            return { ...category, heroes: heroesWithSortedSkins };
-                                        });
-                                        
-                                        this.categories = categories;
-                                    } catch (error) {
-                                        console.error('Error loading skins data:', error);
-                                        this.categories = [];
-                                    } finally {
-                                        this.loading = false;
-                                    }
-                                },
-                                loadExistingSkins() {
-                                    if (!this.existingHighlightedSkins || !this.categories.length) return;
-                                    
-                                    // Parse existing skins: format is "Hero - Skin|Hero - Skin|..."
-                                    const skinsList = this.existingHighlightedSkins.split('|').filter(s => s.trim());
-                                    
-                                    skinsList.forEach(skinText => {
-                                        const [heroName, ...skinParts] = skinText.split(' - ');
-                                        if (!heroName || !skinParts.length) return;
-                                        
-                                        const skinName = skinParts.join(' - ').trim();
-                                        const heroNameTrimmed = heroName.trim();
-                                        
-                                        // Find matching skin in categories
-                                        this.categories.forEach((category, roleIndex) => {
-                                            category.heroes.forEach((hero, heroIndex) => {
-                                                if (hero.hero.trim().toLowerCase() === heroNameTrimmed.toLowerCase()) {
-                                                    hero.skins.forEach((skin, skinIndex) => {
-                                                        if (skin.trim().toLowerCase() === skinName.toLowerCase()) {
-                                                            const key = `${roleIndex}-${heroIndex}-${skinIndex}`;
-                                                            if (!this.selectedSkins.includes(key)) {
-                                                                this.selectedSkins.push(key);
-                                                            }
-                                                        }
-                                                    });
-                                                }
-                                            });
-                                        });
-                                    });
-                                    
-                                    this.updateHiddenInputs();
-                                },
-                                toggleRole(roleIndex) {
-                                    this.expandedRoles[roleIndex] = !this.expandedRoles[roleIndex];
-                                },
-                                toggleHero(roleIndex, heroIndex) {
-                                    const key = `${roleIndex}-${heroIndex}`;
-                                    this.expandedHeroes[key] = !this.expandedHeroes[key];
-                                },
-                                toggleSkin(roleIndex, heroIndex, skinIndex, skinName) {
-                                    const key = `${roleIndex}-${heroIndex}-${skinIndex}`;
-                                    const index = this.selectedSkins.indexOf(key);
-                                    if (index > -1) {
-                                        this.selectedSkins.splice(index, 1);
-                                    } else {
-                                        this.selectedSkins.push(key);
-                                    }
-                                    this.updateHiddenInputs();
-                                },
-                                isSkinSelected(roleIndex, heroIndex, skinIndex) {
-                                    const key = `${roleIndex}-${heroIndex}-${skinIndex}`;
-                                    return this.selectedSkins.includes(key);
-                                },
-                                getSelectedCount() {
-                                    return this.selectedSkins.length;
-                                },
-                                getSelectedSkinsList() {
-                                    return this.selectedSkins.map(key => {
-                                        const [roleIndex, heroIndex, skinIndex] = key.split('-');
-                                        const category = this.categories[roleIndex];
-                                        if (!category) return null;
-                                        const hero = category.heroes[heroIndex];
-                                        if (!hero) return null;
-                                        const skin = hero.skins[skinIndex];
-                                        if (!skin) return null;
-                                        return `${hero.hero.trim()} - ${skin.trim()}`;
-                                    }).filter(v => v);
-                                },
-                                updateHiddenInputs() {
-                                    // Update hidden input with selected skins
-                                    const hiddenInput = document.getElementById('highlighted_skins_input');
-                                    if (hiddenInput) {
-                                        const skinsList = this.getSelectedSkinsList();
-                                        hiddenInput.value = skinsList.join('|');
-                                    }
-                                },
-                                clearAllSkins() {
-                                    this.selectedSkins = [];
-                                    this.expandedRoles = {};
-                                    this.expandedHeroes = {};
-                                    this.updateHiddenInputs();
-                                },
-                                filteredCategories() {
-                                    if (!this.searchQuery) return this.categories;
-                                    const query = this.searchQuery.toLowerCase();
-                                    return this.categories.map(category => {
-                                        const filteredHeroes = category.heroes.map(hero => {
-                                            const matchingSkins = hero.skins.filter(skin => 
-                                                skin.toLowerCase().includes(query) || 
-                                                hero.hero.toLowerCase().includes(query) ||
-                                                category.name.toLowerCase().includes(query)
-                                            );
-                                            if (matchingSkins.length > 0) {
-                                                return { ...hero, skins: matchingSkins };
-                                            }
-                                            return null;
-                                        }).filter(h => h);
-                                        if (filteredHeroes.length > 0) {
-                                            return { ...category, heroes: filteredHeroes };
-                                        }
-                                        return null;
-                                    }).filter(c => c);
-                                }
-                            }">
+                            <div class="mb-8" x-data="highlightedSkinsEdit({{ json_encode($attributesMap['highlighted_skins'] ?? '') }})">
                                 <h2 class="text-xl font-semibold text-white mb-6 flex items-center justify-between">
                                     <div class="flex items-center">
                                         <i class="fa-solid fa-star mr-3 text-red-600"></i>
@@ -894,6 +736,163 @@
         
         // Make function globally accessible
         window.removeImage = removeImage;
+        
+        // Highlighted Skins Component for Edit
+        function highlightedSkinsEdit(existingSkins) {
+            return {
+                categories: [],
+                loading: false,
+                searchQuery: '',
+                expandedRoles: {},
+                expandedHeroes: {},
+                selectedSkins: [],
+                existingHighlightedSkins: existingSkins || '',
+                async init() {
+                    await this.loadSkinsData();
+                    this.$nextTick(() => {
+                        this.loadExistingSkins();
+                    });
+                },
+                async loadSkinsData() {
+                    this.loading = true;
+                    try {
+                        const response = await fetch('/storage/mlbbskins.json');
+                        if (!response.ok) throw new Error('Failed to load skins data');
+                        const data = await response.json();
+                        
+                        let categories = (data.categories || []).sort((a, b) => {
+                            return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+                        });
+                        
+                        categories = categories.map(category => {
+                            const sortedHeroes = (category.heroes || []).sort((a, b) => {
+                                const heroA = (a.hero || '').trim().toLowerCase();
+                                const heroB = (b.hero || '').trim().toLowerCase();
+                                return heroA.localeCompare(heroB, undefined, { sensitivity: 'base' });
+                            });
+                            
+                            const heroesWithSortedSkins = sortedHeroes.map(hero => {
+                                const sortedSkins = (hero.skins || []).sort((a, b) => {
+                                    const skinA = (a || '').trim().toLowerCase();
+                                    const skinB = (b || '').trim().toLowerCase();
+                                    return skinA.localeCompare(skinB, undefined, { sensitivity: 'base' });
+                                });
+                                return { ...hero, skins: sortedSkins };
+                            });
+                            
+                            return { ...category, heroes: heroesWithSortedSkins };
+                        });
+                        
+                        this.categories = categories;
+                    } catch (error) {
+                        console.error('Error loading skins data:', error);
+                        this.categories = [];
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+                loadExistingSkins() {
+                    if (!this.existingHighlightedSkins || !this.categories.length) return;
+                    
+                    const skinsList = this.existingHighlightedSkins.split('|').filter(s => s.trim());
+                    
+                    skinsList.forEach(skinText => {
+                        const [heroName, ...skinParts] = skinText.split(' - ');
+                        if (!heroName || !skinParts.length) return;
+                        
+                        const skinName = skinParts.join(' - ').trim();
+                        const heroNameTrimmed = heroName.trim();
+                        
+                        this.categories.forEach((category, roleIndex) => {
+                            category.heroes.forEach((hero, heroIndex) => {
+                                if (hero.hero.trim().toLowerCase() === heroNameTrimmed.toLowerCase()) {
+                                    hero.skins.forEach((skin, skinIndex) => {
+                                        if (skin.trim().toLowerCase() === skinName.toLowerCase()) {
+                                            const key = `${roleIndex}-${heroIndex}-${skinIndex}`;
+                                            if (!this.selectedSkins.includes(key)) {
+                                                this.selectedSkins.push(key);
+                                            }
+                                        }
+                                    });
+                                }
+                            });
+                        });
+                    });
+                    
+                    this.updateHiddenInputs();
+                },
+                toggleRole(roleIndex) {
+                    this.expandedRoles[roleIndex] = !this.expandedRoles[roleIndex];
+                },
+                toggleHero(roleIndex, heroIndex) {
+                    const key = `${roleIndex}-${heroIndex}`;
+                    this.expandedHeroes[key] = !this.expandedHeroes[key];
+                },
+                toggleSkin(roleIndex, heroIndex, skinIndex, skinName) {
+                    const key = `${roleIndex}-${heroIndex}-${skinIndex}`;
+                    const index = this.selectedSkins.indexOf(key);
+                    if (index > -1) {
+                        this.selectedSkins.splice(index, 1);
+                    } else {
+                        this.selectedSkins.push(key);
+                    }
+                    this.updateHiddenInputs();
+                },
+                isSkinSelected(roleIndex, heroIndex, skinIndex) {
+                    const key = `${roleIndex}-${heroIndex}-${skinIndex}`;
+                    return this.selectedSkins.includes(key);
+                },
+                getSelectedCount() {
+                    return this.selectedSkins.length;
+                },
+                getSelectedSkinsList() {
+                    return this.selectedSkins.map(key => {
+                        const [roleIndex, heroIndex, skinIndex] = key.split('-');
+                        const category = this.categories[roleIndex];
+                        if (!category) return null;
+                        const hero = category.heroes[heroIndex];
+                        if (!hero) return null;
+                        const skin = hero.skins[skinIndex];
+                        if (!skin) return null;
+                        return `${hero.hero.trim()} - ${skin.trim()}`;
+                    }).filter(v => v);
+                },
+                updateHiddenInputs() {
+                    const hiddenInput = document.getElementById('highlighted_skins_input');
+                    if (hiddenInput) {
+                        const skinsList = this.getSelectedSkinsList();
+                        hiddenInput.value = skinsList.join('|');
+                    }
+                },
+                clearAllSkins() {
+                    this.selectedSkins = [];
+                    this.expandedRoles = {};
+                    this.expandedHeroes = {};
+                    this.updateHiddenInputs();
+                },
+                filteredCategories() {
+                    if (!this.searchQuery) return this.categories;
+                    const query = this.searchQuery.toLowerCase();
+                    return this.categories.map(category => {
+                        const filteredHeroes = category.heroes.map(hero => {
+                            const matchingSkins = hero.skins.filter(skin => 
+                                skin.toLowerCase().includes(query) || 
+                                hero.hero.toLowerCase().includes(query) ||
+                                category.name.toLowerCase().includes(query)
+                            );
+                            if (matchingSkins.length > 0) {
+                                return { ...hero, skins: matchingSkins };
+                            }
+                            return null;
+                        }).filter(h => h);
+                        if (filteredHeroes.length > 0) {
+                            return { ...category, heroes: filteredHeroes };
+                        }
+                        return null;
+                    }).filter(c => c);
+                }
+            };
+        }
     </script>
     @endpush
 @endsection
