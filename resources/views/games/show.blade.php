@@ -60,39 +60,39 @@ use Illuminate\Support\Facades\Storage;
                     </div>
                 </div>
 
-                <!-- Rank Filter -->
-                <div class="relative min-w-[125px] sm:block hidden flex-grow md:flex-grow-0" x-data="{ 
-                    rankOpen: false, 
-                    selectedRank: (() => {
+                <!-- Collection Filter -->
+                <div class="relative min-w-[125px] sm:block hidden flex-grow md:flex-grow-0" x-data="{
+                    collectionOpen: false,
+                    selectedCollection: (() => {
                         const urlParams = new URLSearchParams(window.location.search);
-                        const rankParam = urlParams.get('filter[rank]');
-                        if (rankParam) {
-                            const rankMap = {
-                                'mythic': '{{ __('messages.mythic') }}',
-                                'legend': '{{ __('messages.legend') }}',
-                                'epic': '{{ __('messages.epic') }}',
-                                'grandmaster': '{{ __('messages.grandmaster') }}',
-                                'master': '{{ __('messages.master') }}'
+                        const collectionParam = urlParams.get('filter[collection]');
+                        if (collectionParam) {
+                            const collectionMap = {
+                                'Expert Collector': '{{ __('messages.expert_collector') }}',
+                                'Renowned Collector': '{{ __('messages.renowned_collector') }}',
+                                'Exalted Collector': '{{ __('messages.exalted_collector') }}',
+                                'Mega Collector': '{{ __('messages.mega_collector') }}',
+                                'World Collector': '{{ __('messages.world_collector') }}'
                             };
-                            return rankMap[rankParam] || rankParam;
+                            return collectionMap[collectionParam] || collectionParam;
                         }
                         return '';
                     })()
-                }" @click.away="rankOpen = false">
+                }" @click.away="collectionOpen = false">
                     <button 
                         type="button" 
-                        @click="rankOpen = !rankOpen"
+                        @click="collectionOpen = !collectionOpen"
                         class="custom-dropdown-button items-center focus:outline focus:outline-offset-2 focus-visible:outline disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden font-medium active:translate-y-px whitespace-nowrap py-3 sm:py-2.5 text-sm outline-none flex justify-between w-full h-[42px] px-4 group"
                         :class="rankOpen ? 'active' : ''"
                     >
                         <div class="flex items-center pr-2 truncate gap-x-2">
-                            <i class="text-base fa-solid fa-medal custom-dropdown-icon"></i>
-                            <span x-text="selectedRank || '{{ __('messages.rank') }}'" class="font-medium"></span>
+                            <i class="text-base fa-solid fa-gem custom-dropdown-icon"></i>
+                            <span x-text="selectedCollection || '{{ __('messages.collection') }}'" class="font-medium"></span>
                         </div>
                         <i class="text-xs fa-solid fa-caret-down" style="color: rgba(255, 255, 255, 0.7); transition: transform 0.2s;" :style="rankOpen ? 'transform: rotate(180deg);' : ''"></i>
                     </button>
                     <div 
-                        x-show="rankOpen"
+                        x-show="collectionOpen"
                         x-transition:enter="transition ease-out duration-100"
                         x-transition:enter-start="opacity-0 scale-95"
                         x-transition:enter-end="opacity-100 scale-100"
@@ -100,7 +100,7 @@ use Illuminate\Support\Facades\Storage;
                         x-transition:leave-start="opacity-100 scale-100"
                         x-transition:leave-end="opacity-0 scale-95"
                         class="custom-dropdown-menu absolute z-50 mt-1 w-full"
-                        x-init="$watch('rankOpen', (value) => {
+                        x-init="$watch('collectionOpen', (value) => {
                             if (value) {
                                 $nextTick(() => {
                                     setTimeout(() => {
@@ -113,7 +113,7 @@ use Illuminate\Support\Facades\Storage;
                                         const viewportWidth = window.innerWidth;
                                         const dropdownWidth = rect.width;
                                         const leftPosition = rect.left;
-                                        
+
                                         // Check if it would overflow on the right
                                         if (leftPosition + dropdownWidth > viewportWidth) {
                                             dropdown.style.right = '0';
@@ -129,47 +129,47 @@ use Illuminate\Support\Facades\Storage;
                         x-cloak
                     >
                         <div class="py-1">
-                            <button 
-                                @click="selectedRank = ''; rankOpen = false; $dispatch('rank-changed', '')"
+                            <button
+                                @click="selectedCollection = ''; collectionOpen = false; $dispatch('collection-changed', '')"
                                 class="custom-dropdown-item block w-full text-left px-4 py-2.5 text-sm"
-                                :class="selectedRank === '' ? 'active' : ''"
+                                :class="selectedCollection === '' ? 'active' : ''"
                             >
-                                {{ __('messages.all_ranks') }}
+                                {{ __('messages.all_collections') }}
                             </button>
-                            <button 
-                                @click="selectedRank = '{{ __('messages.mythic') }}'; rankOpen = false; $dispatch('rank-changed', 'mythic')"
+                            <button
+                                @click="selectedCollection = '{{ __('messages.expert_collector') }}'; collectionOpen = false; $dispatch('collection-changed', 'Expert Collector')"
                                 class="custom-dropdown-item block w-full text-left px-4 py-2.5 text-sm"
-                                :class="selectedRank === '{{ __('messages.mythic') }}' ? 'active' : ''"
+                                :class="selectedCollection === '{{ __('messages.expert_collector') }}' ? 'active' : ''"
                             >
-                                {{ __('messages.mythic') }}
+                                {{ __('messages.expert_collector') }}
                             </button>
-                            <button 
-                                @click="selectedRank = '{{ __('messages.legend') }}'; rankOpen = false; $dispatch('rank-changed', 'legend')"
+                            <button
+                                @click="selectedCollection = '{{ __('messages.renowned_collector') }}'; collectionOpen = false; $dispatch('collection-changed', 'Renowned Collector')"
                                 class="custom-dropdown-item block w-full text-left px-4 py-2.5 text-sm"
-                                :class="selectedRank === '{{ __('messages.legend') }}' ? 'active' : ''"
+                                :class="selectedCollection === '{{ __('messages.renowned_collector') }}' ? 'active' : ''"
                             >
-                                {{ __('messages.legend') }}
+                                {{ __('messages.renowned_collector') }}
                             </button>
-                            <button 
-                                @click="selectedRank = '{{ __('messages.epic') }}'; rankOpen = false; $dispatch('rank-changed', 'epic')"
+                            <button
+                                @click="selectedCollection = '{{ __('messages.exalted_collector') }}'; collectionOpen = false; $dispatch('collection-changed', 'Exalted Collector')"
                                 class="custom-dropdown-item block w-full text-left px-4 py-2.5 text-sm"
-                                :class="selectedRank === '{{ __('messages.epic') }}' ? 'active' : ''"
+                                :class="selectedCollection === '{{ __('messages.exalted_collector') }}' ? 'active' : ''"
                             >
-                                {{ __('messages.epic') }}
+                                {{ __('messages.exalted_collector') }}
                             </button>
-                            <button 
-                                @click="selectedRank = '{{ __('messages.grandmaster') }}'; rankOpen = false; $dispatch('rank-changed', 'grandmaster')"
+                            <button
+                                @click="selectedCollection = '{{ __('messages.mega_collector') }}'; collectionOpen = false; $dispatch('collection-changed', 'Mega Collector')"
                                 class="custom-dropdown-item block w-full text-left px-4 py-2.5 text-sm"
-                                :class="selectedRank === '{{ __('messages.grandmaster') }}' ? 'active' : ''"
+                                :class="selectedCollection === '{{ __('messages.mega_collector') }}' ? 'active' : ''"
                             >
-                                {{ __('messages.grandmaster') }}
+                                {{ __('messages.mega_collector') }}
                             </button>
-                            <button 
-                                @click="selectedRank = '{{ __('messages.master') }}'; rankOpen = false; $dispatch('rank-changed', 'master')"
+                            <button
+                                @click="selectedCollection = '{{ __('messages.world_collector') }}'; collectionOpen = false; $dispatch('collection-changed', 'World Collector')"
                                 class="custom-dropdown-item block w-full text-left px-4 py-2.5 text-sm"
-                                :class="selectedRank === '{{ __('messages.master') }}' ? 'active' : ''"
+                                :class="selectedCollection === '{{ __('messages.world_collector') }}' ? 'active' : ''"
                             >
-                                {{ __('messages.master') }}
+                                {{ __('messages.world_collector') }}
                             </button>
                         </div>
                     </div>
@@ -1019,11 +1019,11 @@ use Illuminate\Support\Facades\Storage;
                         </div>
                     </template>
                     
-                    <!-- Rank Filter Tag -->
-                    <template x-if="filters.rank">
+                    <!-- Collection Filter Tag -->
+                    <template x-if="filters.collection">
                         <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium text-white" style="background-color: #f59e0b; border: 1px solid #d97706;">
-                            <span x-text="'Rank: ' + filters.rank"></span>
-                            <button @click="clearRankFilter()" class="ml-1 hover:opacity-80 transition-opacity" title="Remove filter">
+                            <span x-text="'Collection: ' + filters.collection"></span>
+                            <button @click="clearCollectionFilter()" class="ml-1 hover:opacity-80 transition-opacity" title="Remove filter">
                                 <i class="fa-solid fa-times text-xs"></i>
                             </button>
                         </div>
@@ -1367,7 +1367,7 @@ use Illuminate\Support\Facades\Storage;
         return {
             searchQuery: '',
             filters: {
-                rank: '',
+                collection: '',
                 platform: '',
                 price: '',
                 skins: '',
@@ -1383,11 +1383,11 @@ use Illuminate\Support\Facades\Storage;
             },
             
             hasAppliedFilters() {
-                return this.searchQuery || 
-                       this.filters.rank || 
-                       this.filters.platform || 
-                       this.filters.price || 
-                       this.filters.winRate || 
+                return this.searchQuery ||
+                       this.filters.collection ||
+                       this.filters.platform ||
+                       this.filters.price ||
+                       this.filters.winRate ||
                        this.filters.level;
             },
             
@@ -1423,7 +1423,7 @@ use Illuminate\Support\Facades\Storage;
             
             clearAllFilters() {
                 this.searchQuery = '';
-                this.filters.rank = '';
+                this.filters.collection = '';
                 this.filters.platform = '';
                 this.filters.price = '';
                 this.filters.skins = '';
@@ -1441,9 +1441,9 @@ use Illuminate\Support\Facades\Storage;
                     params.append('filter[search]', this.searchQuery);
                 }
                 
-                // Add rank filter
-                if (this.filters.rank) {
-                    params.append('filter[rank]', this.filters.rank);
+                // Add collection filter
+                if (this.filters.collection) {
+                    params.append('filter[collection]', this.filters.collection);
                 }
                 
                 // Add platform filter
@@ -1684,17 +1684,17 @@ use Illuminate\Support\Facades\Storage;
                 // Read filter values from URL parameters
                 const urlParams = new URLSearchParams(window.location.search);
                 const searchParam = urlParams.get('filter[search]');
-                const rankParam = urlParams.get('filter[rank]');
+                const collectionParam = urlParams.get('filter[collection]');
                 const platformParam = urlParams.get('filter[platform]');
                 const priceParam = urlParams.get('filter[price]');
                 const winRateParam = urlParams.get('filter[win_rate]');
                 const levelParam = urlParams.get('filter[level]');
-                
+
                 if (searchParam) {
                     this.searchQuery = searchParam;
                 }
-                if (rankParam) {
-                    this.filters.rank = rankParam;
+                if (collectionParam) {
+                    this.filters.collection = collectionParam;
                 }
                 if (platformParam) {
                     this.filters.platform = platformParam;
@@ -1716,9 +1716,9 @@ use Illuminate\Support\Facades\Storage;
                     this.searchTimeout = setTimeout(() => this.applyFilters(), 500);
                 });
                 
-                // Listen for rank dropdown changes
-                this.$el.addEventListener('rank-changed', (e) => {
-                    this.filters.rank = e.detail || '';
+                // Listen for collection dropdown changes
+                this.$el.addEventListener('collection-changed', (e) => {
+                    this.filters.collection = e.detail || '';
                     this.applyFilters();
                 });
                 

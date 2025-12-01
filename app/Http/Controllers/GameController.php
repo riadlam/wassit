@@ -146,10 +146,10 @@ class GameController extends Controller
                           ->orWhere('description', 'like', "%{$value}%");
                     });
                 }),
-                // Rank filter - searches in account attributes
-                AllowedFilter::callback('rank', function ($query, $value) {
+                // Collection filter - searches in account attributes
+                AllowedFilter::callback('collection', function ($query, $value) {
                     $query->whereHas('attributes', function($q) use ($value) {
-                        $q->where('attribute_key', 'rank')
+                        $q->where('attribute_key', 'collection_tier')
                           ->where('attribute_value', 'like', "%{$value}%");
                     });
                 }),
