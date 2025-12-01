@@ -150,7 +150,7 @@ class GameController extends Controller
                 AllowedFilter::callback('collection', function ($query, $value) {
                     $query->whereHas('attributes', function($q) use ($value) {
                         $q->where('attribute_key', 'collection_tier')
-                          ->where('attribute_value', 'like', "%{$value}%");
+                          ->where('attribute_value', '=', $value);
                     });
                 }),
                 // Platform filter - searches in account attributes

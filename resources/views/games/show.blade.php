@@ -83,7 +83,7 @@ use Illuminate\Support\Facades\Storage;
                         type="button" 
                         @click="collectionOpen = !collectionOpen"
                         class="custom-dropdown-button items-center focus:outline focus:outline-offset-2 focus-visible:outline disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden font-medium active:translate-y-px whitespace-nowrap py-3 sm:py-2.5 text-sm outline-none flex justify-between w-full h-[42px] px-4 group"
-                        :class="rankOpen ? 'active' : ''"
+                        :class="collectionOpen ? 'active' : ''"
                     >
                         <div class="flex items-center pr-2 truncate gap-x-2">
                             <i class="text-base fa-solid fa-gem custom-dropdown-icon"></i>
