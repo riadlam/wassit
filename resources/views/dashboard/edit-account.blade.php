@@ -384,11 +384,11 @@
                                                             <template x-for="(skin, skinIndex) in hero.skins" :key="skinIndex">
                                                                 <button
                                                                     type="button"
-                                                                    @click="toggleSkin(roleIndex, heroIndex, skinIndex, skin)"
+                                                                    @click="toggleSkin(hero.hero, skin)"
                                                                     class="px-3 py-1.5 text-xs rounded-md transition-all border"
-                                                                    :class="isSkinSelected(roleIndex, heroIndex, skinIndex) ? 'bg-red-600 border-red-600 text-white' : 'bg-transparent border-gray-600 text-gray-300 hover:border-red-500 hover:text-white'"
+                                                                    :class="isSkinSelected(hero.hero, skin) ? 'bg-red-600 border-red-600 text-white' : 'bg-transparent border-gray-600 text-gray-300 hover:border-red-500 hover:text-white'"
                                                                 >
-                                                                    <i class="fa-solid mr-1.5" :class="isSkinSelected(roleIndex, heroIndex, skinIndex) ? 'fa-check-circle' : 'fa-circle'"></i>
+                                                                    <i class="fa-solid mr-1.5" :class="isSkinSelected(hero.hero, skin) ? 'fa-check-circle' : 'fa-circle'"></i>
                                                                     <span x-text="skin"></span>
                                                                 </button>
                                                             </template>
@@ -814,18 +814,11 @@
                     const key = `${roleIndex}-${heroIndex}`;
                     this.expandedHeroes[key] = !this.expandedHeroes[key];
                 },
-                toggleSkin(roleIndex, heroIndex, skinIndex, skinName) {
-                    // Use hero name and skin name for key instead of indices to avoid filtering issues
-                    const category = this.categories[roleIndex];
-                    if (!category) return;
-                    const hero = category.heroes[heroIndex];
-                    if (!hero) return;
-                    const skin = hero.skins[skinIndex];
-                    if (!skin) return;
-                    
-                    const heroName = hero.hero.trim().toLowerCase();
-                    const skinNameTrimmed = skin.trim().toLowerCase();
-                    const key = `${heroName}::${skinNameTrimmed}`;
+                toggleSkin(heroName, skinName) {
+                    // Use hero name and skin name directly (passed from template) to avoid filtering issues
+                    const heroNameLower = heroName.trim().toLowerCase();
+                    const skinNameLower = skinName.trim().toLowerCase();
+                    const key = `${heroNameLower}::${skinNameLower}`;
                     
                     const index = this.selectedSkins.indexOf(key);
                     if (index > -1) {
@@ -835,17 +828,10 @@
                     }
                     this.updateHiddenInputs();
                 },
-                isSkinSelected(roleIndex, heroIndex, skinIndex) {
-                    const category = this.categories[roleIndex];
-                    if (!category) return false;
-                    const hero = category.heroes[heroIndex];
-                    if (!hero) return false;
-                    const skin = hero.skins[skinIndex];
-                    if (!skin) return false;
-                    
-                    const heroName = hero.hero.trim().toLowerCase();
-                    const skinNameTrimmed = skin.trim().toLowerCase();
-                    const key = `${heroName}::${skinNameTrimmed}`;
+                isSkinSelected(heroName, skinName) {
+                    const heroNameLower = heroName.trim().toLowerCase();
+                    const skinNameLower = skinName.trim().toLowerCase();
+                    const key = `${heroNameLower}::${skinNameLower}`;
                     return this.selectedSkins.includes(key);
                 },
                 getSelectedCount() {
