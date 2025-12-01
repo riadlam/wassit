@@ -1401,6 +1401,11 @@ use Illuminate\Support\Facades\Storage;
                 this.applyFilters();
             },
             
+            clearCollectionFilter() {
+                this.filters.collection = '';
+                this.applyFilters();
+            },
+            
             clearPlatformFilter() {
                 this.filters.platform = '';
                 this.applyFilters();

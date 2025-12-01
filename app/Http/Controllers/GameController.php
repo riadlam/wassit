@@ -50,6 +50,13 @@ class GameController extends Controller
                           ->where('attribute_value', 'like', "%{$value}%");
                     });
                 }),
+                // Collection filter - searches in account attributes
+                AllowedFilter::callback('collection', function ($query, $value) {
+                    $query->whereHas('attributes', function($q) use ($value) {
+                        $q->where('attribute_key', 'collection_tier')
+                          ->where('attribute_value', '=', $value);
+                    });
+                }),
                 // Platform filter - searches in account attributes
                 AllowedFilter::callback('platform', function ($query, $value) {
                     $query->whereHas('attributes', function($q) use ($value) {
