@@ -297,9 +297,9 @@ use Illuminate\Support\Facades\Storage;
                         return '';
                     })(),
                     minPrice: 0,
-                    maxPrice: 1000,
+                    maxPrice: 90000,
                     sliderMin: 0,
-                    sliderMax: 1000,
+                    sliderMax: 90000,
                     init() {
                         // Initialize slider when dropdown opens
                         this.$watch('priceOpen', (value) => {
@@ -308,13 +308,13 @@ use Illuminate\Support\Facades\Storage;
                                     const priceSlider = document.getElementById('price-range-slider');
                                     if (priceSlider && !priceSlider.noUiSlider) {
                                         window.priceRangeSlider = noUiSlider.create(priceSlider, {
-                                            start: [parseFloat(this.priceFrom) || 0, parseFloat(this.priceTo) || 1000],
+                                            start: [parseFloat(this.priceFrom) || 0, parseFloat(this.priceTo) || 90000],
                                             connect: true,
                                             range: {
                                                 'min': 0,
-                                                'max': 1000
+                                                'max': 90000
                                             },
-                                            step: 10,
+                                            step: 100,
                                             format: {
                                                 to: function(value) {
                                                     return Math.round(value);
@@ -344,7 +344,7 @@ use Illuminate\Support\Facades\Storage;
                                     } else if (window.priceRangeSlider) {
                                         // Update slider if it already exists
                                         const from = parseFloat(this.priceFrom) || 0;
-                                        const to = parseFloat(this.priceTo) || 1000;
+                                        const to = parseFloat(this.priceTo) || 90000;
                                         window.priceRangeSlider.set([from, to]);
                                     }
                                 });
@@ -354,14 +354,14 @@ use Illuminate\Support\Facades\Storage;
                     updatePriceFromSlider(value) {
                         if (window.priceRangeSlider && value) {
                             const from = parseFloat(value) || 0;
-                            const to = parseFloat(this.priceTo) || 1000;
+                            const to = parseFloat(this.priceTo) || 90000;
                             window.priceRangeSlider.set([from, to], false);
                         }
                     },
                     updatePriceToSlider(value) {
                         if (window.priceRangeSlider && value) {
                             const from = parseFloat(this.priceFrom) || 0;
-                            const to = parseFloat(value) || 1000;
+                            const to = parseFloat(value) || 90000;
                             window.priceRangeSlider.set([from, to], false);
                         }
                     },
@@ -379,7 +379,7 @@ use Illuminate\Support\Facades\Storage;
                         this.priceFrom = '';
                         this.priceTo = '';
                         if (window.priceRangeSlider) {
-                            window.priceRangeSlider.set([0, 1000]);
+                            window.priceRangeSlider.set([0, 90000]);
                         }
                         this.$dispatch('price-changed', '');
                         this.priceOpen = false;
@@ -722,14 +722,14 @@ use Illuminate\Support\Facades\Storage;
                     },
                     updateLevelFromSlider(value) {
                         if (window.levelSlider && value) {
-                            const from = parseFloat(value) || 0;
+                            const from = parseFloat(value) || 20;
                             const to = parseFloat(this.levelTo) || 130;
                             window.levelSlider.set([from, to], false);
                         }
                     },
                     updateLevelToSlider(value) {
                         if (window.levelSlider && value) {
-                            const from = parseFloat(this.levelFrom) || 0;
+                            const from = parseFloat(this.levelFrom) || 20;
                             const to = parseFloat(value) || 130;
                             window.levelSlider.set([from, to], false);
                         }
@@ -761,7 +761,7 @@ use Illuminate\Support\Facades\Storage;
                             window.winRateSlider.set([0, 100]);
                         }
                         if (window.levelSlider) {
-                            window.levelSlider.set([0, 130]);
+                            window.levelSlider.set([20, 130]);
                         }
                         this.$dispatch('additional-filters-changed', {
                             winRate: '',
@@ -806,10 +806,10 @@ use Illuminate\Support\Facades\Storage;
                                 const levelSlider = document.getElementById('level-slider');
                                 if (levelSlider && !levelSlider.noUiSlider) {
                                     window.levelSlider = noUiSlider.create(levelSlider, {
-                                        start: [parseFloat(this.levelFrom) || 0, parseFloat(this.levelTo) || 130],
+                                        start: [parseFloat(this.levelFrom) || 20, parseFloat(this.levelTo) || 130],
                                         connect: true,
                                         range: {
-                                            'min': 0,
+                                            'min': 20,
                                             'max': 130
                                         },
                                         step: 1,
@@ -828,7 +828,7 @@ use Illuminate\Support\Facades\Storage;
                                         this.levelTo = values[1];
                                     });
                                 } else if (window.levelSlider) {
-                                    window.levelSlider.set([parseFloat(this.levelFrom) || 0, parseFloat(this.levelTo) || 130]);
+                                    window.levelSlider.set([parseFloat(this.levelFrom) || 20, parseFloat(this.levelTo) || 130]);
                                 }
                             });
                         }
@@ -957,7 +957,7 @@ use Illuminate\Support\Facades\Storage;
                                             <input 
                                                 type="number" 
                                                 x-model="levelFrom"
-                                                min="0"
+                                                min="20"
                                                 max="130"
                                                 placeholder="{{ __('messages.min') }}"
                                                 class="w-full px-3 py-2 rounded-md text-sm text-white placeholder-gray-500 focus:ring-2 focus:ring-red-500 focus:outline-none transition-all"
