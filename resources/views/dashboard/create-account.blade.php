@@ -425,7 +425,18 @@
                                     this.expandedHeroes[key] = !this.expandedHeroes[key];
                                 },
                                 toggleSkin(roleIndex, heroIndex, skinIndex, skinName) {
-                                    const key = `${roleIndex}-${heroIndex}-${skinIndex}`;
+                                    // Use hero name and skin name for key instead of indices to avoid filtering issues
+                                    const category = this.categories[roleIndex];
+                                    if (!category) return;
+                                    const hero = category.heroes[heroIndex];
+                                    if (!hero) return;
+                                    const skin = hero.skins[skinIndex];
+                                    if (!skin) return;
+                                    
+                                    const heroName = hero.hero.trim().toLowerCase();
+                                    const skinNameTrimmed = skin.trim().toLowerCase();
+                                    const key = `${heroName}::${skinNameTrimmed}`;
+                                    
                                     const index = this.selectedSkins.indexOf(key);
                                     if (index > -1) {
                                         this.selectedSkins.splice(index, 1);
@@ -435,7 +446,16 @@
                                     this.updateHiddenInputs();
                                 },
                                 isSkinSelected(roleIndex, heroIndex, skinIndex) {
-                                    const key = `${roleIndex}-${heroIndex}-${skinIndex}`;
+                                    const category = this.categories[roleIndex];
+                                    if (!category) return false;
+                                    const hero = category.heroes[heroIndex];
+                                    if (!hero) return false;
+                                    const skin = hero.skins[skinIndex];
+                                    if (!skin) return false;
+                                    
+                                    const heroName = hero.hero.trim().toLowerCase();
+                                    const skinNameTrimmed = skin.trim().toLowerCase();
+                                    const key = `${heroName}::${skinNameTrimmed}`;
                                     return this.selectedSkins.includes(key);
                                 },
                                 getSelectedCount() {
@@ -443,14 +463,22 @@
                                 },
                                 getSelectedSkinsList() {
                                     return this.selectedSkins.map(key => {
-                                        const [roleIndex, heroIndex, skinIndex] = key.split('-');
-                                        const category = this.categories[roleIndex];
-                                        if (!category) return null;
-                                        const hero = category.heroes[heroIndex];
-                                        if (!hero) return null;
-                                        const skin = hero.skins[skinIndex];
-                                        if (!skin) return null;
-                                        return `${hero.hero.trim()} - ${skin.trim()}`;
+                                        const [heroNameLower, skinNameLower] = key.split('::');
+                                        if (!heroNameLower || !skinNameLower) return null;
+                                        
+                                        // Find the actual hero and skin from categories
+                                        for (const category of this.categories) {
+                                            for (const hero of category.heroes) {
+                                                if (hero.hero.trim().toLowerCase() === heroNameLower) {
+                                                    for (const skin of hero.skins) {
+                                                        if (skin.trim().toLowerCase() === skinNameLower) {
+                                                            return `${hero.hero.trim()} - ${skin.trim()}`;
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        return null;
                                     }).filter(v => v);
                                 },
                                 updateHiddenInputs() {
@@ -610,16 +638,10 @@
                                                     type="button"
                                                     @click="
                                                         const skinParts = skinText.split(' - ');
-                                                        const heroName = skinParts[0].trim();
-                                                        const skinName = skinParts[1].trim();
-                                                        selectedSkins = selectedSkins.filter(key => {
-                                                            const [r, h, s] = key.split('-');
-                                                            const cat = categories[r];
-                                                            if (!cat) return true;
-                                                            const hero = cat.heroes[h];
-                                                            if (!hero) return true;
-                                                            return !(hero.hero.trim() === heroName && hero.skins[s]?.trim() === skinName);
-                                                        });
+                                                        const heroName = skinParts[0].trim().toLowerCase();
+                                                        const skinName = skinParts[1].trim().toLowerCase();
+                                                        const keyToRemove = `${heroName}::${skinName}`;
+                                                        selectedSkins = selectedSkins.filter(key => key !== keyToRemove);
                                                         updateHiddenInputs();
                                                     "
                                                     class="hover:text-red-400 transition-colors"
