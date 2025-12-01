@@ -82,7 +82,7 @@ class GameController extends Controller
                         $query->where('price_dzd', '>=', $min);
                     }
                 }),
-                // Skins filter - searches in account attributes (IMPROVED)
+                // Skins filter - searches in highlighted_skins attribute (FIXED)
                 AllowedFilter::callback('skins', function ($query, $value) {
                     if ($value) {
                         $skinFilters = explode(',', $value);
@@ -99,29 +99,26 @@ class GameController extends Controller
                                     $hero = $parts[1];
                                     $skinName = implode('-', array_slice($parts, 2));
                                     
-                                    // Convert back to spaces for matching (most common storage format)
+                                    // Convert to the format used in database (with spaces)
                                     $heroWithSpaces = str_replace('-', ' ', $hero);
                                     $skinNameWithSpaces = str_replace('-', ' ', $skinName);
                                     
+                                    // Look for highlighted_skins attribute and match the hero-skin combination
                                     $q->orWhereHas('attributes', function($attrQuery) use ($hero, $heroWithSpaces, $skinName, $skinNameWithSpaces) {
-                                        $attrQuery->where(function($subQuery) use ($hero, $heroWithSpaces, $skinName, $skinNameWithSpaces) {
-                                            // Try matching skin name directly
-                                            $subQuery->where('attribute_value', 'like', "%{$skinName}%")
-                                                    ->orWhere('attribute_value', 'like', "%{$skinNameWithSpaces}%")
-                                                    // Also try matching hero name + skin name
-                                                    ->orWhere(function($q2) use ($hero, $heroWithSpaces, $skinName, $skinNameWithSpaces) {
-                                                        $q2->where('attribute_key', 'like', "%{$hero}%")
-                                                           ->where('attribute_value', 'like', "%{$skinName}%");
-                                                    })
-                                                    ->orWhere(function($q3) use ($hero, $heroWithSpaces, $skinName, $skinNameWithSpaces) {
-                                                        $q3->where('attribute_key', 'like', "%{$heroWithSpaces}%")
-                                                           ->where('attribute_value', 'like', "%{$skinNameWithSpaces}%");
-                                                    })
-                                                    ->orWhere(function($q4) use ($heroWithSpaces, $skinNameWithSpaces) {
-                                                        // Check if the entire hero-skin combination exists as attribute value
-                                                        $q4->where('attribute_value', 'like', "%{$heroWithSpaces} {$skinNameWithSpaces}%");
-                                                    });
-                                        });
+                                        $attrQuery->where('attribute_key', 'highlighted_skins')
+                                                  ->where(function($subQuery) use ($hero, $heroWithSpaces, $skinName, $skinNameWithSpaces) {
+                                                      // The database stores skins in pipe-separated format:
+                                                      // "hero1 - skin1|hero2 - skin2|hero3 - skin3"
+                                                      
+                                                      // Try exact match first
+                                                      $subQuery->where('attribute_value', 'like', "%{$heroWithSpaces} - {$skinNameWithSpaces}%")
+                                                              // Try with spaces around the pipe separator
+                                                              ->orWhere('attribute_value', 'like', "%{$heroWithSpaces} - {$skinNameWithSpaces}|%")
+                                                              ->orWhere('attribute_value', 'like', "%|{$heroWithSpaces} - {$skinNameWithSpaces}%")
+                                                              // Try partial matches
+                                                              ->orWhere('attribute_value', 'like', "%{$heroWithSpaces}%{$skinNameWithSpaces}%")
+                                                              ->orWhere('attribute_value', 'like', "%{$hero}%{$skinNameWithSpaces}%");
+                                                  });
                                     });
                                 }
                             }
@@ -235,7 +232,7 @@ class GameController extends Controller
                         $query->where('price_dzd', '>=', $min);
                     }
                 }),
-                // Skins filter - searches in account attributes (IMPROVED)
+                // Skins filter - searches in highlighted_skins attribute (FIXED)
                 AllowedFilter::callback('skins', function ($query, $value) {
                     if ($value) {
                         $skinFilters = explode(',', $value);
@@ -252,29 +249,26 @@ class GameController extends Controller
                                     $hero = $parts[1];
                                     $skinName = implode('-', array_slice($parts, 2));
                                     
-                                    // Convert back to spaces for matching (most common storage format)
+                                    // Convert to the format used in database (with spaces)
                                     $heroWithSpaces = str_replace('-', ' ', $hero);
                                     $skinNameWithSpaces = str_replace('-', ' ', $skinName);
                                     
+                                    // Look for highlighted_skins attribute and match the hero-skin combination
                                     $q->orWhereHas('attributes', function($attrQuery) use ($hero, $heroWithSpaces, $skinName, $skinNameWithSpaces) {
-                                        $attrQuery->where(function($subQuery) use ($hero, $heroWithSpaces, $skinName, $skinNameWithSpaces) {
-                                            // Try matching skin name directly
-                                            $subQuery->where('attribute_value', 'like', "%{$skinName}%")
-                                                    ->orWhere('attribute_value', 'like', "%{$skinNameWithSpaces}%")
-                                                    // Also try matching hero name + skin name
-                                                    ->orWhere(function($q2) use ($hero, $heroWithSpaces, $skinName, $skinNameWithSpaces) {
-                                                        $q2->where('attribute_key', 'like', "%{$hero}%")
-                                                           ->where('attribute_value', 'like', "%{$skinName}%");
-                                                    })
-                                                    ->orWhere(function($q3) use ($hero, $heroWithSpaces, $skinName, $skinNameWithSpaces) {
-                                                        $q3->where('attribute_key', 'like', "%{$heroWithSpaces}%")
-                                                           ->where('attribute_value', 'like', "%{$skinNameWithSpaces}%");
-                                                    })
-                                                    ->orWhere(function($q4) use ($heroWithSpaces, $skinNameWithSpaces) {
-                                                        // Check if the entire hero-skin combination exists as attribute value
-                                                        $q4->where('attribute_value', 'like', "%{$heroWithSpaces} {$skinNameWithSpaces}%");
-                                                    });
-                                        });
+                                        $attrQuery->where('attribute_key', 'highlighted_skins')
+                                                  ->where(function($subQuery) use ($hero, $heroWithSpaces, $skinName, $skinNameWithSpaces) {
+                                                      // The database stores skins in pipe-separated format:
+                                                      // "hero1 - skin1|hero2 - skin2|hero3 - skin3"
+                                                      
+                                                      // Try exact match first
+                                                      $subQuery->where('attribute_value', 'like', "%{$heroWithSpaces} - {$skinNameWithSpaces}%")
+                                                              // Try with spaces around the pipe separator
+                                                              ->orWhere('attribute_value', 'like', "%{$heroWithSpaces} - {$skinNameWithSpaces}|%")
+                                                              ->orWhere('attribute_value', 'like', "%|{$heroWithSpaces} - {$skinNameWithSpaces}%")
+                                                              // Try partial matches
+                                                              ->orWhere('attribute_value', 'like', "%{$heroWithSpaces}%{$skinNameWithSpaces}%")
+                                                              ->orWhere('attribute_value', 'like', "%{$hero}%{$skinNameWithSpaces}%");
+                                                  });
                                     });
                                 }
                             }
