@@ -56,6 +56,18 @@
     $accountImages = $account->images;
     $imageCount = $accountImages->count();
     $collectionTier = $accountAttributes['collection_tier'] ?? null;
+    // Translate collection tier label per locale while preserving original for image file lookup
+    $collectionTierLabel = $collectionTier;
+    $tierTranslationMap = [
+        'Expert Collector' => __('messages.expert_collector'),
+        'Renowned Collector' => __('messages.renowned_collector'),
+        'Exalted Collector' => __('messages.exalted_collector'),
+        'Mega Collector' => __('messages.mega_collector'),
+        'World Collector' => __('messages.world_collector'),
+    ];
+    if (!empty($collectionTier) && isset($tierTranslationMap[$collectionTier])) {
+        $collectionTierLabel = $tierTranslationMap[$collectionTier];
+    }
     $skinsCount = $accountAttributes['skins_count'] ?? null;
     
     // Determine profile picture URL
@@ -167,7 +179,7 @@
                     <div class="truncate">
                         <p class="font-semibold leading-6 truncate text-white" style="font-size: 0.85rem;">
                             @if($collectionTier)
-                                {{ $collectionTier }}
+                                {{ $collectionTierLabel }}
                             @endif
                             @if($collectionTier && $skinsCount)
                                 <span class="text-gray-400"> · </span>
@@ -238,7 +250,7 @@
                     $attributesList[] = 'Full Emblem';
                 }
                 if (isset($accountAttributes['collection_tier'])) {
-                    $attributesList[] = $accountAttributes['collection_tier'];
+                    $attributesList[] = $collectionTierLabel;
                 }
             @endphp
             @foreach($attributesList as $attribute)

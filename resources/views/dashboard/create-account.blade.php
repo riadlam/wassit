@@ -373,16 +373,22 @@
                                 searchQuery: '',
                                 expandedRoles: {},
                                 expandedHeroes: {},
-                                selectedSkins: [],
+                                selectedSkinIds: [],
                                 async init() {
                                     await this.loadSkinsData();
                                 },
                                 async loadSkinsData() {
                                     this.loading = true;
                                     try {
-                                        const response = await fetch('/storage/mlbbskins.json');
-                                        if (!response.ok) throw new Error('Failed to load skins data');
+                                        console.log('Fetching skins data from /api/mlbb/skins...');
+                                        const response = await fetch('/api/mlbb/skins');
+                                        console.log('Response status:', response.status);
+                                        
+                                        if (!response.ok) throw new Error('Failed to load skins data: ' + response.status);
+                                        
                                         const data = await response.json();
+                                        console.log('Loaded skins data:', data);
+                                        console.log('Categories count:', data.categories?.length || 0);
                                         
                                         // Sort categories alphabetically
                                         let categories = (data.categories || []).sort((a, b) => {
@@ -398,20 +404,23 @@
                                             });
                                             
                                             const heroesWithSortedSkins = sortedHeroes.map(hero => {
-                                                const sortedSkins = (hero.skins || []).sort((a, b) => {
-                                                    const skinA = (a || '').trim().toLowerCase();
-                                                    const skinB = (b || '').trim().toLowerCase();
-                                                    return skinA.localeCompare(skinB, undefined, { sensitivity: 'base' });
+                                                // Build both plain names and id-bearing structures, sorted by name
+                                                const withIds = (hero.skins_with_ids || []).slice().sort((a, b) => {
+                                                    return (a.name || '').toLowerCase().localeCompare((b.name || '').toLowerCase(), undefined, { sensitivity: 'base' });
                                                 });
-                                                return { ...hero, skins: sortedSkins };
+                                                const namesOnly = withIds.map(s => s.name);
+                                                return { ...hero, skins_with_ids: withIds, skins: namesOnly };
                                             });
                                             
                                             return { ...category, heroes: heroesWithSortedSkins };
                                         });
                                         
                                         this.categories = categories;
+                                        console.log('Processed categories:', this.categories.length);
+                                        console.log('First category:', this.categories[0]);
                                     } catch (error) {
                                         console.error('Error loading skins data:', error);
+                                        console.error('Error details:', error.message);
                                         this.categories = [];
                                     } finally {
                                         this.loading = false;
@@ -424,59 +433,50 @@
                                     const key = `${roleIndex}-${heroIndex}`;
                                     this.expandedHeroes[key] = !this.expandedHeroes[key];
                                 },
-                                toggleSkin(heroName, skinName) {
-                                    // Use hero name and skin name directly (passed from template) to avoid filtering issues
-                                    const heroNameLower = heroName.trim().toLowerCase();
-                                    const skinNameLower = skinName.trim().toLowerCase();
-                                    const key = `${heroNameLower}::${skinNameLower}`;
-                                    
-                                    const index = this.selectedSkins.indexOf(key);
-                                    if (index > -1) {
-                                        this.selectedSkins.splice(index, 1);
+                                toggleSkinById(skinId) {
+                                    const id = Number(skinId);
+                                    const idx = this.selectedSkinIds.indexOf(id);
+                                    if (idx > -1) {
+                                        this.selectedSkinIds.splice(idx, 1);
                                     } else {
-                                        this.selectedSkins.push(key);
+                                        this.selectedSkinIds.push(id);
                                     }
                                     this.updateHiddenInputs();
                                 },
-                                isSkinSelected(heroName, skinName) {
-                                    const heroNameLower = heroName.trim().toLowerCase();
-                                    const skinNameLower = skinName.trim().toLowerCase();
-                                    const key = `${heroNameLower}::${skinNameLower}`;
-                                    return this.selectedSkins.includes(key);
+                                isSkinSelectedById(skinId) {
+                                    return this.selectedSkinIds.includes(Number(skinId));
                                 },
                                 getSelectedCount() {
-                                    return this.selectedSkins.length;
+                                    return this.selectedSkinIds.length;
                                 },
                                 getSelectedSkinsList() {
-                                    return this.selectedSkins.map(key => {
-                                        const [heroNameLower, skinNameLower] = key.split('::');
-                                        if (!heroNameLower || !skinNameLower) return null;
-                                        
-                                        // Find the actual hero and skin from categories
-                                        for (const category of this.categories) {
-                                            for (const hero of category.heroes) {
-                                                if (hero.hero.trim().toLowerCase() === heroNameLower) {
-                                                    for (const skin of hero.skins) {
-                                                        if (skin.trim().toLowerCase() === skinNameLower) {
-                                                            return `${hero.hero.trim()} - ${skin.trim()}`;
-                                                        }
-                                                    }
-                                                }
+                                    const out = [];
+                                    for (const id of this.selectedSkinIds) {
+                                        const info = this.findSkinById(id);
+                                        if (info) out.push(`${info.hero} - ${info.name}`);
+                                    }
+                                    return out;
+                                },
+                                findSkinById(id) {
+                                    id = Number(id);
+                                    for (const category of this.categories) {
+                                        for (const hero of category.heroes) {
+                                            for (const s of (hero.skins_with_ids || [])) {
+                                                if (Number(s.id) === id) return { hero: hero.hero, name: s.name };
                                             }
                                         }
-                                        return null;
-                                    }).filter(v => v);
+                                    }
+                                    return null;
                                 },
                                 updateHiddenInputs() {
                                     // Update hidden input with selected skins
                                     const hiddenInput = document.getElementById('highlighted_skins_input');
                                     if (hiddenInput) {
-                                        const skinsList = this.getSelectedSkinsList();
-                                        hiddenInput.value = skinsList.join('|');
+                                        hiddenInput.value = this.selectedSkinIds.join(',');
                                     }
                                 },
                                 clearAllSkins() {
-                                    this.selectedSkins = [];
+                                    this.selectedSkinIds = [];
                                     this.expandedRoles = {};
                                     this.expandedHeroes = {};
                                     this.updateHiddenInputs();
@@ -588,15 +588,15 @@
                                                             x-collapse
                                                             class="px-3 pb-2 flex flex-wrap gap-2"
                                                         >
-                                                            <template x-for="(skin, skinIndex) in hero.skins" :key="skinIndex">
+                                                            <template x-for="(skinObj, skinIndex) in (hero.skins_with_ids || [])" :key="skinIndex">
                                                                 <button
                                                                     type="button"
-                                                                    @click="toggleSkin(hero.hero, skin)"
+                                                                    @click="toggleSkinById(skinObj.id)"
                                                                     class="px-3 py-1.5 text-xs rounded-md transition-all border"
-                                                                    :class="isSkinSelected(hero.hero, skin) ? 'bg-red-600 border-red-600 text-white' : 'bg-transparent border-gray-600 text-gray-300 hover:border-red-500 hover:text-white'"
+                                                                    :class="isSkinSelectedById(skinObj.id) ? 'bg-red-600 border-red-600 text-white' : 'bg-transparent border-gray-600 text-gray-300 hover:border-red-500 hover:text-white'"
                                                                 >
-                                                                    <i class="fa-solid mr-1.5" :class="isSkinSelected(hero.hero, skin) ? 'fa-check-circle' : 'fa-circle'"></i>
-                                                                    <span x-text="skin"></span>
+                                                                    <i class="fa-solid mr-1.5" :class="isSkinSelectedById(skinObj.id) ? 'fa-check-circle' : 'fa-circle'"></i>
+                                                                    <span x-text="skinObj.name"></span>
                                                                 </button>
                                                             </template>
                                                         </div>
@@ -610,6 +610,8 @@
                                     <div x-show="!loading && filteredCategories().length === 0" class="text-center py-12">
                                         <i class="fa-solid fa-search text-4xl text-gray-600 mb-3"></i>
                                         <p class="text-gray-400">No skins found matching your search</p>
+                                        <p class="text-xs text-gray-500 mt-2">Total categories: <span x-text="categories.length"></span></p>
+                                        <p class="text-xs text-gray-500">Search query: <span x-text="searchQuery || 'none'"></span></p>
                                     </div>
                                 </div>
                                 

@@ -35,31 +35,40 @@
                 <!-- Edit Form -->
                 <div class="rounded-xl overflow-hidden" style="background-color: rgba(14, 16, 21, 0.75); border: 1px solid #2d2c31; backdrop-blur-md;">
                     <div class="p-6 sm:p-8 lg:p-10">
-                        @if($errors->any())
-                            <div class="mb-6 p-4 rounded-lg bg-red-500/10 border border-red-500/20">
-                                <ul class="list-disc list-inside text-red-400 text-sm">
-                                    @foreach($errors->all() as $error)
-                                        <li>{{ $error }}</li>
-                                    @endforeach
-                                </ul>
-                            </div>
-                        @endif
-                        
-                        @if(session('success'))
-                            <div class="mb-6 p-4 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400 text-sm">
-                                {{ session('success') }}
-                            </div>
-                        @endif
-
-                        @if(session('error'))
-                            <div class="mb-6 p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
-                                {{ session('error') }}
-                            </div>
-                        @endif
-                        
                         <form method="POST" action="{{ route('account.listed-accounts.update', $account->id) }}" enctype="multipart/form-data" id="editAccountForm">
                             @csrf
                             @method('PUT')
+                            @if($errors->any())
+                                <div class="mb-6 p-4 rounded-lg bg-red-500/10 border border-red-500/20">
+                                    <div class="flex items-start">
+                                        <i class="fa-solid fa-exclamation-circle text-red-400 mr-2 mt-0.5"></i>
+                                        <div>
+                                            <p class="text-red-400 font-medium mb-2">Please fix the following errors:</p>
+                                            <ul class="list-disc list-inside text-red-400 text-sm space-y-1">
+                                                @foreach($errors->all() as $error)
+                                                    <li>{{ $error }}</li>
+                                                @endforeach
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endif
+                            @if(session('error'))
+                                <div class="mb-6 p-4 rounded-lg bg-red-500/10 border border-red-500/20">
+                                    <div class="flex items-start">
+                                        <i class="fa-solid fa-exclamation-circle text-red-400 mr-2 mt-0.5"></i>
+                                        <div>
+                                            <p class="text-red-400 font-medium">{{ session('error') }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endif
+                            @if(session('success'))
+                                <div class="mb-6 p-4 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400 text-sm">
+                                    <i class="fa-solid fa-check-circle mr-2"></i>
+                                    {{ session('success') }}
+                                </div>
+                            @endif
                             <!-- Basic Information Section -->
                             <div class="mb-8">
                                 <h2 class="text-xl font-semibold text-white mb-6 flex items-center">
@@ -67,131 +76,70 @@
                                     Basic Information
                                 </h2>
                                 
-                                <div class="space-y-6">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <!-- Title -->
-                                    <div>
+                                    <div class="md:col-span-2">
                                         <label for="title" class="block text-sm font-medium text-gray-300 mb-2">
                                             Account Title <span class="text-red-500">*</span>
                                         </label>
-                                        <input 
-                                            type="text" 
-                                            id="title" 
-                                            name="title" 
-                                            required
+                                        <input
+                                            type="text"
+                                            id="title"
+                                            name="title"
                                             value="{{ $account->title }}"
-                                            class="w-full block border-0 rounded-md shadow-sm sm:text-sm disabled:opacity-50 disabled:pointer-events-none py-2.5 px-4 text-white placeholder:text-gray-500 focus:ring-2 focus:ring-red-500 focus:outline-none transition-all" 
+                                            class="w-full block border-0 rounded-md shadow-sm sm:text-sm disabled:opacity-50 disabled:pointer-events-none py-2.5 px-4 text-white placeholder:text-gray-500 focus:ring-2 focus:ring-red-500 focus:outline-none transition-all"
                                             style="background-color: #1b1a1e; border: 1px solid #2d2c31;"
                                             placeholder="Epic Rank Account - 150+ Skins"
                                         >
                                     </div>
                                     
                                     <!-- Description -->
-                                    <div>
-                                        <label for="description" class="block text-sm font-medium text-gray-300 mb-2">
-                                            Description <span class="text-red-500">*</span>
-                                        </label>
-                                        <textarea 
-                                            id="description" 
-                                            name="description" 
-                                            rows="5"
-                                            required
-                                            class="w-full block border-0 rounded-md shadow-sm sm:text-sm disabled:opacity-50 disabled:pointer-events-none py-2.5 px-4 text-white placeholder:text-gray-500 focus:ring-2 focus:ring-red-500 focus:outline-none transition-all resize-none" 
+                                    <div class="md:col-span-2">
+                                        <label for="description" class="block text-sm font-medium text-gray-300 mb-2">Description</label>
+                                        <textarea
+                                            id="description"
+                                            name="description"
+                                            rows="4"
+                                            class="w-full block border-0 rounded-md shadow-sm sm:text-sm disabled:opacity-50 disabled:pointer-events-none py-2.5 px-4 text-white placeholder:text-gray-500 focus:ring-2 focus:ring-red-500 focus:outline-none transition-all"
                                             style="background-color: #1b1a1e; border: 1px solid #2d2c31;"
-                                            placeholder="Describe your account in detail..."
+                                            placeholder="Describe the account features"
                                         >{{ $account->description }}</textarea>
                                     </div>
-                                    
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <!-- Price -->
-                                        <div>
-                                            <label for="price_dzd" class="block text-sm font-medium text-gray-300 mb-2">
-                                                Price (DZD) <span class="text-red-500">*</span>
-                                            </label>
-                                            <div class="relative">
-                                                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">DZD</span>
-                                                <input 
-                                                    type="number" 
-                                                    id="price_dzd" 
-                                                    name="price_dzd" 
-                                                    step="0.01"
-                                                    required
-                                                    value="{{ number_format($account->price_dzd / 100, 2, '.', '') }}"
-                                                    class="w-full block border-0 rounded-md shadow-sm sm:text-sm disabled:opacity-50 disabled:pointer-events-none py-2.5 pl-12 pr-4 text-white placeholder:text-gray-500 focus:ring-2 focus:ring-red-500 focus:outline-none transition-all" 
-                                                    style="background-color: #1b1a1e; border: 1px solid #2d2c31;"
-                                                    placeholder="16228"
-                                                >
-                                            </div>
-                                        </div>
-                                        
-                                        <!-- Status -->
-                                        <div>
-                                            <label for="status" class="block text-sm font-medium text-gray-300 mb-2">
-                                                Status <span class="text-red-500">*</span>
-                                            </label>
-                                            <select 
-                                                id="status" 
-                                                name="status" 
-                                                required
-                                                class="w-full block border-0 rounded-md shadow-sm sm:text-sm disabled:opacity-50 disabled:pointer-events-none py-2.5 px-4 text-white focus:ring-2 focus:ring-red-500 focus:outline-none transition-all" 
+                                    <!-- Price (DZD) -->
+                                    <div>
+                                        <label for="price_dzd" class="block text-sm font-medium text-gray-300 mb-2">
+                                            Price (DZD)
+                                        </label>
+                                        <div class="relative">
+                                            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">DZD</span>
+                                            <input 
+                                                type="number" 
+                                                id="price_dzd" 
+                                                name="price_dzd" 
+                                                step="0.01"
+                                                value="{{ number_format(($account->price_dzd ?? 0) / 100, 0, '.', '') }}"
+                                                class="w-full block border-0 rounded-md shadow-sm sm:text-sm disabled:opacity-50 disabled:pointer-events-none py-2.5 pl-12 pr-4 text-white placeholder:text-gray-500 focus:ring-2 focus:ring-red-500 focus:outline-none transition-all" 
                                                 style="background-color: #1b1a1e; border: 1px solid #2d2c31;"
+                                                placeholder="16228"
                                             >
-                                                <option value="available" {{ $account->status === 'available' ? 'selected' : '' }}>Available</option>
-                                                <option value="disabled" {{ $account->status === 'disabled' ? 'selected' : '' }}>Disabled</option>
-                                                <option value="sold" {{ $account->status === 'sold' ? 'selected' : '' }}>Sold</option>
-                                            </select>
                                         </div>
                                     </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Account Attributes Section -->
-                            <div class="mb-8">
-                                <h2 class="text-xl font-semibold text-white mb-6 flex items-center">
-                                    <i class="fa-solid fa-list-check mr-3 text-red-600"></i>
-                                    Account Attributes
-                                </h2>
-                                
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    @php
-                                        $attributesMap = [];
-                                        foreach ($account->attributes as $attr) {
-                                            $attributesMap[$attr->attribute_key] = $attr->attribute_value;
-                                        }
-                                    @endphp
                                     
-                                    <!-- Rank -->
+                                    <!-- Status -->
                                     <div>
-                                        <label for="rank" class="block text-sm font-medium text-gray-300 mb-2">
-                                            Rank
+                                        <label for="status" class="block text-sm font-medium text-gray-300 mb-2">
+                                            Status
                                         </label>
-                                        <input 
-                                            type="text" 
-                                            id="rank" 
-                                            name="attributes[rank]" 
-                                            value="{{ $attributesMap['rank'] ?? '' }}"
-                                            class="w-full block border-0 rounded-md shadow-sm sm:text-sm disabled:opacity-50 disabled:pointer-events-none py-2.5 px-4 text-white placeholder:text-gray-500 focus:ring-2 focus:ring-red-500 focus:outline-none transition-all" 
+                                        <select 
+                                            id="status" 
+                                            name="status" 
+                                            class="w-full block border-0 rounded-md shadow-sm sm:text-sm disabled:opacity-50 disabled:pointer-events-none py-2.5 px-4 text-white focus:ring-2 focus:ring-red-500 focus:outline-none transition-all" 
                                             style="background-color: #1b1a1e; border: 1px solid #2d2c31;"
-                                            placeholder="Epic IV"
                                         >
+                                            <option value="available" {{ ($account->status ?? 'available') === 'available' ? 'selected' : '' }}>Available</option>
+                                            <option value="disabled" {{ ($account->status ?? '') === 'disabled' ? 'selected' : '' }}>Disabled</option>
+                                        </select>
                                     </div>
-                                    
-                                    <!-- Heroes Count -->
-                                    <div>
-                                        <label for="heroes_count" class="block text-sm font-medium text-gray-300 mb-2">
-                                            Heroes Count
-                                        </label>
-                                        <input 
-                                            type="number" 
-                                            id="heroes_count" 
-                                            name="attributes[heroes_count]" 
-                                            value="{{ $attributesMap['heroes_count'] ?? '' }}"
-                                            class="w-full block border-0 rounded-md shadow-sm sm:text-sm disabled:opacity-50 disabled:pointer-events-none py-2.5 px-4 text-white placeholder:text-gray-500 focus:ring-2 focus:ring-red-500 focus:outline-none transition-all" 
-                                            style="background-color: #1b1a1e; border: 1px solid #2d2c31;"
-                                            placeholder="85"
-                                        >
-                                    </div>
-                                    
-                                    <!-- Skins Count -->
                                     <div>
                                         <label for="skins_count" class="block text-sm font-medium text-gray-300 mb-2">
                                             Skins Count
@@ -291,11 +239,28 @@
                                             <option value="World Collector" {{ ($attributesMap['collection_tier'] ?? '') === 'World Collector' ? 'selected' : '' }}>World Collector</option>
                                         </select>
                                     </div>
+                                    <!-- Ensure status includes all valid options per validation -->
+                                    <div class="md:col-span-2">
+                                        <label for="status" class="block text-sm font-medium text-gray-300 mb-2">Status</label>
+                                        <select 
+                                            id="status" 
+                                            name="status" 
+                                            class="w-full block border-0 rounded-md shadow-sm sm:text-sm disabled:opacity-50 disabled:pointer-events-none py-2.5 px-4 text-white focus:ring-2 focus:ring-red-500 focus:outline-none transition-all" 
+                                            style="background-color: #1b1a1e; border: 1px solid #2d2c31;"
+                                        >
+                                            @php $st = $account->status ?? 'available'; @endphp
+                                            <option value="available" {{ $st === 'available' ? 'selected' : '' }}>Available</option>
+                                            <option value="disabled" {{ $st === 'disabled' ? 'selected' : '' }}>Disabled</option>
+                                            <option value="pending" {{ $st === 'pending' ? 'selected' : '' }}>Pending</option>
+                                            <option value="sold" {{ $st === 'sold' ? 'selected' : '' }}>Sold</option>
+                                            <option value="cancelled" {{ $st === 'cancelled' ? 'selected' : '' }}>Cancelled</option>
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
                             
                             <!-- Highlighted Skins Section -->
-                            <div class="mb-8" x-data="highlightedSkinsEdit({{ json_encode($attributesMap['highlighted_skins'] ?? '') }})">
+                            <div class="mb-8" x-data="highlightedSkinsEdit({{ json_encode($attributesMap['highlighted_skins'] ?? '') }})" x-init="init()">
                                 <h2 class="text-xl font-semibold text-white mb-6 flex items-center justify-between">
                                     <div class="flex items-center">
                                         <i class="fa-solid fa-star mr-3 text-red-600"></i>
@@ -381,15 +346,15 @@
                                                             x-collapse
                                                             class="px-3 pb-2 flex flex-wrap gap-2"
                                                         >
-                                                            <template x-for="(skin, skinIndex) in hero.skins" :key="skinIndex">
+                                                            <template x-for="(skinObj, skinIndex) in (hero.skins_with_ids || [])" :key="skinIndex">
                                                                 <button
                                                                     type="button"
-                                                                    @click="toggleSkin(hero.hero, skin)"
+                                                                    @click="toggleSkinById(skinObj.id)"
                                                                     class="px-3 py-1.5 text-xs rounded-md transition-all border"
-                                                                    :class="isSkinSelected(hero.hero, skin) ? 'bg-red-600 border-red-600 text-white' : 'bg-transparent border-gray-600 text-gray-300 hover:border-red-500 hover:text-white'"
+                                                                    :class="isSkinSelectedById(skinObj.id) ? 'bg-red-600 border-red-600 text-white' : 'bg-transparent border-gray-600 text-gray-300 hover:border-red-500 hover:text-white'"
                                                                 >
-                                                                    <i class="fa-solid mr-1.5" :class="isSkinSelected(hero.hero, skin) ? 'fa-check-circle' : 'fa-circle'"></i>
-                                                                    <span x-text="skin"></span>
+                                                                    <i class="fa-solid mr-1.5" :class="isSkinSelectedById(skinObj.id) ? 'fa-check-circle' : 'fa-circle'"></i>
+                                                                    <span x-text="skinObj.name"></span>
                                                                 </button>
                                                             </template>
                                                         </div>
@@ -410,19 +375,12 @@
                                 <div x-show="getSelectedCount() > 0" class="mt-4 p-4 rounded-lg" style="background-color: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3);">
                                     <h3 class="text-sm font-semibold text-white mb-2">Selected Skins (<span x-text="getSelectedCount()"></span>)</h3>
                                     <div class="flex flex-wrap gap-2">
-                                        <template x-for="(skinText, index) in getSelectedSkinsList()" :key="index">
+                                        <template x-for="(skin, index) in getSelectedSkinsList()" :key="index">
                                             <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs text-white" style="background-color: rgba(239, 68, 68, 0.2);">
-                                                <span x-text="skinText"></span>
+                                                <span x-text="`${skin.hero} - ${skin.name}`"></span>
                                                 <button 
                                                     type="button"
-                                                    @click="
-                                                        const skinParts = skinText.split(' - ');
-                                                        const heroName = skinParts[0].trim().toLowerCase();
-                                                        const skinName = skinParts[1].trim().toLowerCase();
-                                                        const keyToRemove = `${heroName}::${skinName}`;
-                                                        selectedSkins = selectedSkins.filter(key => key !== keyToRemove);
-                                                        updateHiddenInputs();
-                                                    "
+                                                    @click="toggleSkinById(skin.id)"
                                                     class="hover:text-red-400 transition-colors"
                                                 >
                                                     <i class="fa-solid fa-times text-xs"></i>
@@ -536,6 +494,14 @@
             
             if (form && submitBtn) {
                 form.addEventListener('submit', function(e) {
+                    // Ensure highlighted skins hidden input is up-to-date (desktop + mobile)
+                    try {
+                        const hiddenInput = document.getElementById('highlighted_skins_input');
+                        if (hiddenInput && Array.isArray(window.highlightedSelectedSkinIds)) {
+                            hiddenInput.value = window.highlightedSelectedSkinIds.join(',');
+                        }
+                    } catch (_) {}
+                    
                     // Validate at least one image remains (either existing kept or new uploads)
                     const imagesGrid = document.getElementById('imagesGrid');
                     const fileInput = document.getElementById('images');
@@ -555,7 +521,7 @@
                         return false;
                     }
                     
-                    console.log('Form is submitting...');
+                    
                     submitBtn.disabled = true;
                     if (submitText) submitText.style.display = 'none';
                     if (submitLoading) submitLoading.style.display = 'inline-flex';
@@ -731,7 +697,7 @@
         // Make function globally accessible
         window.removeImage = removeImage;
         
-        // Highlighted Skins Component for Edit
+        // Highlighted Skins Component for Edit (ID-based)
         function highlightedSkinsEdit(existingSkins) {
             return {
                 categories: [],
@@ -739,133 +705,122 @@
                 searchQuery: '',
                 expandedRoles: {},
                 expandedHeroes: {},
-                selectedSkins: [],
-                existingHighlightedSkins: existingSkins || '',
+                selectedSkinIds: [],
+                initialValue: existingSkins || '',
                 async init() {
                     await this.loadSkinsData();
-                    this.$nextTick(() => {
-                        this.loadExistingSkins();
-                    });
+                    this.prefillSelections();
+                    // Expose selection for form submission safety
+                    window.highlightedSelectedSkinIds = this.selectedSkinIds.slice();
                 },
                 async loadSkinsData() {
                     this.loading = true;
                     try {
-                        const response = await fetch('/storage/mlbbskins.json');
-                        if (!response.ok) throw new Error('Failed to load skins data');
+                        const response = await fetch('/api/mlbb/skins');
+                        if (!response.ok) throw new Error('Failed to load skins data: ' + response.status);
                         const data = await response.json();
-                        
-                        let categories = (data.categories || []).sort((a, b) => {
-                            return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
-                        });
-                        
+                        let categories = (data.categories || []).sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
                         categories = categories.map(category => {
-                            const sortedHeroes = (category.heroes || []).sort((a, b) => {
-                                const heroA = (a.hero || '').trim().toLowerCase();
-                                const heroB = (b.hero || '').trim().toLowerCase();
-                                return heroA.localeCompare(heroB, undefined, { sensitivity: 'base' });
-                            });
-                            
+                            const sortedHeroes = (category.heroes || []).sort((a, b) => (a.hero || '').trim().toLowerCase().localeCompare((b.hero || '').trim().toLowerCase(), undefined, { sensitivity: 'base' }));
                             const heroesWithSortedSkins = sortedHeroes.map(hero => {
-                                const sortedSkins = (hero.skins || []).sort((a, b) => {
-                                    const skinA = (a || '').trim().toLowerCase();
-                                    const skinB = (b || '').trim().toLowerCase();
-                                    return skinA.localeCompare(skinB, undefined, { sensitivity: 'base' });
-                                });
-                                return { ...hero, skins: sortedSkins };
+                                const withIds = (hero.skins_with_ids || []).slice().sort((x, y) => (x.name || '').toLowerCase().localeCompare((y.name || '').toLowerCase(), undefined, { sensitivity: 'base' }));
+                                const namesOnly = withIds.map(s => s.name);
+                                return { ...hero, skins_with_ids: withIds, skins: namesOnly };
                             });
-                            
                             return { ...category, heroes: heroesWithSortedSkins };
                         });
-                        
                         this.categories = categories;
                     } catch (error) {
-                        console.error('Error loading skins data:', error);
                         this.categories = [];
                     } finally {
                         this.loading = false;
                     }
                 },
-                loadExistingSkins() {
-                    if (!this.existingHighlightedSkins || !this.categories.length) return;
-                    
-                    const skinsList = this.existingHighlightedSkins.split('|').filter(s => s.trim());
-                    
-                    skinsList.forEach(skinText => {
-                        const [heroName, ...skinParts] = skinText.split(' - ');
-                        if (!heroName || !skinParts.length) return;
-                        
-                        const skinName = skinParts.join(' - ').trim();
-                        const heroNameTrimmed = heroName.trim().toLowerCase();
-                        const skinNameTrimmed = skinName.trim().toLowerCase();
-                        
-                        // Use hero name and skin name as key (same format as toggleSkin)
-                        const key = `${heroNameTrimmed}::${skinNameTrimmed}`;
-                        if (!this.selectedSkins.includes(key)) {
-                            this.selectedSkins.push(key);
-                        }
-                    });
-                    
-                    this.updateHiddenInputs();
-                },
-                toggleRole(roleIndex) {
-                    this.expandedRoles[roleIndex] = !this.expandedRoles[roleIndex];
-                },
-                toggleHero(roleIndex, heroIndex) {
-                    const key = `${roleIndex}-${heroIndex}`;
-                    this.expandedHeroes[key] = !this.expandedHeroes[key];
-                },
-                toggleSkin(heroName, skinName) {
-                    // Use hero name and skin name directly (passed from template) to avoid filtering issues
-                    const heroNameLower = heroName.trim().toLowerCase();
-                    const skinNameLower = skinName.trim().toLowerCase();
-                    const key = `${heroNameLower}::${skinNameLower}`;
-                    
-                    const index = this.selectedSkins.indexOf(key);
-                    if (index > -1) {
-                        this.selectedSkins.splice(index, 1);
+                prefillSelections() {
+                    if (!this.initialValue) return;
+                    let raw = String(this.initialValue).trim();
+                    // Handle JSON array format like [1,2,3]
+                    if (/^\[.*\]$/.test(raw)) {
+                        try {
+                            const arr = JSON.parse(raw);
+                            if (Array.isArray(arr)) {
+                                this.selectedSkinIds = arr.map(v => Number(v)).filter(v => !isNaN(v));
+                                this.updateHiddenInputs();
+                                return;
+                            }
+                        } catch (_) {}
+                    }
+                    // Normalize comma-separated string of IDs, tolerate spaces
+                    const trimmed = raw.replace(/\s+/g, '');
+                    const isIds = /^[0-9]+(,[0-9]+)*$/.test(trimmed);
+                    if (isIds) {
+                        this.selectedSkinIds = trimmed.split(',').map(v => Number(v.trim())).filter(v => !isNaN(v));
                     } else {
-                        this.selectedSkins.push(key);
+                        let parts = [];
+                        if (trimmed.includes('|')) parts = trimmed.split('|');
+                        else if (trimmed.includes(',')) parts = trimmed.split(',');
+                        else parts = [trimmed];
+                        parts.map(p => p.trim()).filter(p => p).forEach(entry => {
+                            const heroSkin = entry.split('-');
+                            if (heroSkin.length >= 2) {
+                                const hero = heroSkin[0].trim().toLowerCase();
+                                const skin = heroSkin.slice(1).join('-').trim().toLowerCase();
+                                const found = this.findSkinId(hero, skin);
+                                if (found && !this.selectedSkinIds.includes(found)) this.selectedSkinIds.push(found);
+                            }
+                        });
                     }
                     this.updateHiddenInputs();
                 },
-                isSkinSelected(heroName, skinName) {
-                    const heroNameLower = heroName.trim().toLowerCase();
-                    const skinNameLower = skinName.trim().toLowerCase();
-                    const key = `${heroNameLower}::${skinNameLower}`;
-                    return this.selectedSkins.includes(key);
-                },
-                getSelectedCount() {
-                    return this.selectedSkins.length;
-                },
-                getSelectedSkinsList() {
-                    return this.selectedSkins.map(key => {
-                        const [heroNameLower, skinNameLower] = key.split('::');
-                        if (!heroNameLower || !skinNameLower) return null;
-                        
-                        // Find the actual hero and skin from categories
-                        for (const category of this.categories) {
-                            for (const hero of category.heroes) {
-                                if (hero.hero.trim().toLowerCase() === heroNameLower) {
-                                    for (const skin of hero.skins) {
-                                        if (skin.trim().toLowerCase() === skinNameLower) {
-                                            return `${hero.hero.trim()} - ${skin.trim()}`;
-                                        }
-                                    }
+                findSkinId(heroLower, skinLower) {
+                    for (const category of this.categories) {
+                        for (const hero of category.heroes) {
+                            if (hero.hero.trim().toLowerCase() === heroLower) {
+                                for (const s of (hero.skins_with_ids || [])) {
+                                    if ((s.name || '').trim().toLowerCase() === skinLower) return Number(s.id);
                                 }
                             }
                         }
-                        return null;
-                    }).filter(v => v);
+                    }
+                    return null;
+                },
+                toggleRole(roleIndex) { this.expandedRoles[roleIndex] = !this.expandedRoles[roleIndex]; },
+                toggleHero(roleIndex, heroIndex) { const key = `${roleIndex}-${heroIndex}`; this.expandedHeroes[key] = !this.expandedHeroes[key]; },
+                toggleSkinById(id) {
+                    id = Number(id);
+                    const idx = this.selectedSkinIds.indexOf(id);
+                    if (idx > -1) this.selectedSkinIds.splice(idx, 1); else this.selectedSkinIds.push(id);
+                    this.updateHiddenInputs();
+                },
+                isSkinSelectedById(id) { return this.selectedSkinIds.includes(Number(id)); },
+                getSelectedCount() { return this.selectedSkinIds.length; },
+                findSkinById(id) {
+                    id = Number(id);
+                    for (const category of this.categories) {
+                        for (const hero of category.heroes) {
+                            for (const s of (hero.skins_with_ids || [])) {
+                                if (Number(s.id) === id) return { id: Number(s.id), hero: hero.hero, name: s.name };
+                            }
+                        }
+                    }
+                    return null;
+                },
+                getSelectedSkinsList() {
+                    const out = [];
+                    for (const id of this.selectedSkinIds) {
+                        const info = this.findSkinById(id);
+                        if (info) out.push(info);
+                    }
+                    return out;
                 },
                 updateHiddenInputs() {
                     const hiddenInput = document.getElementById('highlighted_skins_input');
-                    if (hiddenInput) {
-                        const skinsList = this.getSelectedSkinsList();
-                        hiddenInput.value = skinsList.join('|');
-                    }
+                    if (hiddenInput) hiddenInput.value = this.selectedSkinIds.join(',');
+                    // Mirror to global for mobile submit reliability
+                    window.highlightedSelectedSkinIds = this.selectedSkinIds.slice();
                 },
                 clearAllSkins() {
-                    this.selectedSkins = [];
+                    this.selectedSkinIds = [];
                     this.expandedRoles = {};
                     this.expandedHeroes = {};
                     this.updateHiddenInputs();
@@ -875,13 +830,13 @@
                     const query = this.searchQuery.toLowerCase();
                     return this.categories.map(category => {
                         const filteredHeroes = category.heroes.map(hero => {
-                            const matchingSkins = hero.skins.filter(skin => 
-                                skin.toLowerCase().includes(query) || 
-                                hero.hero.toLowerCase().includes(query) ||
-                                category.name.toLowerCase().includes(query)
+                            const matchingSkins = (hero.skins_with_ids || []).filter(s => 
+                                (s.name || '').toLowerCase().includes(query) || 
+                                (hero.hero || '').toLowerCase().includes(query) ||
+                                (category.name || '').toLowerCase().includes(query)
                             );
                             if (matchingSkins.length > 0) {
-                                return { ...hero, skins: matchingSkins };
+                                return { ...hero, skins_with_ids: matchingSkins, skins: matchingSkins.map(s => s.name) };
                             }
                             return null;
                         }).filter(h => h);

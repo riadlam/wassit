@@ -2,6 +2,10 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\MlbbSkinController;
+
+// Public endpoint to retrieve MLBB skins from DB
+Route::get('/mlbb/skins', [MlbbSkinController::class, 'index']);
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -18,6 +22,7 @@ Route::prefix('auth')->group(function () {
 Route::get('/games', [App\Http\Controllers\GameController::class, 'index']);
 Route::get('/games/{id}/attributes', [App\Http\Controllers\GameController::class, 'getAttributes']);
 Route::get('/games/{slug}/accounts', [App\Http\Controllers\GameController::class, 'filterAccounts']);
+Route::get('/games/{slug}/debug-skins', [App\Http\Controllers\GameController::class, 'debugSkins']);
 
 // Account listing routes
 Route::get('/accounts', [App\Http\Controllers\AccountController::class, 'index']);

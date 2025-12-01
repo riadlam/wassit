@@ -244,6 +244,18 @@ if ($seller && !empty($seller->pfp)) {
             <div class="rounded-xl p-6" style="background-color: #0e1015; border: 1px solid #2d2c31;">
                 @php
                     $collectionTier = $accountAttributes['collection_tier'] ?? null;
+                    // Localized label for collection tier
+                    $collectionTierLabel = $collectionTier;
+                    $tierTranslationMap = [
+                        'Expert Collector' => __('messages.expert_collector'),
+                        'Renowned Collector' => __('messages.renowned_collector'),
+                        'Exalted Collector' => __('messages.exalted_collector'),
+                        'Mega Collector' => __('messages.mega_collector'),
+                        'World Collector' => __('messages.world_collector'),
+                    ];
+                    if (!empty($collectionTier) && isset($tierTranslationMap[$collectionTier])) {
+                        $collectionTierLabel = $tierTranslationMap[$collectionTier];
+                    }
                     $skinsCount = $accountAttributes['skins_count'] ?? null;
                     
                     // Map collection tier to image filename (same as account card)
@@ -451,7 +463,7 @@ if ($seller && !empty($seller->pfp)) {
                                 @if(isset($accountAttributes['collection_tier']))
                                 <div class="px-4 py-6 sm:col-span-1 sm:px-0 border-t" style="border-color: rgba(45, 44, 49, 0.5);">
                                     <dt class="text-sm font-medium capitalize text-white mb-1">{{ __('messages.collection_tier') }}</dt>
-                                    <dd class="text-sm leading-6 text-gray-400 sm:col-span-2 sm:mt-0">{{ $accountAttributes['collection_tier'] }}</dd>
+                                    <dd class="text-sm leading-6 text-gray-400 sm:col-span-2 sm:mt-0">{{ $collectionTierLabel }}</dd>
                                 </div>
                                 @endif
                                 
@@ -869,7 +881,7 @@ if ($seller && !empty($seller->pfp)) {
                         </div>
                         <div class="min-w-0 flex-1">
                             <h2 class="text-base sm:text-lg font-medium leading-5 sm:leading-6 text-white truncate">{{ __('messages.message') }} {{ $account->seller->user->name ?? 'Game Market Store' }}</h2>
-                            <p class="text-xs sm:text-sm truncate" style="color: rgba(255, 255, 255, 0.9);">{{ __('messages.offline') }} · {{ __('messages.member_since') }} {{ $account->seller->created_at->format('M jS, Y') ?? 'Jul 11th, 2024' }}</p>
+                            <p class="text-xs sm:text-sm truncate" style="color: rgba(255, 255, 255, 0.9);">{{ __('messages.offline') }} · {{ __('messages.member_since') }} {{ $account->seller?->created_at?->format('M jS, Y') ?? 'Jul 11th, 2024' }}</p>
                         </div>
                     </div>
                     <button 

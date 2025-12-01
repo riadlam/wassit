@@ -198,9 +198,9 @@ use Illuminate\Support\Facades\Storage;
                         return '';
                     })(),
                     minPrice: 0,
-                    maxPrice: 90000,
+                    maxPrice: 100000,
                     sliderMin: 0,
-                    sliderMax: 90000,
+                    sliderMax: 100000,
                     init() {
                         // Initialize slider when dropdown opens
                         this.$watch('priceOpen', (value) => {
@@ -209,11 +209,11 @@ use Illuminate\Support\Facades\Storage;
                                     const priceSlider = document.getElementById('price-range-slider');
                                     if (priceSlider && !priceSlider.noUiSlider) {
                                         window.priceRangeSlider = noUiSlider.create(priceSlider, {
-                                            start: [parseFloat(this.priceFrom) || 0, parseFloat(this.priceTo) || 90000],
+                                            start: [parseFloat(this.priceFrom) || 0, parseFloat(this.priceTo) || 100000],
                                             connect: true,
                                             range: {
                                                 'min': 0,
-                                                'max': 90000
+                                                'max': 100000
                                             },
                                             step: 100,
                                             format: {
@@ -245,7 +245,7 @@ use Illuminate\Support\Facades\Storage;
                                     } else if (window.priceRangeSlider) {
                                         // Update slider if it already exists
                                         const from = parseFloat(this.priceFrom) || 0;
-                                        const to = parseFloat(this.priceTo) || 90000;
+                                        const to = parseFloat(this.priceTo) || 100000;
                                         window.priceRangeSlider.set([from, to]);
                                     }
                                 });
@@ -255,14 +255,14 @@ use Illuminate\Support\Facades\Storage;
                     updatePriceFromSlider(value) {
                         if (window.priceRangeSlider && value) {
                             const from = parseFloat(value) || 0;
-                            const to = parseFloat(this.priceTo) || 90000;
+                            const to = parseFloat(this.priceTo) || 100000;
                             window.priceRangeSlider.set([from, to], false);
                         }
                     },
                     updatePriceToSlider(value) {
                         if (window.priceRangeSlider && value) {
                             const from = parseFloat(this.priceFrom) || 0;
-                            const to = parseFloat(value) || 90000;
+                            const to = parseFloat(value) || 100000;
                             window.priceRangeSlider.set([from, to], false);
                         }
                     },
@@ -280,7 +280,7 @@ use Illuminate\Support\Facades\Storage;
                         this.priceFrom = '';
                         this.priceTo = '';
                         if (window.priceRangeSlider) {
-                            window.priceRangeSlider.set([0, 90000]);
+                            window.priceRangeSlider.set([0, 100000]);
                         }
                         this.$dispatch('price-changed', '');
                         this.priceOpen = false;
@@ -393,10 +393,10 @@ use Illuminate\Support\Facades\Storage;
                     </div>
                 </div>
 
-                <!-- Skins Filter -->
+                <!-- Skins Filter (ID-based) -->
                 <div class="relative min-w-[140px] flex-grow md:flex-grow-0" x-data="{ 
                     skinsOpen: false,
-                    selectedSkins: [],
+                    selectedSkinIds: [],
                     expandedRoles: {},
                     expandedHeroes: {},
                     categories: [],
@@ -404,152 +404,108 @@ use Illuminate\Support\Facades\Storage;
                     searchQuery: '',
                     async init() {
                         await this.loadSkinsData();
+                        this.prefillFromUrl();
                     },
                     async loadSkinsData() {
                         this.loading = true;
                         try {
-                            const response = await fetch('/storage/mlbbskins.json');
+                            const response = await fetch('/api/mlbb/skins');
                             if (!response.ok) throw new Error('Failed to load skins data');
                             const data = await response.json();
-                            
-                            // Sort categories alphabetically by name
-                            let categories = (data.categories || []).sort((a, b) => {
-                                return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
-                            });
-                            
-                            // Sort heroes within each category alphabetically
+                            let categories = (data.categories || []).sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
                             categories = categories.map(category => {
-                                const sortedHeroes = (category.heroes || []).sort((a, b) => {
-                                    const heroA = (a.hero || '').trim().toLowerCase();
-                                    const heroB = (b.hero || '').trim().toLowerCase();
-                                    return heroA.localeCompare(heroB, undefined, { sensitivity: 'base' });
+                                const sortedHeroes = (category.heroes || []).sort((a, b) => (a.hero || '').trim().toLowerCase().localeCompare((b.hero || '').trim().toLowerCase(), undefined, { sensitivity: 'base' }));
+                                const heroesWithSkins = sortedHeroes.map(hero => {
+                                    const sortedSkins = (hero.skins_with_ids || []).slice().sort((a, b) => (a.name || '').trim().toLowerCase().localeCompare((b.name || '').trim().toLowerCase(), undefined, { sensitivity: 'base' }));
+                                    return { ...hero, skins_with_ids: sortedSkins };
                                 });
-                                
-                                // Sort skins within each hero alphabetically
-                                const heroesWithSortedSkins = sortedHeroes.map(hero => {
-                                    const sortedSkins = (hero.skins || []).sort((a, b) => {
-                                        const skinA = (a || '').trim().toLowerCase();
-                                        const skinB = (b || '').trim().toLowerCase();
-                                        return skinA.localeCompare(skinB, undefined, { sensitivity: 'base' });
-                                    });
-                                    return { ...hero, skins: sortedSkins };
-                                });
-                                
-                                return { ...category, heroes: heroesWithSortedSkins };
+                                return { ...category, heroes: heroesWithSkins };
                             });
-                            
                             this.categories = categories;
-                        } catch (error) {
-                            console.error('Error loading skins data:', error);
+                        } catch (e) {
+                            console.error('Error loading skins data:', e);
                             this.categories = [];
-                        } finally {
-                            this.loading = false;
-                        }
+                        } finally { this.loading = false; }
                     },
-                    toggleRole(roleIndex) {
-                        this.expandedRoles[roleIndex] = !this.expandedRoles[roleIndex];
-                    },
-                    toggleHero(roleIndex, heroIndex) {
-                        const key = `${roleIndex}-${heroIndex}`;
-                        this.expandedHeroes[key] = !this.expandedHeroes[key];
-                    },
-                    toggleSkin(heroName, skinName) {
-                        // Use hero name and skin name directly to avoid filtering issues
-                        const heroNameLower = heroName.trim().toLowerCase();
-                        const skinNameLower = skinName.trim().toLowerCase();
-                        const key = `${heroNameLower}::${skinNameLower}`;
-                        
-                        const index = this.selectedSkins.indexOf(key);
-                        if (index > -1) {
-                            this.selectedSkins.splice(index, 1);
-                        } else {
-                            this.selectedSkins.push(key);
-                        }
-                        
-                        // Auto-apply filter
+                    prefillFromUrl() {
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const skinsParam = urlParams.get('filter[skins]');
+                        if (!skinsParam) return;
+                        const parts = skinsParam.split(',').map(p => p.trim()).filter(p => p);
+                        parts.forEach(p => {
+                            if (/^[0-9]+$/.test(p)) {
+                                const id = Number(p);
+                                if (!this.selectedSkinIds.includes(id)) this.selectedSkinIds.push(id);
+                            } else {
+                                // legacy slug role-hero-skin -> attempt map
+                                const id = this.mapLegacySlugToId(p);
+                                if (id && !this.selectedSkinIds.includes(id)) this.selectedSkinIds.push(id);
+                            }
+                        });
                         this.applySkinsFilter();
                     },
-                    isSkinSelected(heroName, skinName) {
-                        const heroNameLower = heroName.trim().toLowerCase();
-                        const skinNameLower = skinName.trim().toLowerCase();
-                        const key = `${heroNameLower}::${skinNameLower}`;
-                        return this.selectedSkins.includes(key);
+                    mapLegacySlugToId(slug) {
+                        const parts = slug.split('-');
+                        if (parts.length < 3) return null;
+                        const role = parts[0];
+                        const hero = parts[1];
+                        const skin = parts.slice(2).join('-');
+                        const heroNorm = hero.replace(/-/g, ' ').toLowerCase();
+                        const skinNorm = skin.replace(/-/g, ' ').toLowerCase();
+                        for (const category of this.categories) {
+                            for (const h of category.heroes) {
+                                if (h.hero.trim().toLowerCase().replace(/\s+/g, ' ') === heroNorm) {
+                                    for (const s of (h.skins_with_ids || [])) {
+                                        if ((s.name || '').trim().toLowerCase().replace(/\s+/g, ' ') === skinNorm) return Number(s.id);
+                                    }
+                                }
+                            }
+                        }
+                        return null;
                     },
-                    getSelectedCount() {
-                        return this.selectedSkins.length;
+                    toggleRole(i) { this.expandedRoles[i] = !this.expandedRoles[i]; },
+                    toggleHero(r, h) { const key = `${r}-${h}`; this.expandedHeroes[key] = !this.expandedHeroes[key]; },
+                    toggleSkinId(id) {
+                        id = Number(id);
+                        const idx = this.selectedSkinIds.indexOf(id);
+                        if (idx > -1) this.selectedSkinIds.splice(idx, 1); else this.selectedSkinIds.push(id);
+                        this.applySkinsFilter();
                     },
+                    isSkinSelectedId(id) { return this.selectedSkinIds.includes(Number(id)); },
+                    getSelectedCount() { return this.selectedSkinIds.length; },
                     getSelectedSkinsList() {
-                        return this.selectedSkins.map(key => {
-                            const [heroNameLower, skinNameLower] = key.split('::');
-                            if (!heroNameLower || !skinNameLower) return null;
-                            
-                            // Find the actual hero and skin from categories
-                            for (const category of this.categories) {
-                                for (const hero of category.heroes) {
-                                    if (hero.hero.trim().toLowerCase() === heroNameLower) {
-                                        for (const skin of hero.skins) {
-                                            if (skin.trim().toLowerCase() === skinNameLower) {
-                                                return `${hero.hero.trim()} - ${skin.trim()}`;
-                                            }
-                                        }
-                                    }
+                        const out = [];
+                        for (const id of this.selectedSkinIds) {
+                            const info = this.findSkinById(id);
+                            if (info) out.push({ id: Number(id), text: `${info.hero} - ${info.name}` });
+                        }
+                        return out;
+                    },
+                    findSkinById(id) {
+                        id = Number(id);
+                        for (const category of this.categories) {
+                            for (const hero of category.heroes) {
+                                for (const s of (hero.skins_with_ids || [])) {
+                                    if (Number(s.id) === id) return { hero: hero.hero, name: s.name };
                                 }
                             }
-                            return null;
-                        }).filter(v => v);
+                        }
+                        return null;
                     },
-                    clearSkins() {
-                        this.selectedSkins = [];
-                        this.expandedRoles = {};
-                        this.expandedHeroes = {};
-                        this.applySkinsFilter();
-                    },
-                    applySkinsFilter() {
-                        // Build filter string: role-hero-skin format
-                        const filterValues = this.selectedSkins.map(key => {
-                            const [heroNameLower, skinNameLower] = key.split('::');
-                            if (!heroNameLower || !skinNameLower) return '';
-                            
-                            // Find category, hero, and skin from original categories
-                            for (const category of this.categories) {
-                                for (const hero of category.heroes) {
-                                    if (hero.hero.trim().toLowerCase() === heroNameLower) {
-                                        for (const skin of hero.skins) {
-                                            if (skin.trim().toLowerCase() === skinNameLower) {
-                                                // Format: role-hero-skin (lowercase, spaces replaced with hyphens)
-                                                const roleName = category.name.toLowerCase().replace(/\s+/g, '-');
-                                                const heroName = hero.hero.toLowerCase().trim().replace(/\s+/g, '-');
-                                                const skinName = skin.toLowerCase().trim().replace(/\s+/g, '-');
-                                                return `${roleName}-${heroName}-${skinName}`;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            return '';
-                        }).filter(v => v);
-                        this.$dispatch('skins-changed', filterValues.join(','));
-                    },
+                    clearSkins() { this.selectedSkinIds = []; this.expandedRoles = {}; this.expandedHeroes = {}; this.applySkinsFilter(); },
+                    applySkinsFilter() { this.$dispatch('skins-changed', this.selectedSkinIds.join(',')); },
                     filteredCategories() {
                         if (!this.searchQuery) return this.categories;
-                        const query = this.searchQuery.toLowerCase();
+                        const q = this.searchQuery.toLowerCase();
                         return this.categories.map(category => {
-                            const filteredHeroes = category.heroes.map(hero => {
-                                const matchingSkins = hero.skins.filter(skin => 
-                                    skin.toLowerCase().includes(query) || 
-                                    hero.hero.toLowerCase().includes(query) ||
-                                    category.name.toLowerCase().includes(query)
-                                );
-                                if (matchingSkins.length > 0) {
-                                    return { ...hero, skins: matchingSkins };
-                                }
+                            const heroes = category.heroes.map(hero => {
+                                const skins = (hero.skins_with_ids || []).filter(s => (s.name||'').toLowerCase().includes(q) || hero.hero.toLowerCase().includes(q) || category.name.toLowerCase().includes(q));
+                                if (skins.length) return { ...hero, skins_with_ids: skins };
                                 return null;
-                            }).filter(h => h);
-                            if (filteredHeroes.length > 0) {
-                                return { ...category, heroes: filteredHeroes };
-                            }
+                            }).filter(Boolean);
+                            if (heroes.length) return { ...category, heroes };
                             return null;
-                        }).filter(c => c);
+                        }).filter(Boolean);
                     }
                 }" @click.away="skinsOpen = false">
                     <button 
@@ -560,7 +516,7 @@ use Illuminate\Support\Facades\Storage;
                     >
                         <div class="flex items-center pr-2 truncate gap-x-2">
                             <i class="text-base fa-solid fa-mask custom-dropdown-icon"></i>
-                            <span class="font-medium" x-text="getSelectedCount() > 0 ? getSelectedCount() + ' selected' : '{{ __('messages.skins') }}'"></span>
+                            <span class="font-medium" x-text="(() => { const sel = getSelectedSkinsList(); return sel.length === 1 ? sel[0].text : (sel.length > 1 ? sel.length + ' selected' : '{{ __('messages.skins') }}'); })()"></span>
                         </div>
                         <i class="text-xs fa-solid fa-caret-down" style="color: rgba(255, 255, 255, 0.7); transition: transform 0.2s;" :style="skinsOpen ? 'transform: rotate(180deg);' : ''"></i>
                     </button>
@@ -635,19 +591,12 @@ use Illuminate\Support\Facades\Storage;
                                     <span class="text-xs font-semibold text-white">Selected (<span x-text="getSelectedCount()"></span>)</span>
                                 </div>
                                 <div class="flex flex-wrap gap-1.5 max-h-20 overflow-y-auto">
-                                    <template x-for="(skinText, index) in getSelectedSkinsList()" :key="index">
+                                    <template x-for="(sel, index) in getSelectedSkinsList()" :key="sel.id">
                                         <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs text-white" style="background-color: rgba(239, 68, 68, 0.2);">
-                                            <span x-text="skinText" class="truncate max-w-[120px]"></span>
+                                            <span x-text="sel.text" class="truncate max-w-[120px]"></span>
                                             <button 
                                                 type="button"
-                                                @click="
-                                                    const skinParts = skinText.split(' - ');
-                                                    const heroName = skinParts[0].trim().toLowerCase();
-                                                    const skinName = skinParts[1].trim().toLowerCase();
-                                                    const keyToRemove = `${heroName}::${skinName}`;
-                                                    selectedSkins = selectedSkins.filter(key => key !== keyToRemove);
-                                                    applySkinsFilter();
-                                                "
+                                                @click="selectedSkinIds = selectedSkinIds.filter(id => Number(id) !== Number(sel.id)); applySkinsFilter();"
                                                 class="hover:text-red-400 transition-colors ml-0.5"
                                             >
                                                 <i class="fa-solid fa-times text-xs"></i>
@@ -700,14 +649,14 @@ use Illuminate\Support\Facades\Storage;
                                                         x-collapse
                                                         class="flex flex-wrap gap-2 ml-2"
                                                     >
-                                                            <template x-for="(skin, skinIndex) in hero.skins" :key="skinIndex">
+                                                            <template x-for="(skinObj, skinIndex) in (hero.skins_with_ids || [])" :key="skinObj.id">
                                                                 <button
-                                                                    @click="toggleSkin(hero.hero, skin)"
+                                                                    @click="toggleSkinId(skinObj.id)"
                                                                     class="px-3 py-1.5 text-xs rounded-md transition-all border"
-                                                                    :class="isSkinSelected(hero.hero, skin) ? 'bg-red-600 border-red-600 text-white' : 'bg-transparent border-gray-600 text-gray-300 hover:border-red-500 hover:text-white'"
+                                                                    :class="isSkinSelectedId(skinObj.id) ? 'bg-red-600 border-red-600 text-white' : 'bg-transparent border-gray-600 text-gray-300 hover:border-red-500 hover:text-white'"
                                                                 >
-                                                                    <i class="fa-solid" :class="isSkinSelected(hero.hero, skin) ? 'fa-check-circle' : 'fa-circle'"></i>
-                                                                    <span class="ml-1.5" x-text="skin"></span>
+                                                                    <i class="fa-solid" :class="isSkinSelectedId(skinObj.id) ? 'fa-check-circle' : 'fa-circle'"></i>
+                                                                    <span class="ml-1.5" x-text="skinObj.name"></span>
                                                                 </button>
                                                             </template>
                                                     </div>
@@ -1119,7 +1068,7 @@ use Illuminate\Support\Facades\Storage;
                     <!-- Skins Filter Tag -->
                     <template x-if="filters.skins">
                         <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium text-white" style="background-color: #ec4899; border: 1px solid #db2777;">
-                            <span x-text="'Skins: ' + (filters.skins.split(',').length) + ' selected'"></span>
+                            <span x-text="(() => { const ids = (filters.skins || '').split(',').filter(Boolean).map(v => Number(v)); const names = []; ids.forEach(id => { const info = (function(){ const comp = document.querySelector('[x-data*=filterComponent]'); if (!comp) return null; const skinsDropdown = comp.querySelector('[x-data*=skinsOpen]'); if (!skinsDropdown) return null; const data = Alpine.$data(skinsDropdown); return data ? data.findSkinById(id) : null; })(); if (info) names.push(info.hero + ' - ' + info.name); }); if (names.length === 1) return 'Skin: ' + names[0]; if (names.length > 1) return 'Skins: ' + names.join(', '); return 'Skins'; })()"></span>
                             <button @click="clearSkinsFilter()" class="ml-1 hover:opacity-80 transition-opacity" title="Remove filter">
                                 <i class="fa-solid fa-times text-xs"></i>
                             </button>
@@ -1364,23 +1313,35 @@ use Illuminate\Support\Facades\Storage;
 <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/nouislider@15.7.1/dist/nouislider.min.js"></script>
 <script>
+    // Inject i18n for collection tiers from Blade translations
+    window.COLLECTION_TIER_I18N = {
+        'Expert Collector': @json(__('messages.expert_collector')),
+        'Renowned Collector': @json(__('messages.renowned_collector')),
+        'Exalted Collector': @json(__('messages.exalted_collector')),
+        'Mega Collector': @json(__('messages.mega_collector')),
+        'World Collector': @json(__('messages.world_collector'))
+    };
+    function translateCollectionTier(tier) {
+        if (!tier) return '';
+        return window.COLLECTION_TIER_I18N[tier] || tier;
+    }
     document.addEventListener('DOMContentLoaded', function() {
         // Initialize Tom Select for remaining selects
         // Store select instances for Alpine.js access (if needed in future)
         window.filterSelects = {};
         
-        // Initialize price range slider
+        // Initialize price range slider (fallback init)
         function initPriceSlider() {
             const priceSlider = document.getElementById('price-range-slider');
             if (priceSlider && !priceSlider.noUiSlider) {
                 window.priceRangeSlider = noUiSlider.create(priceSlider, {
-                    start: [0, 1000],
+                    start: [0, 100000],
                     connect: true,
                     range: {
                         'min': 0,
-                        'max': 1000
+                        'max': 100000
                     },
-                    step: 10,
+                    step: 100,
                     format: {
                         to: function(value) {
                             return Math.round(value);
@@ -1543,48 +1504,6 @@ use Illuminate\Support\Facades\Storage;
                 }
             },
             
-            initializeSkinsFromUrl(skinsParam) {
-                // Convert URL format (role-hero-skin) to internal format (hero::skin)
-                if (!skinsParam || !this.categories.length) return;
-                
-                const skinFilters = skinsParam.split(',');
-                skinFilters.forEach(skinFilter => {
-                    skinFilter = skinFilter.trim();
-                    if (!skinFilter) return;
-                    
-                    const parts = skinFilter.split('-');
-                    if (parts.length >= 3) {
-                        const role = parts[0];
-                        const hero = parts[1];
-                        const skinName = parts.slice(2).join('-');
-                        
-                        // Find matching hero and skin in categories
-                        for (const category of this.categories) {
-                            if (category.name.toLowerCase().replace(/\s+/g, '-') === role) {
-                                for (const categoryHero of category.heroes) {
-                                    if (categoryHero.hero.toLowerCase().trim().replace(/\s+/g, '-') === hero) {
-                                        for (const skin of categoryHero.skins) {
-                                            if (skin.toLowerCase().trim().replace(/\s+/g, '-') === skinName) {
-                                                // Add to selected skins
-                                                const heroNameLower = categoryHero.hero.trim().toLowerCase();
-                                                const skinNameLower = skin.trim().toLowerCase();
-                                                const key = `${heroNameLower}::${skinNameLower}`;
-                                                
-                                                if (!this.selectedSkins.includes(key)) {
-                                                    this.selectedSkins.push(key);
-                                                }
-                                                break;
-                                            }
-                                        }
-                                        break;
-                                    }
-                                }
-                                break;
-                            }
-                        }
-                    }
-                });
-            },
             
             updateAccountsGrid(accounts) {
                 const gridContainer = document.querySelector('[data-accounts-grid]');
@@ -1631,11 +1550,12 @@ use Illuminate\Support\Facades\Storage;
                     }
                     
                     const collectionTier = attributes['collection_tier'] || '';
+                    const collectionTierLabel = translateCollectionTier(collectionTier);
                     const skinsCount = attributes['skins_count'] || '';
                     
                     let tierDisplay = '';
                     if (collectionTier || skinsCount) {
-                        tierDisplay = collectionTier;
+                        tierDisplay = collectionTierLabel;
                         if (collectionTier && skinsCount) {
                             tierDisplay += ' · ';
                         }
@@ -1668,7 +1588,7 @@ use Illuminate\Support\Facades\Storage;
                         attributesList.push('Level ' + attributes['level']);
                     }
                     if (attributes['collection_tier']) {
-                        attributesList.push(attributes['collection_tier']);
+                        attributesList.push(collectionTierLabel);
                     }
                     
                     const attributesHtml = attributesList.map(attr => 
@@ -1803,12 +1723,7 @@ use Illuminate\Support\Facades\Storage;
                 if (levelParam) {
                     this.filters.level = levelParam;
                 }
-                if (skinsParam) {
-                    this.filters.skins = skinsParam;
-                    
-                    // Initialize selected skins state from URL parameter
-                    this.initializeSkinsFromUrl(skinsParam);
-                }
+                if (skinsParam) { this.filters.skins = skinsParam; }
                 
                 // Watch for filter changes
                 this.$watch('searchQuery', () => {

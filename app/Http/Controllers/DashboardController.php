@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Storage;
 use App\Models\AccountForSale;
 use App\Models\AccountAttribute;
 use App\Models\AccountImage;
+use App\Support\SkinsHelper;
 
 class DashboardController extends Controller
 {
@@ -145,6 +146,14 @@ class DashboardController extends Controller
                             // Validate and sanitize: strip HTML tags and limit length
                             $sanitizedKey = substr(strip_tags(trim($key)), 0, 255);
                             $sanitizedValue = substr(strip_tags(trim($valueString)), 0, 255);
+
+                            // Normalize highlighted_skins to numeric IDs (comma-separated)
+                            if ($sanitizedKey === 'highlighted_skins') {
+                                $normalized = SkinsHelper::normalizeHighlightedSkins($sanitizedValue);
+                                if ($normalized !== '') {
+                                    $sanitizedValue = $normalized;
+                                }
+                            }
                             
                             // Only add if both key and value are valid (not empty after sanitization)
                             if (!empty($sanitizedKey) && $sanitizedValue !== '') {
@@ -270,7 +279,12 @@ class DashboardController extends Controller
             ->where('seller_id', $seller->id) // Ensure seller owns this account
             ->firstOrFail();
         
-        return view('dashboard.edit-account', compact('account'));
+        // Build attributes map for blade convenience
+        $attributesMap = [];
+        foreach ($account->attributes as $attr) {
+            $attributesMap[$attr->attribute_key] = $attr->attribute_value;
+        }
+        return view('dashboard.edit-account', compact('account', 'attributesMap'));
     }
     
     public function updateAccount(Request $request, $id)
@@ -351,6 +365,14 @@ class DashboardController extends Controller
                             $valueString = (string)$value;
                             $sanitizedKey = substr(strip_tags(trim($key)), 0, 255);
                             $sanitizedValue = substr(strip_tags(trim($valueString)), 0, 255);
+
+                            // Normalize highlighted_skins to numeric IDs (comma-separated)
+                            if ($sanitizedKey === 'highlighted_skins') {
+                                $normalized = SkinsHelper::normalizeHighlightedSkins($sanitizedValue);
+                                if ($normalized !== '') {
+                                    $sanitizedValue = $normalized;
+                                }
+                            }
                             
                             if (!empty($sanitizedKey) && $sanitizedValue !== '') {
                                 $attributesToCreate[] = [
@@ -545,29 +567,40 @@ class DashboardController extends Controller
         }
         
         try {
-            $account = AccountForSale::with('images')->where('id', $id)
-                ->where('seller_id', $seller->id)
-                ->firstOrFail();
-            
-            // Delete all associated images from storage
-            foreach ($account->images as $image) {
-                if (Storage::disk('public')->exists($image->url)) {
-                    Storage::disk('public')->delete($image->url);
+            return \DB::transaction(function () use ($id, $seller) {
+                $account = AccountForSale::with(['images'])
+                    ->where('id', $id)
+                    ->where('seller_id', $seller->id)
+                    ->firstOrFail();
+
+                // Delete all associated image files (ignore missing files)
+                foreach ($account->images as $image) {
+                    try {
+                        if (Storage::disk('public')->exists($image->url)) {
+                            Storage::disk('public')->delete($image->url);
+                        }
+                    } catch (\Throwable $t) {
+                        // Ignore storage errors to not block DB deletion
+                    }
                 }
-            }
-            
-            // Delete the account (cascade will handle related records)
-            $account->delete();
-            
-            if (request()->expectsJson()) {
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Account deleted successfully.'
-                ]);
-            }
-            
-            return redirect()->route('account.listed-accounts')
-                ->with('success', 'Account deleted successfully.');
+
+                // Explicitly delete related records to avoid constraint issues
+                $account->attributes()->delete();
+                $account->images()->delete();
+
+                // Finally delete the account
+                $account->delete();
+
+                if (request()->expectsJson()) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Account deleted successfully.'
+                    ]);
+                }
+
+                return redirect()->route('account.listed-accounts')
+                    ->with('success', 'Account deleted successfully.');
+            }, 3);
         } catch (\Exception $e) {
             if (request()->expectsJson()) {
                 return response()->json([
