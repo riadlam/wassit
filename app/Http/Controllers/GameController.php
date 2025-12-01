@@ -30,7 +30,11 @@ class GameController extends Controller
             ->where('game_id', $game->id)
             ->where('status', 'available')
             ->with(['seller.user', 'attributes', 'images'])
-            ->withCount('orders')
+            ->with(['seller' => function ($query) {
+                $query->withCount(['orders' => function ($q) {
+                    $q->where('status', 'completed');
+                }]);
+            }])
             ->allowedFilters([
                 // Search filter - searches in title and description
                 AllowedFilter::callback('search', function ($query, $value) {
@@ -129,7 +133,11 @@ class GameController extends Controller
             ->where('game_id', $game->id)
             ->where('status', 'available')
             ->with(['seller.user', 'attributes', 'images'])
-            ->withCount('orders')
+            ->with(['seller' => function ($query) {
+                $query->withCount(['orders' => function ($q) {
+                    $q->where('status', 'completed');
+                }]);
+            }])
             ->allowedFilters([
                 // Search filter - searches in title and description
                 AllowedFilter::callback('search', function ($query, $value) {
