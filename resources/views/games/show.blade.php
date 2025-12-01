@@ -1005,6 +1005,77 @@ use Illuminate\Support\Facades\Storage;
                 </div>
             </div>
 
+            <!-- Applied Filters Display -->
+            <div class="mt-5 pt-5 border-t" style="border-color: #2d2c31;" x-show="hasAppliedFilters()" x-transition>
+                <p class="text-xs font-semibold text-gray-400 mb-2.5 uppercase tracking-wide">{{ __('messages.applied_filters') ?? 'Active Filters' }}</p>
+                <div class="flex flex-wrap gap-2">
+                    <!-- Search Filter Tag -->
+                    <template x-if="searchQuery">
+                        <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium text-white" style="background-color: #ef4444; border: 1px solid #dc2626;">
+                            <span x-text="'Search: ' + searchQuery"></span>
+                            <button @click="clearSearchFilter()" class="ml-1 hover:opacity-80 transition-opacity" title="Remove filter">
+                                <i class="fa-solid fa-times text-xs"></i>
+                            </button>
+                        </div>
+                    </template>
+                    
+                    <!-- Rank Filter Tag -->
+                    <template x-if="filters.rank">
+                        <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium text-white" style="background-color: #f59e0b; border: 1px solid #d97706;">
+                            <span x-text="'Rank: ' + filters.rank"></span>
+                            <button @click="clearRankFilter()" class="ml-1 hover:opacity-80 transition-opacity" title="Remove filter">
+                                <i class="fa-solid fa-times text-xs"></i>
+                            </button>
+                        </div>
+                    </template>
+                    
+                    <!-- Platform Filter Tag -->
+                    <template x-if="filters.platform">
+                        <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium text-white" style="background-color: #3b82f6; border: 1px solid #2563eb;">
+                            <span x-text="'Platform: ' + filters.platform"></span>
+                            <button @click="clearPlatformFilter()" class="ml-1 hover:opacity-80 transition-opacity" title="Remove filter">
+                                <i class="fa-solid fa-times text-xs"></i>
+                            </button>
+                        </div>
+                    </template>
+                    
+                    <!-- Price Filter Tag -->
+                    <template x-if="filters.price">
+                        <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium text-white" style="background-color: #10b981; border: 1px solid #059669;">
+                            <span x-text="'Price: ' + filters.price"></span>
+                            <button @click="clearPriceFilter()" class="ml-1 hover:opacity-80 transition-opacity" title="Remove filter">
+                                <i class="fa-solid fa-times text-xs"></i>
+                            </button>
+                        </div>
+                    </template>
+                    
+                    <!-- Win Rate Filter Tag -->
+                    <template x-if="filters.winRate">
+                        <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium text-white" style="background-color: #8b5cf6; border: 1px solid #7c3aed;">
+                            <span x-text="'Win Rate: ' + filters.winRate + '%'"></span>
+                            <button @click="clearWinRateFilter()" class="ml-1 hover:opacity-80 transition-opacity" title="Remove filter">
+                                <i class="fa-solid fa-times text-xs"></i>
+                            </button>
+                        </div>
+                    </template>
+                    
+                    <!-- Level Filter Tag -->
+                    <template x-if="filters.level">
+                        <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium text-white" style="background-color: #ec4899; border: 1px solid #db2777;">
+                            <span x-text="'Level: ' + filters.level"></span>
+                            <button @click="clearLevelFilter()" class="ml-1 hover:opacity-80 transition-opacity" title="Remove filter">
+                                <i class="fa-solid fa-times text-xs"></i>
+                            </button>
+                        </div>
+                    </template>
+                    
+                    <!-- Clear All Button -->
+                    <button @click="clearAllFilters()" class="px-3 py-1.5 rounded-md text-xs text-gray-300 transition-colors hover:bg-red-600 hover:text-white font-medium" style="background-color: #1b1a1e; border: 1px solid #2d2c31;">
+                        <i class="fa-solid fa-trash-alt mr-1"></i>{{ __('messages.clear_all') ?? 'Clear All' }}
+                    </button>
+                </div>
+            </div>
+
             <!-- Popular Searches -->
             <div class="mt-5 pt-5 border-t" style="border-color: #2d2c31;">
                 <p class="text-xs font-semibold text-gray-400 mb-2.5 uppercase tracking-wide">{{ __('messages.popular_searches') }}</p>
@@ -1308,6 +1379,56 @@ use Illuminate\Support\Facades\Storage;
             
             applySearch(term) {
                 this.searchQuery = term;
+                this.applyFilters();
+            },
+            
+            hasAppliedFilters() {
+                return this.searchQuery || 
+                       this.filters.rank || 
+                       this.filters.platform || 
+                       this.filters.price || 
+                       this.filters.winRate || 
+                       this.filters.level;
+            },
+            
+            clearSearchFilter() {
+                this.searchQuery = '';
+                this.applyFilters();
+            },
+            
+            clearRankFilter() {
+                this.filters.rank = '';
+                this.applyFilters();
+            },
+            
+            clearPlatformFilter() {
+                this.filters.platform = '';
+                this.applyFilters();
+            },
+            
+            clearPriceFilter() {
+                this.filters.price = '';
+                this.applyFilters();
+            },
+            
+            clearWinRateFilter() {
+                this.filters.winRate = '';
+                this.applyFilters();
+            },
+            
+            clearLevelFilter() {
+                this.filters.level = '';
+                this.applyFilters();
+            },
+            
+            clearAllFilters() {
+                this.searchQuery = '';
+                this.filters.rank = '';
+                this.filters.platform = '';
+                this.filters.price = '';
+                this.filters.skins = '';
+                this.filters.winRate = '';
+                this.filters.level = '';
                 this.applyFilters();
             },
             
