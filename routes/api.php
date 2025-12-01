@@ -17,6 +17,7 @@ Route::prefix('auth')->group(function () {
 // Games routes
 Route::get('/games', [App\Http\Controllers\GameController::class, 'index']);
 Route::get('/games/{id}/attributes', [App\Http\Controllers\GameController::class, 'getAttributes']);
+Route::get('/games/{slug}/accounts', [App\Http\Controllers\GameController::class, 'filterAccounts']);
 
 // Account listing routes
 Route::get('/accounts', [App\Http\Controllers\AccountController::class, 'index']);

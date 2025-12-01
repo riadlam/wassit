@@ -1019,7 +1019,7 @@ use Illuminate\Support\Facades\Storage;
         </div>
 
         <!-- Accounts Grid -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4" style="gap: 15px;">
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4" style="gap: 15px;" data-accounts-grid>
             @forelse($accounts as $account)
                 @include('components.account-card', ['account' => $account])
             @empty
@@ -1303,12 +1303,16 @@ use Illuminate\Support\Facades\Storage;
                 winRate: '',
                 level: ''
             },
+            isLoading: false,
+            gameSlug: '{{ $game->slug }}',
+            
             applySearch(term) {
                 this.searchQuery = term;
                 this.applyFilters();
             },
-            applyFilters() {
-                // Build query parameters for Spatie Query Builder
+            
+            async applyFilters() {
+                // Build query parameters for API request
                 const params = new URLSearchParams();
                 
                 // Add search filter
@@ -1331,11 +1335,6 @@ use Illuminate\Support\Facades\Storage;
                     params.append('filter[price]', this.filters.price);
                 }
                 
-                // Add skins filter
-                if (this.filters.skins) {
-                    params.append('filter[skins]', this.filters.skins);
-                }
-                
                 // Add win rate filter
                 if (this.filters.winRate) {
                     params.append('filter[win_rate]', this.filters.winRate);
@@ -1346,11 +1345,215 @@ use Illuminate\Support\Facades\Storage;
                     params.append('filter[level]', this.filters.level);
                 }
                 
-                // Reload page with filters
+                // Skip skins filter for now (will implement later)
+                // if (this.filters.skins) {
+                //     params.append('filter[skins]', this.filters.skins);
+                // }
+                
+                this.isLoading = true;
                 const queryString = params.toString();
-                const currentUrl = window.location.pathname;
-                window.location.href = queryString ? `${currentUrl}?${queryString}` : currentUrl;
+                const url = `/api/games/${this.gameSlug}/accounts${queryString ? '?' + queryString : ''}`;
+                
+                try {
+                    const response = await fetch(url);
+                    if (!response.ok) throw new Error('Failed to fetch accounts');
+                    
+                    const data = await response.json();
+                    this.updateAccountsGrid(data.data);
+                } catch (error) {
+                    console.error('Filter error:', error);
+                } finally {
+                    this.isLoading = false;
+                }
             },
+            
+            updateAccountsGrid(accounts) {
+                const gridContainer = document.querySelector('[data-accounts-grid]');
+                if (!gridContainer) return;
+                
+                if (accounts.length === 0) {
+                    gridContainer.innerHTML = `
+                        <div class="col-span-full rounded-xl p-12 text-center" style="background-color: #252429; border: 1px solid #2d2c31;">
+                            <p class="text-gray-400 text-lg">${'{{ __("messages.no_accounts_available") }}'}</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // Build HTML for account cards
+                let html = '';
+                accounts.forEach(account => {
+                    const mainImage = account.images && account.images.length > 0 
+                        ? '/storage/' + account.images[0].url 
+                        : '{{ asset("storage/default-account.png") }}';
+                    
+                    const seller = account.seller;
+                    const user = seller ? seller.user : null;
+                    const sellerName = user ? user.name : 'Unknown';
+                    
+                    // Calculate sold count
+                    const soldCount = seller ? (seller.orders_count || 0) : 0;
+                    
+                    // Calculate rating percentage
+                    const ratingPercentage = seller && seller.rating > 0 
+                        ? Math.round((seller.rating / 5) * 100)
+                        : 0;
+                    
+                    // Price formatting
+                    const priceDzd = account.price_dzd;
+                    const formattedPrice = Number(priceDzd).toLocaleString('en');
+                    
+                    // Build attributes display
+                    const attributes = {};
+                    if (account.attributes && Array.isArray(account.attributes)) {
+                        account.attributes.forEach(attr => {
+                            attributes[attr.attribute_key] = attr.attribute_value;
+                        });
+                    }
+                    
+                    const collectionTier = attributes['collection_tier'] || '';
+                    const skinsCount = attributes['skins_count'] || '';
+                    
+                    let tierDisplay = '';
+                    if (collectionTier || skinsCount) {
+                        tierDisplay = collectionTier;
+                        if (collectionTier && skinsCount) {
+                            tierDisplay += ' · ';
+                        }
+                        tierDisplay += skinsCount ? skinsCount + ' Skins' : '';
+                    } else {
+                        tierDisplay = 'Account Details';
+                    }
+                    
+                    // Build attributes list
+                    const attributesList = [];
+                    if (attributes['skins_count']) {
+                        attributesList.push(attributes['skins_count'] + ' Skins');
+                    }
+                    if (attributes['heroes_count']) {
+                        attributesList.push(attributes['heroes_count'] + ' Heroes');
+                    }
+                    if (attributes['diamonds']) {
+                        const diamonds = Number(attributes['diamonds']).toLocaleString();
+                        attributesList.push(diamonds + ' Diamonds');
+                    }
+                    if (attributes['bp']) {
+                        const bp = Number(attributes['bp']).toLocaleString();
+                        attributesList.push(bp + ' BP');
+                    }
+                    if (attributes['level']) {
+                        attributesList.push('Level ' + attributes['level']);
+                    }
+                    if (attributes['collection_tier']) {
+                        attributesList.push(attributes['collection_tier']);
+                    }
+                    
+                    const attributesHtml = attributesList.map(attr => 
+                        `<span class="inline-block px-2 py-0.5 text-xs whitespace-nowrap" style="color: rgba(255, 255, 255, 0.7); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 6px;">${attr}</span>`
+                    ).join('');
+                    
+                    const sellerPfp = seller && seller.pfp ? '/storage/' + seller.pfp : '{{ asset("storage/examplepfp.webp") }}';
+                    const sellerDisplayName = user ? user.name.substring(0, 8).toUpperCase() + (user.name.length > 8 ? '..' : '') : 'Unknown';
+                    
+                    html += `
+                        <a href="/mobile-legends/accounts/${account.id}" class="account-card-hover account-card flex relative flex-col justify-between overflow-hidden rounded-xl h-full hover:shadow-xl transition-all duration-300 group" style="background-color: #0e1015; border: 1px solid #2d2c31;">
+                            <!-- Flash Sale Badge (Top Right) -->
+                            <div class="absolute z-10" style="top: 0.5rem; right: 0.5rem;">
+                                <div class="flex justify-center items-center py-1 w-7 h-7 text-xs font-semibold tracking-wide text-center uppercase rounded-lg" style="color: #fbbf24;">
+                                    <i class="fa-solid fa-bolt"></i>
+                                </div>
+                            </div>
+
+                            <!-- Card Content -->
+                            <div class="flex flex-col flex-1 justify-between px-4 py-4 space-y-4 sm:px-5">
+                                <!-- Collection Tier/Skins Section -->
+                                <div class="pt-1.5">
+                                    <div class="flex items-center gap-x-2">
+                                        <div class="truncate">
+                                            <p class="font-semibold leading-6 truncate text-white" style="font-size: 0.85rem;">
+                                                ${tierDisplay}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Description (Fixed Height) -->
+                                <div class="text-sm line-clamp-2 break-all" style="min-height: 40px; color: rgba(255, 255, 255, 0.8); margin-top: 5px; margin-bottom: 10px;">
+                                    ${account.title.substring(0, 100)}${account.title.length > 100 ? '...' : ''}
+                                </div>
+
+                                <!-- Account Image -->
+                                <div style="margin-bottom: 15px;">
+                                    <div class="relative overflow-hidden rounded-lg account-image-hover" style="height: 140px; border: 1px solid #2d2c31;">
+                                        <img src="${mainImage}" alt="Account Image" class="object-cover w-full h-full">
+                                        ${account.images && account.images.length > 1 ? `
+                                            <div type="button" class="inline-flex items-center justify-center transition-colors overflow-hidden font-medium whitespace-nowrap py-1.5 px-2 text-xs rounded-md absolute right-2 bottom-2 backdrop-blur-md" style="background-color: rgba(27, 26, 30, 0.8); color: #ffffff; border: 1px solid #2d2c31;">
+                                                <i class="mr-2 fas fa-images"></i> ${account.images.length}+
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                </div>
+
+                                <!-- Account Attributes -->
+                                <div class="attributes-scroll overflow-y-auto overflow-x-hidden rounded-md flex flex-wrap gap-1.5" style="height: 60px; margin-left: 5px; margin-right: 5px; padding: 0.5rem; background-color: rgba(27, 26, 30, 0.5); border: 1px solid rgba(255, 255, 255, 0.05);">
+                                    ${attributesHtml}
+                                </div>
+
+                                <!-- Small Divider -->
+                                <div class="h-px w-full" style="background: linear-gradient(90deg, rgba(45, 44, 49, 0.1), #2d2c31, rgba(45, 44, 49, 0.1)); margin-top: 0.5rem; margin-bottom: 0.5rem;"></div>
+
+                                <!-- Price and Buy Button -->
+                                <div class="flex relative gap-1 justify-between items-center pt-1">
+                                    <div class="flex gap-x-1 items-baseline truncate">
+                                        <span class="text-3xl font-bold tracking-tight text-transparent bg-clip-text" style="background: linear-gradient(to left, #ffffff, rgba(255, 255, 255, 0.6)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                                            ${formattedPrice}
+                                        </span>
+                                        <span class="text-sm font-semibold leading-6" style="color: rgba(255, 255, 255, 0.6);">DZD</span>
+                                    </div>
+                                    <button type="button" class="account-buy-btn inline-flex items-center justify-center transition-colors focus:outline focus:outline-offset-2 focus-visible:outline outline-none disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden font-medium active:translate-y-px whitespace-nowrap bg-red-600 hover:bg-red-700 text-white shadow-sm focus:outline-red-600 py-2 px-4 text-sm rounded-full shrink-0" data-account-id="${account.id}">
+                                        <span class="buy-btn-text truncate">Buy Now</span>
+                                        <i class="buy-btn-loading ml-1 hidden" style="display: none;">
+                                            <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                        </i>
+                                        <i class="ml-1 fa-solid fa-chevron-right buy-btn-icon"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Divider -->
+                            <div class="h-px w-full" style="background: linear-gradient(90deg, rgba(45, 44, 49, 0.1), #2d2c31, rgba(45, 44, 49, 0.1));"></div>
+
+                            <!-- Seller Info (Bottom Section) -->
+                            <button class="flex gap-x-2 justify-between items-center px-5 py-3 rounded-b-xl border-t group-hover:bg-opacity-50" style="background-color: rgba(27, 26, 30, 0.5); border-color: #2d2c31; margin-bottom: 15px;">
+                                <div class="flex items-center truncate cursor-pointer">
+                                    <div class="relative block shrink-0 rounded-full border flex items-center justify-center" style="height: 36px; width: 36px; border-color: #252429; margin-bottom: 5px; margin-right: 5px;">
+                                        <img class="object-cover w-full h-full rounded-full" src="${sellerPfp}" alt="${sellerDisplayName}" onerror="this.src='{{ asset("storage/examplepfp.webp") }}';">
+                                    </div>
+                                    <div class="cursor-default flex items-center truncate gap-x-1.5" data-state="closed">
+                                        <div class="truncate text-sm font-medium text-white">${sellerDisplayName}</div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center shrink-0">
+                                    <div class="flex items-center text-sm gap-x-2 text-xs" style="color: rgba(255, 255, 255, 0.6);">
+                                        <span style="color: rgba(255, 255, 255, 0.6);">${soldCount} Sold</span>
+                                        <div data-orientation="horizontal" role="separator" class="shrink-0 w-px" style="height: 1rem; background-color: rgba(255, 255, 255, 0.3);"></div>
+                                        <div class="flex items-center" style="color: #10b981; margin-left: 5px;">
+                                            <i class="fa-solid fa-thumbs-up" style="color: #10b981; margin-right: 2px;"></i>
+                                            <span style="color: #10b981;">${ratingPercentage}%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </button>
+                        </a>
+                    `;
+                });
+                
+                gridContainer.innerHTML = html;
+            },
+            
             init() {
                 // Read filter values from URL parameters
                 const urlParams = new URLSearchParams(window.location.search);
@@ -1405,11 +1608,11 @@ use Illuminate\Support\Facades\Storage;
                     this.applyFilters();
                 });
                 
-                // Listen for skins filter changes
-                this.$el.addEventListener('skins-changed', (e) => {
-                    this.filters.skins = e.detail || '';
-                    this.applyFilters();
-                });
+                // Listen for skins filter changes (skip for now)
+                // this.$el.addEventListener('skins-changed', (e) => {
+                //     this.filters.skins = e.detail || '';
+                //     this.applyFilters();
+                // });
                 
                 // Listen for additional filters changes
                 this.$el.addEventListener('additional-filters-changed', (e) => {
