@@ -1512,8 +1512,8 @@ use Illuminate\Support\Facades\Storage;
                     const user = seller ? seller.user : null;
                     const sellerName = user ? user.name : 'Unknown';
                     
-                    // Calculate sold count from orders_count field
-                    const soldCount = account.orders_count || 0;
+                    // Calculate sold count from seller's orders_count field
+                    const soldCount = account.seller ? account.seller.orders_count || 0 : 0;
                     
                     // Calculate rating percentage
                     const ratingPercentage = seller && seller.rating > 0 
