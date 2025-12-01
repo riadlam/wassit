@@ -1512,17 +1512,17 @@ use Illuminate\Support\Facades\Storage;
                     const user = seller ? seller.user : null;
                     const sellerName = user ? user.name : 'Unknown';
                     
-                    // Calculate sold count
-                    const soldCount = seller ? (seller.orders_count || 0) : 0;
+                    // Calculate sold count from orders_count field
+                    const soldCount = account.orders_count || 0;
                     
                     // Calculate rating percentage
                     const ratingPercentage = seller && seller.rating > 0 
                         ? Math.round((seller.rating / 5) * 100)
                         : 0;
                     
-                    // Price formatting
+                    // Price formatting - no commas, just the raw number
                     const priceDzd = account.price_dzd;
-                    const formattedPrice = Number(priceDzd).toLocaleString('en');
+                    const formattedPrice = String(priceDzd).replace(/,/g, '');
                     
                     // Build attributes display
                     const attributes = {};
@@ -1546,7 +1546,7 @@ use Illuminate\Support\Facades\Storage;
                         tierDisplay = 'Account Details';
                     }
                     
-                    // Build attributes list
+                    // Build attributes list - no formatting with commas
                     const attributesList = [];
                     if (attributes['skins_count']) {
                         attributesList.push(attributes['skins_count'] + ' Skins');
@@ -1555,12 +1555,10 @@ use Illuminate\Support\Facades\Storage;
                         attributesList.push(attributes['heroes_count'] + ' Heroes');
                     }
                     if (attributes['diamonds']) {
-                        const diamonds = Number(attributes['diamonds']).toLocaleString();
-                        attributesList.push(diamonds + ' Diamonds');
+                        attributesList.push(attributes['diamonds'] + ' Diamonds');
                     }
                     if (attributes['bp']) {
-                        const bp = Number(attributes['bp']).toLocaleString();
-                        attributesList.push(bp + ' BP');
+                        attributesList.push(attributes['bp'] + ' BP');
                     }
                     if (attributes['level']) {
                         attributesList.push('Level ' + attributes['level']);
