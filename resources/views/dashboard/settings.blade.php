@@ -76,7 +76,7 @@
                                     </dd>
                                 </div>
                                 <div class="flex items-center px-4 sm:px-6 py-3 border-t sm:rounded-b-xl" style="border-color: #2d2c31; background-color: rgba(27, 26, 30, 0.2);">
-                                    <a href="{{ route('dashboard.wallet') }}" class="inline-flex items-center justify-center transition-colors focus:outline focus:outline-offset-2 focus-visible:outline outline-none disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden font-medium active:translate-y-px whitespace-nowrap bg-transparent hover:bg-gray-800/50 text-white focus:outline-secondary py-1.5 px-2 text-xs rounded-md">
+                                    <a href="{{ route('wallet') }}" class="inline-flex items-center justify-center transition-colors focus:outline focus:outline-offset-2 focus-visible:outline outline-none disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden font-medium active:translate-y-px whitespace-nowrap bg-transparent hover:bg-gray-800/50 text-white focus:outline-secondary py-1.5 px-2 text-xs rounded-md">
                                         <i class="mr-2 fa-solid fa-receipt"></i> View History
                                     </a>
                                 </div>
