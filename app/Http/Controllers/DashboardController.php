@@ -74,7 +74,8 @@ class DashboardController extends Controller
             'title' => 'required|string|max:255',
             'description' => 'required|string',
             'game_id' => 'required|integer|exists:games,id',
-            'price_dzd' => 'required|numeric|min:0',
+            // Allow raw input; we'll normalize to cents safely (accepts 1000, 1,000, 1000.00, 1.000,50)
+            'price_dzd' => 'required|string',
             'status' => 'required|in:available,disabled,pending',
             'attributes' => 'nullable|array',
             'attributes.*' => 'nullable|string|max:255',
@@ -103,8 +104,21 @@ class DashboardController extends Controller
         }
 
         try {
+            // Normalize price to cents (integer) with no separators or decimals carried over
+            $priceCents = $this->normalizePriceToCents($request->input('price_dzd'));
+            if ($priceCents === null || $priceCents < 0) {
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Invalid price format.',
+                    ], 422);
+                }
+                return redirect()->back()
+                    ->with('error', 'Invalid price format.')
+                    ->withInput();
+            }
             // Use database transaction to ensure data integrity
-            return DB::transaction(function () use ($request) {
+            return DB::transaction(function () use ($request, $priceCents) {
                 $user = Auth::user();
                 $seller = $user->seller;
                 
@@ -126,7 +140,7 @@ class DashboardController extends Controller
                     'game_id' => (int)$request->game_id, // Ensure integer
                     'title' => strip_tags($request->title), // Sanitize HTML
                     'description' => strip_tags($request->description), // Sanitize HTML
-                    'price_dzd' => (int)($request->price_dzd * 100), // Convert to cents
+                    'price_dzd' => $priceCents, // Already normalized to cents
                     'status' => in_array($request->status, ['available', 'disabled', 'pending']) ? $request->status : 'available',
                 ]);
 
@@ -307,7 +321,8 @@ class DashboardController extends Controller
         $validator = Validator::make($request->all(), [
             'title' => 'required|string|max:255',
             'description' => 'required|string',
-            'price_dzd' => 'required|numeric|min:0',
+            // Allow raw input; we'll normalize to cents safely
+            'price_dzd' => 'required|string',
             'status' => 'required|in:available,disabled,pending,sold,cancelled',
             'attributes' => 'nullable|array',
             'attributes.*' => 'nullable|string|max:255',
@@ -336,7 +351,21 @@ class DashboardController extends Controller
         }
 
         try {
-            return DB::transaction(function () use ($request, $id, $seller) {
+            // Normalize price to cents (integer) with no separators or decimals carried over
+            $priceCents = $this->normalizePriceToCents($request->input('price_dzd'));
+            if ($priceCents === null || $priceCents < 0) {
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Invalid price format.',
+                    ], 422);
+                }
+                return redirect()->back()
+                    ->with('error', 'Invalid price format.')
+                    ->withInput();
+            }
+
+            return DB::transaction(function () use ($request, $id, $seller, $priceCents) {
                 // Fetch the account
                 $account = AccountForSale::where('id', $id)
                     ->where('seller_id', $seller->id)
@@ -346,7 +375,7 @@ class DashboardController extends Controller
                 $account->update([
                     'title' => strip_tags($request->title),
                     'description' => strip_tags($request->description),
-                    'price_dzd' => (int)($request->price_dzd * 100), // Convert to cents
+                    'price_dzd' => $priceCents, // Already normalized to cents
                     'status' => $request->status,
                 ]);
 
@@ -616,6 +645,58 @@ class DashboardController extends Controller
     public function settings()
     {
         return view('dashboard.settings');
+    }
+
+    /**
+     * Normalize a seller-entered DZD price to integer cents.
+     * Accepts values like 1000, "1,000", "1 000", "1000.00", or "1.000,50".
+     * Returns null if it cannot parse to a valid non-negative number.
+     */
+    protected function normalizePriceToCents($value): ?int
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        if (is_int($value)) {
+            return $value >= 0 ? $value * 100 : null;
+        }
+        if (is_float($value)) {
+            if ($value < 0) return null;
+            return (int) round($value * 100);
+        }
+
+        $raw = trim((string)$value);
+        $raw = str_replace("\u{00A0}", '', $raw); // remove non-breaking space
+        $raw = str_replace([' '], '', $raw); // remove regular spaces
+
+        $hasComma = strpos($raw, ',') !== false;
+        $hasDot = strpos($raw, '.') !== false;
+
+        if ($hasComma && !$hasDot) {
+            // Treat comma as decimal separator (e.g., 1000,50)
+            $normalized = str_replace('.', '', $raw); // remove potential thousand dots
+            $normalized = str_replace(',', '.', $normalized);
+        } else {
+            // Treat dot as decimal; remove comma thousand separators
+            $normalized = str_replace(',', '', $raw);
+        }
+
+        // After normalization, should be a standard decimal number
+        if (!is_numeric($normalized)) {
+            // As a fallback, keep only digits (interprets as whole DZD)
+            $digitsOnly = preg_replace('/[^0-9]/', '', $raw);
+            if ($digitsOnly === '' || !ctype_digit($digitsOnly)) {
+                return null;
+            }
+            return (int) $digitsOnly * 100;
+        }
+
+        $float = (float) $normalized;
+        if ($float < 0) {
+            return null;
+        }
+        return (int) round($float * 100);
     }
 }
 
