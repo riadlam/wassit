@@ -267,7 +267,7 @@
         <div class="flex relative gap-1 justify-between items-center pt-1">
             <div class="flex gap-x-1 items-baseline truncate">
                 <span class="text-3xl font-bold tracking-tight text-transparent bg-clip-text" style="background: linear-gradient(to left, #ffffff, rgba(255, 255, 255, 0.6)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
-                    {{ number_format($account->price_dzd, 0, '.', '') }}
+                    {{ number_format(($account->price_dzd ?? 0) / 100, 0, '.', '') }}
                 </span>
                 <span class="text-sm font-semibold leading-6" style="color: rgba(255, 255, 255, 0.6);">DZD</span>
             </div>

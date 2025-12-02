@@ -181,7 +181,7 @@
                                                     @endif
                                                 </td>
                                                 <td class="p-2.5 align-middle">
-                                                    <div class="text-white text-sm text-right">{{ number_format($account->price_dzd / 100, 2) }} DZD</div>
+                                                    <div class="text-white text-sm text-right">{{ number_format($account->price_dzd / 100, 0, '.', '') }} DZD</div>
                                                 </td>
                                                 <td class="p-2.5 align-middle">
                                                     <div class="text-gray-400 text-sm">{{ $account->created_at->diffForHumans() }}</div>
