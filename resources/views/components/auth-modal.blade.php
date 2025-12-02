@@ -111,7 +111,12 @@
                 if (result.success) {
                     this.success = result.message || 'Logged in successfully';
                     setTimeout(() => {
-                        window.location.reload();
+                        // Check if there's a redirect URL set (for pages like /apply)
+                        if (window.authRedirectUrl) {
+                            window.location.href = window.authRedirectUrl;
+                        } else {
+                            window.location.reload();
+                        }
                     }, 1000);
                 } else {
                     this.error = result.message || 'Invalid email or password';
@@ -168,7 +173,12 @@
                 if (result.success) {
                     this.success = result.message || 'Account created successfully';
                     setTimeout(() => {
-                        window.location.reload();
+                        // Check if there's a redirect URL set (for pages like /apply)
+                        if (window.authRedirectUrl) {
+                            window.location.href = window.authRedirectUrl;
+                        } else {
+                            window.location.reload();
+                        }
                     }, 1000);
                 } else {
                     this.error = result.message || 'Registration failed';

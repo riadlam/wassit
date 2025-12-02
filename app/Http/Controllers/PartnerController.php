@@ -11,36 +11,36 @@ class PartnerController extends Controller
 {
     public function apply()
     {
-        // Check if user is logged in
-        if (!Auth::check()) {
-            return redirect()->route('home')->with('error', 'Please login to apply as a seller.');
-        }
-
+        // Allow non-logged in users to see the page (login modal will handle it)
         $user = Auth::user();
-        $user->loadMissing('seller');
 
-        // Check if user already has an approved application (is already a seller)
-        if ($user->seller) {
-            return redirect()->route('account.dashboard');
-        }
+        if ($user) {
+            $user->loadMissing('seller');
 
-        // Check if user has a pending or rejected application
-        $application = SellerApplication::where('user_id', $user->id)->first();
-
-        if ($application) {
-            if ($application->status === 'approved') {
+            // Check if user already has an approved application (is already a seller)
+            if ($user->seller) {
                 return redirect()->route('account.dashboard');
             }
-            
-            // Show under review message for pending or rejected applications
-            return view('partner.apply', [
-                'hasApplication' => true,
-                'application' => $application,
-            ]);
+
+            // Check if user has a pending or rejected application
+            $application = SellerApplication::where('user_id', $user->id)->first();
+
+            if ($application) {
+                if ($application->status === 'approved') {
+                    return redirect()->route('account.dashboard');
+                }
+                
+                // Show under review message for pending or rejected applications
+                return view('partner.apply', [
+                    'hasApplication' => true,
+                    'application' => $application,
+                ]);
+            }
         }
 
         return view('partner.apply', [
             'hasApplication' => false,
+            'requiresAuth' => !$user,
         ]);
     }
 

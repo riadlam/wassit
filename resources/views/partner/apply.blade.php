@@ -27,7 +27,26 @@ use Illuminate\Support\Facades\Storage;
             <!-- Application Form -->
             <div class="rounded-xl overflow-hidden" style="background-color: rgba(14, 16, 21, 0.75); border: 1px solid #2d2c31; backdrop-blur-md;">
                 <div class="p-6 sm:p-8 lg:p-10">
-                    @if(isset($hasApplication) && $hasApplication)
+                    @if(isset($requiresAuth) && $requiresAuth)
+                        <!-- Login Required Message -->
+                        <div class="text-center py-12">
+                            <div class="mb-6">
+                                <div class="inline-flex items-center justify-center w-20 h-20 rounded-full mb-4" style="background-color: rgba(239, 68, 68, 0.1);">
+                                    <i class="fa-solid fa-lock text-4xl text-red-500"></i>
+                                </div>
+                            </div>
+                            <h2 class="text-2xl font-bold text-white mb-3">Login Required</h2>
+                            <p class="text-gray-400 text-lg mb-6">
+                                Please login or create an account to apply as a seller.
+                            </p>
+                            <button 
+                                onclick="document.getElementById('auth-modal').style.display='flex'; window.authRedirectUrl='{{ route('partner.apply') }}'"
+                                class="inline-flex items-center gap-2 px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-colors">
+                                <i class="fa-solid fa-right-to-bracket"></i>
+                                Login or Sign Up
+                            </button>
+                        </div>
+                    @elseif(isset($hasApplication) && $hasApplication)
                         <!-- Application Under Review Message -->
                         <div class="text-center py-12">
                             <div class="mb-6">
