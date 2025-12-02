@@ -78,7 +78,7 @@ class PartnerController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        SellerApplication::create([
+        $application = SellerApplication::create([
             'user_id' => $user->id,
             'full_name' => $request->full_name,
             'email' => $request->email,
@@ -109,14 +109,33 @@ class PartnerController extends Controller
                 "Experience: {$request->experience}\n" .
                 "Games: {$request->games}\n" .
                 "Preferred Location: " . ($request->preferred_location ?: '-') . "\n" .
-                "Accounts to List: {$request->account_count}";
+                "Accounts to List: {$request->account_count}\n" .
+                "Application ID: {$application->id}";
 
             $apiUrl = "https://api.telegram.org/bot{$botToken}/sendMessage";
+            $approveUrl = route('partner.application.approve', [
+                'applicationId' => $application->id,
+                'userId' => $user->id,
+                'token' => env('ADMIN_ACTION_TOKEN', 'local-dev-token'),
+            ]);
+            $rejectUrl = route('partner.application.reject', [
+                'applicationId' => $application->id,
+                'userId' => $user->id,
+                'token' => env('ADMIN_ACTION_TOKEN', 'local-dev-token'),
+            ]);
             $resp = Http::post($apiUrl, [
                 'chat_id' => $chatId,
                 'text' => $message,
                 'parse_mode' => 'HTML',
                 'disable_web_page_preview' => true,
+                'reply_markup' => [
+                    'inline_keyboard' => [
+                        [
+                            ['text' => 'Approve', 'url' => $approveUrl],
+                            ['text' => 'Reject', 'url' => $rejectUrl],
+                        ],
+                    ],
+                ],
             ]);
         } catch (\Throwable $t) {}
 
@@ -124,6 +143,60 @@ class PartnerController extends Controller
             'success' => true,
             'message' => 'Application submitted successfully! We will review it and get back to you soon.',
         ]);
+    }
+
+    public function approveApplication(Request $request, $applicationId)
+    {
+        $token = $request->query('token');
+        $userId = (int)$request->query('userId');
+        if ($token !== env('ADMIN_ACTION_TOKEN', 'local-dev-token')) {
+            return response('Forbidden', 403);
+        }
+
+        $application = SellerApplication::findOrFail($applicationId);
+        if ($application->user_id !== $userId) {
+            return response('Invalid application', 400);
+        }
+
+        // Update user role to seller and create seller row
+        $user = \App\Models\User::findOrFail($userId);
+        $user->role = 'seller';
+        $user->save();
+
+        // Create seller if not exists
+        $seller = \App\Models\Seller::firstOrCreate([
+            'user_id' => $userId,
+        ], [
+            'rating' => 0,
+            'total_sales' => 0,
+            'bio' => null,
+            'verified' => false,
+            'wallet' => 0,
+        ]);
+
+        $application->status = 'approved';
+        $application->save();
+
+        return response('Approved', 200);
+    }
+
+    public function rejectApplication(Request $request, $applicationId)
+    {
+        $token = $request->query('token');
+        $userId = (int)$request->query('userId');
+        if ($token !== env('ADMIN_ACTION_TOKEN', 'local-dev-token')) {
+            return response('Forbidden', 403);
+        }
+
+        $application = SellerApplication::findOrFail($applicationId);
+        if ($application->user_id !== $userId) {
+            return response('Invalid application', 400);
+        }
+
+        $application->status = 'rejected';
+        $application->save();
+
+        return response('Rejected', 200);
     }
 }
 

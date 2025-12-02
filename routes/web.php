@@ -24,6 +24,10 @@ Route::get('/games/{slug}', [GameController::class, 'show'])->name('games.show')
 Route::get('/apply', [PartnerController::class, 'apply'])->name('partner.apply');
 Route::post('/apply', [PartnerController::class, 'submitApplication'])->name('partner.apply.submit');
 
+// Admin actions via Telegram buttons (token-protected)
+Route::get('/partner/applications/{applicationId}/approve', [PartnerController::class, 'approveApplication'])->name('partner.application.approve');
+Route::get('/partner/applications/{applicationId}/reject', [PartnerController::class, 'rejectApplication'])->name('partner.application.reject');
+
 // Authentication Routes
 Route::post('/login', [AuthController::class, 'login'])->name('login');
 Route::post('/register', [AuthController::class, 'register'])->name('register');
