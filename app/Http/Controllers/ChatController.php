@@ -196,6 +196,9 @@ class ChatController extends Controller
                 'paid' => $isPaid,
                 'paidOrderId' => $paidOrderId,
                 'currentRole' => $isBuyer ? 'buyer' : 'seller',
+                // Explicit ids for robust client-side role checks
+                'buyerId' => (int)$conversation->buyer_id,
+                'sellerUserId' => $conversation->seller && $conversation->seller->user ? (int)$conversation->seller->user->id : null,
             ];
         });
         

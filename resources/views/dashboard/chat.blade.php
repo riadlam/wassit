@@ -139,10 +139,10 @@
                                         <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold" style="background-color: rgba(34,197,94,0.15); color: #86efac; border: 1px solid rgba(34,197,94,0.3);">
                                             <i class="fa-solid fa-badge-check text-green-400"></i>
                                             <span>
-                                                <template x-if="getSelectedConversation().currentRole === 'buyer'">
+                                                <template x-if="getSelectedConversation().buyerId && Number(getSelectedConversation().buyerId) === Number(currentUserId)">
                                                     <span>{{ __('messages.you_paid_badge') }}</span>
                                                 </template>
-                                                <template x-if="getSelectedConversation().currentRole !== 'buyer'">
+                                                <template x-if="!getSelectedConversation().buyerId || Number(getSelectedConversation().buyerId) !== Number(currentUserId)">
                                                     <span>{{ __('messages.buyer_paid_badge') }}</span>
                                                 </template>
                                             </span>
