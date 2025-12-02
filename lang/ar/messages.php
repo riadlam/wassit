@@ -100,7 +100,7 @@ return [
     'no_accounts_available' => 'لا توجد حسابات متاحة لهذه اللعبة بعد.',
     
     // Account Details Page
-    'free_warranty_and_support' => 'ضمان ودعم مجاني',
+    'free_warranty_and_support' => 'حماية الدفع الآمن - الأموال محجوزة حتى تأكيد الاستلام',
     'instant_delivery' => 'توصيل فوري',
     'gallery' => 'المعرض',
     'account_data' => 'بيانات الحساب',

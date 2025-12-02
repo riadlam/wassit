@@ -100,7 +100,7 @@ return [
     'no_accounts_available' => 'Aucun compte disponible pour ce jeu pour le moment.',
     
     // Account Details Page
-    'free_warranty_and_support' => 'Garantie et support gratuits',
+    'free_warranty_and_support' => 'Protection de Paiement Sécurisé - Fonds bloqués jusqu\'à confirmation de livraison',
     'instant_delivery' => 'Livraison instantanée',
     'gallery' => 'Galerie',
     'account_data' => 'Données du Compte',

@@ -100,7 +100,7 @@ return [
     'no_accounts_available' => 'No accounts available for this game yet.',
     
     // Account Details Page
-    'free_warranty_and_support' => 'Free warranty and support',
+    'free_warranty_and_support' => 'Secure Payment Protection - Funds held until delivery confirmed',
     'instant_delivery' => 'Instant delivery',
     'gallery' => 'Gallery',
     'account_data' => 'Account Data',
