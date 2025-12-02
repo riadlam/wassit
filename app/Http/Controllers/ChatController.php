@@ -456,7 +456,13 @@ class ChatController extends Controller
         if ($request->hasFile('attachments')) {
             foreach ($request->file('attachments') as $file) {
                 try {
-                    $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                    // Get file info before moving
+                    $originalName = $file->getClientOriginalName();
+                    $extension = $file->getClientOriginalExtension();
+                    $fileType = $file->getMimeType();
+                    $fileSize = $file->getSize();
+                    
+                    $filename = time() . '_' . uniqid() . '.' . $extension;
                     
                     // Ensure directory exists
                     $directory = public_path('storage/chat_attachments');
@@ -466,7 +472,6 @@ class ChatController extends Controller
                     
                     $file->move($directory, $filename);
                     $filePath = 'chat_attachments/' . $filename;
-                    $fileType = $file->getMimeType();
                     
                     // Generate thumbnail for images/videos if needed
                     $thumbnailPath = null;
@@ -481,15 +486,15 @@ class ChatController extends Controller
                     MessageAttachment::create([
                         'message_id' => $message->id,
                         'file_path' => $filePath,
-                        'file_name' => $file->getClientOriginalName(),
+                        'file_name' => $originalName,
                         'file_type' => $fileType,
-                        'file_size' => $file->getSize(),
+                        'file_size' => $fileSize,
                         'thumbnail_path' => $thumbnailPath,
                     ]);
                 } catch (\Throwable $e) {
                     \Log::error('Failed to save chat attachment', [
                         'error' => $e->getMessage(),
-                        'file' => $file->getClientOriginalName(),
+                        'trace' => $e->getTraceAsString(),
                     ]);
                 }
             }
