@@ -273,5 +273,14 @@ return [
     'confirm' => 'Confirmer',
     'cancel' => 'Annuler',
     'delivery_confirm_error' => 'Échec de la confirmation de livraison. Veuillez réessayer.',
+    'order_id' => 'N° de commande',
+    'account' => 'Compte',
+    'buyer' => 'Acheteur',
+    'seller' => 'Vendeur',
+    'delivery' => 'Livraison',
+    'amount' => 'Montant',
+    'date' => 'Date',
+    'actions' => 'Actions',
+    'no_orders_yet' => 'Aucune commande pour le moment.',
 ];
 

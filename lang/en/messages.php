@@ -279,5 +279,14 @@ return [
     'confirm' => 'Confirm',
     'cancel' => 'Cancel',
     'delivery_confirm_error' => 'Failed to confirm delivery. Please try again.',
+    'order_id' => 'Order ID',
+    'account' => 'Account',
+    'buyer' => 'Buyer',
+    'seller' => 'Seller',
+    'delivery' => 'Delivery',
+    'amount' => 'Amount',
+    'date' => 'Date',
+    'actions' => 'Actions',
+    'no_orders_yet' => 'No orders yet.',
 ];
 
