@@ -657,13 +657,23 @@
                                 selectedFiles: [],
                                 handleFileSelect(event) {
                                     const files = Array.from(event.target.files || []);
-                                    if (files.length + this.imageCount > this.maxImages) {
-                                        alert(`Maximum ${this.maxImages} images allowed. You can only select ${this.maxImages - this.imageCount} more.`);
+                                    const allowed = this.maxImages - this.imageCount;
+                                    if (files.length > allowed) {
+                                        alert(`Maximum ${this.maxImages} images allowed. You can only add ${allowed} more.`);
+                                        // Keep current selection; clear the input to avoid accidental replacement
                                         event.target.value = '';
                                         return;
                                     }
-                                    this.selectedFiles = files;
-                                    this.imageCount = files.length;
+                                    // Append new files to existing selection
+                                    this.selectedFiles = [...this.selectedFiles, ...files];
+                                    this.imageCount = this.selectedFiles.length;
+                                    // Sync back to the file input so form submits all selected files
+                                    const input = document.getElementById('images');
+                                    const dt = new DataTransfer();
+                                    this.selectedFiles.forEach(file => dt.items.add(file));
+                                    input.files = dt.files;
+                                    // Clear the native input to allow re-selecting the same file again if needed
+                                    event.target.value = '';
                                 },
                                 removeFile(index) {
                                     this.selectedFiles.splice(index, 1);
