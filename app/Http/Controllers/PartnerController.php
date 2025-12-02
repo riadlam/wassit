@@ -20,9 +20,9 @@ class PartnerController extends Controller
         if ($user) {
             $user->loadMissing('seller');
 
-            // Check if user already has an approved application (is already a seller)
+            // If user is already a seller, just redirect to home for now
             if ($user->seller) {
-                return redirect()->route('account.dashboard');
+                return redirect('/');
             }
 
             // Check if user has a pending or rejected application
@@ -30,7 +30,8 @@ class PartnerController extends Controller
 
             if ($application) {
                 if ($application->status === 'approved') {
-                    return redirect()->route('account.dashboard');
+                    // Approved but dashboard route not defined; redirect to home
+                    return redirect('/');
                 }
                 
                 // Show under review message for pending or rejected applications
