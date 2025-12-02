@@ -38,7 +38,7 @@
                             <!-- Coins Card -->
                             <div class="sm:rounded-xl sm:mx-0 -mx-4 border relative" style="background-color: #0e1015; border-color: #2d2c31;">
                                 <!-- Coming Soon Overlay -->
-                                <div class="absolute inset-0 bg-black/60 backdrop-blur-sm rounded-xl z-10 flex items-center justify-center">
+                                <div class="absolute inset-0 bg-black/40 backdrop-blur-[2px] rounded-xl z-10 flex items-center justify-center">
                                     <div class="text-center px-4">
                                         <i class="fa-solid fa-clock text-4xl text-blue-400 mb-2"></i>
                                         <p class="text-white font-bold text-lg">Coming Soon</p>
