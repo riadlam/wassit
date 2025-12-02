@@ -93,9 +93,9 @@ class GameController extends Controller
                     AllowedFilter::callback('price', function ($query, $value) {
                         if (strpos($value, '-') !== false) {
                             [$min, $max] = explode('-', $value);
-                            $query->whereBetween('price_dzd', [(int)$min * 100, (int)$max * 100]);
+                            $query->whereBetween('price_dzd', [(int)$min, (int)$max]);
                         } elseif (strpos($value, '+') !== false) {
-                            $min = (int)str_replace('+', '', $value) * 100;
+                            $min = (int)str_replace('+', '', $value);
                             $query->where('price_dzd', '>=', $min);
                         }
                     }),
@@ -229,11 +229,11 @@ class GameController extends Controller
                     if (strpos($value, '-') !== false) {
                         [$min, $max] = explode('-', $value);
                         $query->whereBetween('price_dzd', [
-                            (int)$min * 100, 
-                            (int)$max * 100
+                            (int)$min, 
+                            (int)$max
                         ]);
                     } elseif (strpos($value, '+') !== false) {
-                        $min = (int)str_replace('+', '', $value) * 100;
+                        $min = (int)str_replace('+', '', $value);
                         $query->where('price_dzd', '>=', $min);
                     }
                 }),

@@ -56,7 +56,7 @@ class OrderController extends Controller
                 'buyer_id' => $user->id,
                 'seller_id' => $account->seller_id,
                 'account_id' => $account_id,
-                'amount_dzd' => $account->price_dzd, // Already in cents
+                'amount_dzd' => $account->price_dzd, // Raw value
                 'status' => 'pending',
             ]);
             

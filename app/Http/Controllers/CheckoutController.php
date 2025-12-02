@@ -76,7 +76,7 @@ class CheckoutController extends Controller
             ]);
             
             // Calculate fees
-            $subtotal = $order->amount_dzd / 100; // Convert from cents to DZD
+            $subtotal = $order->amount_dzd; // Stored as raw value
             $processorFeePercent = 3.9; // 3.9% processor fee
             $processorFee = $subtotal * ($processorFeePercent / 100);
             $total = $subtotal + $processorFee;

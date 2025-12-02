@@ -117,7 +117,7 @@
                                                 id="price_dzd" 
                                                 name="price_dzd" 
                                                 step="0.01"
-                                                value="{{ number_format(($account->price_dzd ?? 0) / 100, 0, '.', '') }}"
+                                                value="{{ $account->price_dzd ?? 0 }}"
                                                 class="w-full block border-0 rounded-md shadow-sm sm:text-sm disabled:opacity-50 disabled:pointer-events-none py-2.5 pl-12 pr-4 text-white placeholder:text-gray-500 focus:ring-2 focus:ring-red-500 focus:outline-none transition-all" 
                                                 style="background-color: #1b1a1e; border: 1px solid #2d2c31;"
                                                 placeholder="16228"

@@ -523,7 +523,7 @@ if ($seller && !empty($seller->pfp)) {
                         <div class="mb-6 pb-6 border-b" style="border-color: #2d2c31;">
                             <div class="flex items-baseline gap-2 mb-2">
                                 <span class="text-3xl font-bold text-white">
-                                    {{ number_format(($account->price_dzd ?? 0) / 100, 0, '.', '') }}
+                                    {{ number_format($account->price_dzd, 0, '.', '') }}
                                 </span>
                                 <span class="text-sm font-semibold text-gray-400">DZD</span>
                             </div>

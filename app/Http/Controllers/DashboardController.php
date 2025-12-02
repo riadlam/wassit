@@ -140,7 +140,7 @@ class DashboardController extends Controller
                     'game_id' => (int)$request->game_id, // Ensure integer
                     'title' => strip_tags($request->title), // Sanitize HTML
                     'description' => strip_tags($request->description), // Sanitize HTML
-                    'price_dzd' => $priceCents, // Already normalized to cents
+                    'price_dzd' => $priceCents, // Store as-is (seller enters final value)
                     'status' => in_array($request->status, ['available', 'disabled', 'pending']) ? $request->status : 'available',
                 ]);
 
@@ -375,7 +375,7 @@ class DashboardController extends Controller
                 $account->update([
                     'title' => strip_tags($request->title),
                     'description' => strip_tags($request->description),
-                    'price_dzd' => $priceCents, // Already normalized to cents
+                    'price_dzd' => $priceCents, // Store as-is (seller enters final value)
                     'status' => $request->status,
                 ]);
 
@@ -648,8 +648,9 @@ class DashboardController extends Controller
     }
 
     /**
-     * Normalize a seller-entered DZD price to integer cents.
-     * Accepts values like 1000, "1,000", "1 000", "1000.00", or "1.000,50".
+     * Normalize a seller-entered DZD price to integer (stored as-is, no cents conversion).
+     * Removes separators like commas, spaces, and decimals.
+     * Seller enters 20 -> stores 20, seller enters 1,000 -> stores 1000.
      * Returns null if it cannot parse to a valid non-negative number.
      */
     protected function normalizePriceToCents($value): ?int
@@ -659,44 +660,22 @@ class DashboardController extends Controller
         }
 
         if (is_int($value)) {
-            return $value >= 0 ? $value * 100 : null;
-        }
-        if (is_float($value)) {
-            if ($value < 0) return null;
-            return (int) round($value * 100);
+            return $value >= 0 ? $value : null;
         }
 
         $raw = trim((string)$value);
-        $raw = str_replace("\u{00A0}", '', $raw); // remove non-breaking space
-        $raw = str_replace([' '], '', $raw); // remove regular spaces
+        // Remove all separators and spaces
+        $raw = str_replace([',', ' ', '.', "\u{00A0}"], '', $raw);
 
-        $hasComma = strpos($raw, ',') !== false;
-        $hasDot = strpos($raw, '.') !== false;
-
-        if ($hasComma && !$hasDot) {
-            // Treat comma as decimal separator (e.g., 1000,50)
-            $normalized = str_replace('.', '', $raw); // remove potential thousand dots
-            $normalized = str_replace(',', '.', $normalized);
-        } else {
-            // Treat dot as decimal; remove comma thousand separators
-            $normalized = str_replace(',', '', $raw);
-        }
-
-        // After normalization, should be a standard decimal number
-        if (!is_numeric($normalized)) {
-            // As a fallback, keep only digits (interprets as whole DZD)
-            $digitsOnly = preg_replace('/[^0-9]/', '', $raw);
-            if ($digitsOnly === '' || !ctype_digit($digitsOnly)) {
-                return null;
-            }
-            return (int) $digitsOnly * 100;
-        }
-
-        $float = (float) $normalized;
-        if ($float < 0) {
+        // Keep only digits
+        $digitsOnly = preg_replace('/[^0-9]/', '', $raw);
+        
+        if ($digitsOnly === '' || !ctype_digit($digitsOnly)) {
             return null;
         }
-        return (int) round($float * 100);
+
+        $result = (int) $digitsOnly;
+        return $result >= 0 ? $result : null;
     }
 }
 
