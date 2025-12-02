@@ -100,10 +100,11 @@ class WebhookController extends Controller
                     'paid_at' => now(),
                 ]);
 
-                // Create/find conversation and notify seller with system message
+                // Create/find conversation for this buyer/seller/account and notify seller with system message
                 $conversation = \App\Models\Conversation::firstOrCreate([
                     'buyer_id' => (int)$order->buyer_id,
                     'seller_id' => (int)$order->seller_id,
+                    'account_for_sale_id' => (int)$order->account_id,
                 ]);
 
                 $sysMsg = \App\Models\Message::create([

@@ -129,10 +129,11 @@ class PaymentController extends Controller
             $orderId = Crypt::decryptString($encryptedOrderId);
             $order = Order::with(['buyer', 'seller'])->findOrFail($orderId);
 
-            // Ensure there is a conversation between buyer and seller
+            // Ensure there is a conversation for this buyer/seller/account
             $conversation = \App\Models\Conversation::firstOrCreate([
                 'buyer_id' => (int)$order->buyer_id,
                 'seller_id' => (int)$order->seller_id,
+                'account_for_sale_id' => (int)$order->account_id,
             ]);
 
             // Post a system message notifying payment initiation success (final confirmation via webhook)
