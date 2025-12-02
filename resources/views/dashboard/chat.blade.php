@@ -356,6 +356,84 @@
                         </div>
                     </div>
                 </div>
+
+                    <!-- Confirmation Dialog Modal -->
+                    <template x-if="showConfirmDialog">
+                        <div 
+                            class="fixed inset-0 z-50 flex items-center justify-center p-4"
+                            x-transition:enter="transition ease-out duration-200"
+                            x-transition:enter-start="opacity-0"
+                            x-transition:enter-end="opacity-100"
+                            x-transition:leave="transition ease-in duration-150"
+                            x-transition:leave-start="opacity-100"
+                            x-transition:leave-end="opacity-0"
+                        >
+                            <!-- Backdrop -->
+                            <div 
+                                class="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                                @click="showConfirmDialog = false"
+                            ></div>
+                        
+                            <!-- Dialog -->
+                            <div 
+                                class="relative bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full mx-4 border border-gray-700"
+                                x-transition:enter="transition ease-out duration-200"
+                                x-transition:enter-start="opacity-0 scale-95"
+                                x-transition:enter-end="opacity-100 scale-100"
+                                x-transition:leave="transition ease-in duration-150"
+                                x-transition:leave-start="opacity-100 scale-100"
+                                x-transition:leave-end="opacity-0 scale-95"
+                                @click.stop
+                            >
+                                <!-- Header -->
+                                <div class="p-6 pb-4">
+                                    <div class="flex items-center gap-4">
+                                        <div class="flex-shrink-0 w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center">
+                                            <i class="fa-solid fa-circle-check text-blue-400 text-xl"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="text-lg font-bold text-white">{{ __('messages.confirm_delivery_title') }}</h3>
+                                            <p class="text-sm text-gray-400 mt-0.5">{{ __('messages.confirm_delivery_subtitle') }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            
+                                <!-- Body -->
+                                <div class="px-6 pb-6">
+                                    <p class="text-gray-300 text-sm leading-relaxed">
+                                        {{ __('messages.confirm_delivery_dialog') }}
+                                    </p>
+                                    <div class="mt-4 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/30">
+                                        <div class="flex gap-2">
+                                            <i class="fa-solid fa-triangle-exclamation text-yellow-400 mt-0.5 flex-shrink-0"></i>
+                                            <p class="text-xs text-yellow-200">
+                                                {{ __('messages.confirm_delivery_warning') }}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            
+                                <!-- Footer -->
+                                <div class="px-6 pb-6 flex flex-col sm:flex-row gap-3">
+                                    <button 
+                                        @click="showConfirmDialog = false"
+                                        class="flex-1 px-4 py-2.5 rounded-lg font-semibold text-sm transition-all duration-200 bg-gray-700 text-gray-300 hover:bg-gray-600 active:scale-95"
+                                    >
+                                        <i class="fa-solid fa-xmark mr-1.5"></i>
+                                        {{ __('messages.cancel') }}
+                                    </button>
+                                    <button 
+                                        @click="confirmDelivery()"
+                                        class="flex-1 px-4 py-2.5 rounded-lg font-semibold text-sm transition-all duration-200 shadow-lg hover:shadow-xl active:scale-95"
+                                        style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white;"
+                                    >
+                                        <i class="fa-solid fa-check mr-1.5"></i>
+                                        {{ __('messages.confirm') }}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
             </div>
         </div>
     </div>
@@ -841,84 +919,6 @@ function chatData() {
     }
 }
 </script>
-
-<!-- Confirmation Dialog Modal -->
-<template x-if="showConfirmDialog">
-    <div 
-        class="fixed inset-0 z-50 flex items-center justify-center p-4"
-        x-transition:enter="transition ease-out duration-200"
-        x-transition:enter-start="opacity-0"
-        x-transition:enter-end="opacity-100"
-        x-transition:leave="transition ease-in duration-150"
-        x-transition:leave-start="opacity-100"
-        x-transition:leave-end="opacity-0"
-    >
-        <!-- Backdrop -->
-        <div 
-            class="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            @click="showConfirmDialog = false"
-        ></div>
-        
-        <!-- Dialog -->
-        <div 
-            class="relative bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full mx-4 border border-gray-700"
-            x-transition:enter="transition ease-out duration-200"
-            x-transition:enter-start="opacity-0 scale-95"
-            x-transition:enter-end="opacity-100 scale-100"
-            x-transition:leave="transition ease-in duration-150"
-            x-transition:leave-start="opacity-100 scale-100"
-            x-transition:leave-end="opacity-0 scale-95"
-            @click.stop
-        >
-            <!-- Header -->
-            <div class="p-6 pb-4">
-                <div class="flex items-center gap-4">
-                    <div class="flex-shrink-0 w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center">
-                        <i class="fa-solid fa-circle-check text-blue-400 text-xl"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-lg font-bold text-white">{{ __('messages.confirm_delivery_title') }}</h3>
-                        <p class="text-sm text-gray-400 mt-0.5">{{ __('messages.confirm_delivery_subtitle') }}</p>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Body -->
-            <div class="px-6 pb-6">
-                <p class="text-gray-300 text-sm leading-relaxed">
-                    {{ __('messages.confirm_delivery_dialog') }}
-                </p>
-                <div class="mt-4 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/30">
-                    <div class="flex gap-2">
-                        <i class="fa-solid fa-triangle-exclamation text-yellow-400 mt-0.5 flex-shrink-0"></i>
-                        <p class="text-xs text-yellow-200">
-                            {{ __('messages.confirm_delivery_warning') }}
-                        </p>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Footer -->
-            <div class="px-6 pb-6 flex flex-col sm:flex-row gap-3">
-                <button 
-                    @click="showConfirmDialog = false"
-                    class="flex-1 px-4 py-2.5 rounded-lg font-semibold text-sm transition-all duration-200 bg-gray-700 text-gray-300 hover:bg-gray-600 active:scale-95"
-                >
-                    <i class="fa-solid fa-xmark mr-1.5"></i>
-                    {{ __('messages.cancel') }}
-                </button>
-                <button 
-                    @click="confirmDelivery()"
-                    class="flex-1 px-4 py-2.5 rounded-lg font-semibold text-sm transition-all duration-200 shadow-lg hover:shadow-xl active:scale-95"
-                    style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white;"
-                >
-                    <i class="fa-solid fa-check mr-1.5"></i>
-                    {{ __('messages.confirm') }}
-                </button>
-            </div>
-        </div>
-    </div>
-</template>
 
 @endpush
 
