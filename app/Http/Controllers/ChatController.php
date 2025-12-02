@@ -455,29 +455,43 @@ class ChatController extends Controller
         // Handle file attachments
         if ($request->hasFile('attachments')) {
             foreach ($request->file('attachments') as $file) {
-                $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-                $file->move(public_path('storage/chat_attachments'), $filename);
-                $filePath = 'chat_attachments/' . $filename;
-                $fileType = $file->getMimeType();
-                
-                // Generate thumbnail for images/videos if needed
-                $thumbnailPath = null;
-                if (str_starts_with($fileType, 'image/')) {
-                    // For images, we can use the same file as thumbnail
-                    $thumbnailPath = $filePath;
-                } elseif (str_starts_with($fileType, 'video/')) {
-                    // TODO: Generate video thumbnail using FFmpeg or similar
-                    // For now, leave as null
+                try {
+                    $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                    
+                    // Ensure directory exists
+                    $directory = public_path('storage/chat_attachments');
+                    if (!file_exists($directory)) {
+                        mkdir($directory, 0755, true);
+                    }
+                    
+                    $file->move($directory, $filename);
+                    $filePath = 'chat_attachments/' . $filename;
+                    $fileType = $file->getMimeType();
+                    
+                    // Generate thumbnail for images/videos if needed
+                    $thumbnailPath = null;
+                    if (str_starts_with($fileType, 'image/')) {
+                        // For images, we can use the same file as thumbnail
+                        $thumbnailPath = $filePath;
+                    } elseif (str_starts_with($fileType, 'video/')) {
+                        // TODO: Generate video thumbnail using FFmpeg or similar
+                        // For now, leave as null
+                    }
+                    
+                    MessageAttachment::create([
+                        'message_id' => $message->id,
+                        'file_path' => $filePath,
+                        'file_name' => $file->getClientOriginalName(),
+                        'file_type' => $fileType,
+                        'file_size' => $file->getSize(),
+                        'thumbnail_path' => $thumbnailPath,
+                    ]);
+                } catch (\Throwable $e) {
+                    \Log::error('Failed to save chat attachment', [
+                        'error' => $e->getMessage(),
+                        'file' => $file->getClientOriginalName(),
+                    ]);
                 }
-                
-                MessageAttachment::create([
-                    'message_id' => $message->id,
-                    'file_path' => $filePath,
-                    'file_name' => $file->getClientOriginalName(),
-                    'file_type' => $fileType,
-                    'file_size' => $file->getSize(),
-                    'thumbnail_path' => $thumbnailPath,
-                ]);
             }
         }
         
