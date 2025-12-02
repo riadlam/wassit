@@ -288,10 +288,12 @@ class PartnerController extends Controller
                     ]);
                     $user->role = 'seller';
                     $user->save();
+                    // Seller model uses primary key `id` equal to `users.id`
                     \App\Models\Seller::firstOrCreate([
-                        'user_id' => $userId,
+                        'id' => $userId,
                     ], [
-                        'rating' => 0,
+                        'pfp' => null,
+                        'rating' => 5.0,
                         'total_sales' => 0,
                         'bio' => null,
                         'verified' => false,
