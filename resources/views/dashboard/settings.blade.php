@@ -423,17 +423,16 @@
                 
                 <!-- Edit Profile Modal -->
                 <div id="editModal" 
-                     class="fixed inset-0 z-50 overflow-y-auto" 
+                     class="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center" 
                      style="display: none;">
                     <!-- Backdrop -->
                     <div class="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity"
                          onclick="document.getElementById('editModal').style.display='none'"></div>
                     
                     <!-- Modal -->
-                    <div class="flex min-h-full items-center justify-center p-4">
-                        <div class="relative w-full max-w-md transform rounded-xl border shadow-2xl transition-all"
-                             style="background-color: #0e1015; border-color: #2d2c31;"
-                             @click.stop>
+                    <div class="relative w-full max-w-md transform rounded-xl border shadow-2xl transition-all m-4"
+                         style="background-color: #0e1015; border-color: #2d2c31;"
+                         onclick="event.stopPropagation()">
                             
                             <form action="{{ route('account.settings.update-profile') }}" 
                                   method="POST" 
@@ -541,7 +540,6 @@
                         </div>
                     </div>
                 </div>
-            </div>
         </div>
     </div>
 @endsection
