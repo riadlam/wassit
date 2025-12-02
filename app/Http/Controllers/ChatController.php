@@ -289,6 +289,15 @@ class ChatController extends Controller
             $formattedType = 'system';
             if ($message->message_type !== 'system') {
                 $formattedType = $isSender ? 'user' : 'seller';
+                // Fallback alignment correction for legacy rows where sender_id may not match user ids
+                // If current user is the seller and the message was sent by seller, force 'user'
+                if ($formattedType === 'seller' && $conversation->seller && (int)$conversation->seller->user_id === (int)$user->id && $senderType === 'seller') {
+                    $formattedType = 'user';
+                }
+                // If current user is the buyer and the message was sent by buyer, force 'user'
+                if ($formattedType === 'seller' && (int)$conversation->buyer_id === (int)$user->id && $senderType === 'buyer') {
+                    $formattedType = 'user';
+                }
             }
 
             $formatted = [
