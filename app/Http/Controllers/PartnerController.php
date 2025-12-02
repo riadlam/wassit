@@ -113,16 +113,7 @@ class PartnerController extends Controller
                 "Application ID: {$application->id}";
 
             $apiUrl = "https://api.telegram.org/bot{$botToken}/sendMessage";
-            $approveUrl = route('partner.application.approve', [
-                'applicationId' => $application->id,
-                'userId' => $user->id,
-                'token' => env('ADMIN_ACTION_TOKEN', 'local-dev-token'),
-            ]);
-            $rejectUrl = route('partner.application.reject', [
-                'applicationId' => $application->id,
-                'userId' => $user->id,
-                'token' => env('ADMIN_ACTION_TOKEN', 'local-dev-token'),
-            ]);
+            // Use callback_data for webhook handling
             $resp = Http::post($apiUrl, [
                 'chat_id' => $chatId,
                 'text' => $message,
@@ -131,8 +122,24 @@ class PartnerController extends Controller
                 'reply_markup' => [
                     'inline_keyboard' => [
                         [
-                            ['text' => "✅ Approve", 'url' => $approveUrl],
-                            ['text' => "❌ Reject", 'url' => $rejectUrl],
+                            [
+                                'text' => "✅ Approve",
+                                'callback_data' => json_encode([
+                                    'type' => 'application_action',
+                                    'action' => 'approve',
+                                    'application_id' => $application->id,
+                                    'user_id' => $user->id,
+                                ]),
+                            ],
+                            [
+                                'text' => "❌ Reject",
+                                'callback_data' => json_encode([
+                                    'type' => 'application_action',
+                                    'action' => 'reject',
+                                    'application_id' => $application->id,
+                                    'user_id' => $user->id,
+                                ]),
+                            ],
                         ],
                     ],
                 ],
@@ -154,6 +161,125 @@ class PartnerController extends Controller
         ]);
     }
 
+    /**
+     * Telegram webhook to process inline keyboard callbacks for approve/reject.
+     */
+    public function telegramWebhook(Request $request)
+    {
+        $botToken = env('TELEGRAM_BOT_TOKEN', '');
+        if (!$botToken) {
+            return response()->json(['ok' => false], 400);
+        }
+
+        $update = $request->all();
+        if (!isset($update['callback_query'])) {
+            return response()->json(['ok' => true]);
+        }
+
+        $callback = $update['callback_query'];
+        $fromId = $callback['from']['id'] ?? null;
+        $message = $callback['message'] ?? null;
+        $data = $callback['data'] ?? '';
+
+        // Only accept actions from configured admin chat/user
+        $adminId = (int)env('TELEGRAM_CHAT_ID', 0);
+        if ($adminId && (int)$fromId !== $adminId) {
+            // Ignore actions from non-admin IDs
+            return response()->json(['ok' => true]);
+        }
+
+        // Decode callback data
+        try {
+            $payload = json_decode($data, true, 512, JSON_THROW_ON_ERROR);
+        } catch (\Throwable $t) {
+            return response()->json(['ok' => false], 400);
+        }
+
+        if (($payload['type'] ?? '') !== 'application_action') {
+            return response()->json(['ok' => true]);
+        }
+
+        $action = $payload['action'] ?? '';
+        $applicationId = (int)($payload['application_id'] ?? 0);
+        $userId = (int)($payload['user_id'] ?? 0);
+
+        $application = SellerApplication::find($applicationId);
+        if (!$application || $application->user_id !== $userId) {
+            return response()->json(['ok' => false, 'error' => 'Invalid application'], 400);
+        }
+
+        if ($action === 'approve') {
+            // Update user role and create seller
+            $user = \App\Models\User::findOrFail($userId);
+            $user->role = 'seller';
+            $user->save();
+
+            \App\Models\Seller::firstOrCreate([
+                'user_id' => $userId,
+            ], [
+                'rating' => 0,
+                'total_sales' => 0,
+                'bio' => null,
+                'verified' => false,
+                'wallet' => 0,
+            ]);
+
+            $application->status = 'approved';
+            $application->save();
+        } elseif ($action === 'reject') {
+            $application->status = 'rejected';
+            $application->save();
+        }
+
+        // Edit original message to reflect status
+        $chatId = env('TELEGRAM_CHAT_ID', '');
+        $messageId = $application->telegram_message;
+        $apiEdit = "https://api.telegram.org/bot{$botToken}/editMessageText";
+
+        // Build updated text with status
+        $statusEmoji = $application->status === 'approved' ? '✅' : '❌';
+        $statusLabel = ucfirst($application->status);
+        $newText = (
+            "New Seller Application\n" .
+            "User ID: {$userId}\n" .
+            "Name: {$application->full_name}\n" .
+            "Email: {$application->email}\n" .
+            "Phone: {$application->phone}\n" .
+            "Country: {$application->country}\n" .
+            "Business: " . ($application->business_name ?: '-') . "\n" .
+            "Website: " . ($application->website ?: '-') . "\n" .
+            "Experience: {$application->experience}\n" .
+            "Games: {$application->games}\n" .
+            "Preferred Location: " . ($application->preferred_location ?: '-') . "\n" .
+            "Accounts to List: {$application->account_count}\n" .
+            "Application ID: {$application->id}\n" .
+            "Status: {$statusLabel} {$statusEmoji}"
+        );
+
+        try {
+            if ($chatId && $messageId) {
+                Http::post($apiEdit, [
+                    'chat_id' => $chatId,
+                    'message_id' => (int)$messageId,
+                    'text' => $newText,
+                    'parse_mode' => 'HTML',
+                    'disable_web_page_preview' => true,
+                ]);
+            }
+        } catch (\Throwable $t) {}
+
+        // Answer callback query to remove loading in Telegram client
+        $apiAnswer = "https://api.telegram.org/bot{$botToken}/answerCallbackQuery";
+        try {
+            Http::post($apiAnswer, [
+                'callback_query_id' => $callback['id'] ?? '',
+                'text' => $action === 'approve' ? 'Approved ✅' : 'Rejected ❌',
+                'show_alert' => false,
+            ]);
+        } catch (\Throwable $t) {}
+
+        return response()->json(['ok' => true]);
+    }
     public function approveApplication(Request $request, $applicationId)
     {
         $token = $request->query('token');

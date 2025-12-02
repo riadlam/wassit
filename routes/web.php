@@ -28,6 +28,11 @@ Route::post('/apply', [PartnerController::class, 'submitApplication'])->name('pa
 Route::get('/partner/applications/{applicationId}/approve', [PartnerController::class, 'approveApplication'])->name('partner.application.approve');
 Route::get('/partner/applications/{applicationId}/reject', [PartnerController::class, 'rejectApplication'])->name('partner.application.reject');
 
+// Telegram webhook for inline keyboard callbacks (no CSRF)
+Route::post('/telegram/webhook', [PartnerController::class, 'telegramWebhook'])
+    ->name('telegram.webhook')
+    ->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
+
 // Authentication Routes
 Route::post('/login', [AuthController::class, 'login'])->name('login');
 Route::post('/register', [AuthController::class, 'register'])->name('register');
