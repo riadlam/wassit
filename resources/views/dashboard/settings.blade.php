@@ -29,7 +29,7 @@
                 </div>
                 
                 <!-- Settings Content -->
-                <div class="mt-8" x-data="{ activeTab: 'general' }">
+                <div class="mt-8" x-data="{ activeTab: 'general', showEditModal: false, uploading: false }">
                     <!-- Tabs -->
                     <div class="mb-4">
                         <div class="flex overflow-x-auto -mb-8 pb-8" style="scrollbar-width: none; -ms-overflow-style: none;">
@@ -119,36 +119,38 @@
                             <div class="sm:rounded-xl sm:mx-0 -mx-4 border" style="background-color: #0e1015; border-color: #2d2c31;">
                                 <div class="space-y-1.5 px-4 sm:px-6 border-b sm:rounded-t-xl flex flex-row items-center justify-between py-3" style="border-color: #2d2c31; background-color: rgba(27, 26, 30, 0.2);">
                                     <h3 class="font-semibold font-display leading-none text-white">User Information</h3>
-                                    <button type="button" class="inline-flex items-center justify-center transition-colors focus:outline focus:outline-offset-2 focus-visible:outline outline-none disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden font-medium active:translate-y-px whitespace-nowrap py-2 px-4 text-sm rounded-md ring-1 hover:bg-gray-800/50 text-white focus:outline-secondary" style="background-color: rgba(27, 26, 30, 0.5); border-color: #2d2c31;">
+                                    @if($seller)
+                                    <button type="button" @click="showEditModal = true" class="inline-flex items-center justify-center transition-colors focus:outline focus:outline-offset-2 focus-visible:outline outline-none disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden font-medium active:translate-y-px whitespace-nowrap py-2 px-4 text-sm rounded-md ring-1 hover:bg-gray-800/50 text-white focus:outline-secondary" style="background-color: rgba(27, 26, 30, 0.5); border-color: #2d2c31;">
                                         <i class="mr-1.5 fa-solid fa-pencil"></i> Edit Profile
                                     </button>
+                                    @endif
                                 </div>
                                 <div class="px-0 sm:px-6 pt-0">
                                     <div class="grid grid-cols-2 lg:grid-cols-3">
                                         <div class="px-4 py-6 sm:col-span-1 sm:px-0">
                                             <dt class="text-sm font-medium capitalize text-white">Username</dt>
-                                            <dd class="mt-1 text-sm leading-6 text-gray-400 sm:col-span-2 sm:mt-0">saminia laamari</dd>
-                                        </div>
-                                        <div class="px-4 py-6 sm:col-span-1 sm:px-0">
-                                            <dt class="text-sm font-medium capitalize text-white">Handle</dt>
-                                            <dd class="mt-1 text-sm leading-6 text-gray-400 sm:col-span-2 sm:mt-0">saminia-laamari</dd>
-                                        </div>
-                                        <div class="px-4 py-6 sm:col-span-1 sm:px-0">
-                                            <dt class="text-sm font-medium capitalize text-white">User ID</dt>
-                                            <dd class="mt-1 text-sm leading-6 text-gray-400 sm:col-span-2 sm:mt-0">#763938</dd>
+                                            <dd class="mt-1 text-sm leading-6 text-gray-400 sm:col-span-2 sm:mt-0">{{ $user->name }}</dd>
                                         </div>
                                         <div class="px-4 py-6 sm:col-span-1 sm:px-0">
                                             <dt class="text-sm font-medium capitalize text-white">Email address</dt>
-                                            <dd class="mt-1 text-sm leading-6 text-gray-400 sm:col-span-2 sm:mt-0">asminvfs12@gmail.com</dd>
+                                            <dd class="mt-1 text-sm leading-6 text-gray-400 sm:col-span-2 sm:mt-0">{{ $user->email }}</dd>
                                         </div>
                                         <div class="px-4 py-6 sm:col-span-1 sm:px-0">
-                                            <dt class="text-sm font-medium capitalize text-white">Languages</dt>
-                                            <dd class="mt-1 text-sm leading-6 text-gray-400 sm:col-span-2 sm:mt-0">_</dd>
+                                            <dt class="text-sm font-medium capitalize text-white">User ID</dt>
+                                            <dd class="mt-1 text-sm leading-6 text-gray-400 sm:col-span-2 sm:mt-0">#{{ $user->id }}</dd>
                                         </div>
+                                        @if($seller)
                                         <div class="px-4 py-6 sm:col-span-1 sm:px-0">
-                                            <dt class="text-sm font-medium capitalize text-white">Games</dt>
-                                            <dd class="mt-1 text-sm leading-6 text-gray-400 sm:col-span-2 sm:mt-0">_</dd>
+                                            <dt class="text-sm font-medium capitalize text-white">Profile Picture</dt>
+                                            <dd class="mt-1 text-sm leading-6 text-gray-400 sm:col-span-2 sm:mt-0">
+                                                @if($seller->pfp)
+                                                    <img src="{{ $seller->pfp }}" alt="Profile" class="w-12 h-12 rounded-full object-cover border-2" style="border-color: #2d2c31;">
+                                                @else
+                                                    <span class="text-gray-500">No profile picture</span>
+                                                @endif
+                                            </dd>
                                         </div>
+                                        @endif
                                     </div>
                                 </div>
                             </div>
@@ -426,6 +428,133 @@
                         </div>
                     </div>
                 </div>
+                
+                <!-- Edit Profile Modal (Sellers Only) -->
+                @if($seller)
+                <div x-show="showEditModal" 
+                     x-cloak
+                     class="fixed inset-0 z-50 overflow-y-auto" 
+                     style="display: none;">
+                    <!-- Backdrop -->
+                    <div class="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity"
+                         @click="showEditModal = false"></div>
+                    
+                    <!-- Modal -->
+                    <div class="flex min-h-full items-center justify-center p-4">
+                        <div class="relative w-full max-w-md transform rounded-xl border shadow-2xl transition-all"
+                             style="background-color: #0e1015; border-color: #2d2c31;"
+                             @click.stop>
+                            
+                            <form action="{{ route('account.settings.update-profile') }}" 
+                                  method="POST" 
+                                  enctype="multipart/form-data"
+                                  @submit="uploading = true">
+                                @csrf
+                                
+                                <!-- Header -->
+                                <div class="flex items-center justify-between px-6 py-4 border-b" style="border-color: #2d2c31; background-color: rgba(27, 26, 30, 0.5);">
+                                    <div class="flex items-center gap-3">
+                                        <div class="flex items-center justify-center w-10 h-10 rounded-full" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">
+                                            <i class="fa-solid fa-user-edit text-white"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="text-lg font-semibold text-white">Edit Profile</h3>
+                                            <p class="text-xs text-gray-400">Update your name and profile picture</p>
+                                        </div>
+                                    </div>
+                                    <button type="button" 
+                                            @click="showEditModal = false"
+                                            class="text-gray-400 hover:text-white transition-colors">
+                                        <i class="fa-solid fa-times text-xl"></i>
+                                    </button>
+                                </div>
+                                
+                                <!-- Body -->
+                                <div class="px-6 py-6 space-y-6">
+                                    <!-- Success/Error Messages -->
+                                    @if(session('success'))
+                                    <div class="p-3 rounded-lg border" style="background-color: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.3);">
+                                        <p class="text-sm text-green-400">{{ session('success') }}</p>
+                                    </div>
+                                    @endif
+                                    
+                                    @if(session('error'))
+                                    <div class="p-3 rounded-lg border" style="background-color: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3);">
+                                        <p class="text-sm text-red-400">{{ session('error') }}</p>
+                                    </div>
+                                    @endif
+                                    
+                                    <!-- Name Input -->
+                                    <div>
+                                        <label class="block text-sm font-medium text-white mb-2">
+                                            <i class="fa-solid fa-user mr-2"></i>Name
+                                        </label>
+                                        <input type="text" 
+                                               name="name" 
+                                               value="{{ old('name', $user->name) }}"
+                                               required
+                                               class="w-full px-4 py-2.5 rounded-lg border text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                                               style="background-color: rgba(27, 26, 30, 0.5); border-color: #2d2c31;"
+                                               placeholder="Enter your name">
+                                        @error('name')
+                                        <p class="mt-1 text-xs text-red-400">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+                                    
+                                    <!-- Current Profile Picture -->
+                                    @if($seller->pfp)
+                                    <div>
+                                        <label class="block text-sm font-medium text-white mb-2">Current Profile Picture</label>
+                                        <img src="{{ $seller->pfp }}" 
+                                             alt="Current Profile" 
+                                             class="w-24 h-24 rounded-full object-cover border-2"
+                                             style="border-color: #2d2c31;">
+                                    </div>
+                                    @endif
+                                    
+                                    <!-- Profile Picture Upload -->
+                                    <div>
+                                        <label class="block text-sm font-medium text-white mb-2">
+                                            <i class="fa-solid fa-camera mr-2"></i>Profile Picture
+                                        </label>
+                                        <input type="file" 
+                                               name="pfp" 
+                                               accept="image/*"
+                                               class="w-full px-4 py-2.5 rounded-lg border text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 file:cursor-pointer"
+                                               style="background-color: rgba(27, 26, 30, 0.5); border-color: #2d2c31;">
+                                        <p class="mt-1 text-xs text-gray-400">Accepted: JPG, PNG, GIF, WEBP (Max 2MB)</p>
+                                        @error('pfp')
+                                        <p class="mt-1 text-xs text-red-400">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+                                </div>
+                                
+                                <!-- Footer -->
+                                <div class="flex items-center justify-end gap-3 px-6 py-4 border-t" style="border-color: #2d2c31; background-color: rgba(27, 26, 30, 0.3);">
+                                    <button type="button" 
+                                            @click="showEditModal = false"
+                                            :disabled="uploading"
+                                            class="px-4 py-2 text-sm font-medium rounded-lg transition-colors text-gray-400 hover:text-white hover:bg-gray-800/50"
+                                            style="background-color: rgba(27, 26, 30, 0.5);">
+                                        Cancel
+                                    </button>
+                                    <button type="submit"
+                                            :disabled="uploading"
+                                            class="px-6 py-2 text-sm font-medium rounded-lg text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                            style="background: linear-gradient(135deg, #3b82f6, #2563eb);">
+                                        <span x-show="!uploading">
+                                            <i class="fa-solid fa-save mr-2"></i>Save Changes
+                                        </span>
+                                        <span x-show="uploading">
+                                            <i class="fa-solid fa-spinner fa-spin mr-2"></i>Saving...
+                                        </span>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                @endif
             </div>
         </div>
     </div>

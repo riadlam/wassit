@@ -10,6 +10,7 @@ class Seller extends Model
 {
     protected $fillable = [
         'id',
+        'pfp',
         'rating',
         'total_sales',
         'bio',

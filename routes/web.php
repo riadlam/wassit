@@ -63,6 +63,7 @@ Route::prefix('account')->name('account.')->middleware('auth')->group(function (
     });
     
     Route::get('/settings', [DashboardController::class, 'settings'])->name('settings');
+    Route::post('/settings/update-profile', [DashboardController::class, 'updateProfile'])->name('settings.update-profile');
 });
 
 // Order creation route (web-based, uses session auth) - must be authenticated

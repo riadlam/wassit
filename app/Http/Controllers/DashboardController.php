@@ -731,7 +731,41 @@ class DashboardController extends Controller
         // Get wallet balance (sellers only)
         $walletBalance = $seller ? ($seller->wallet ?? 0) : 0;
         
-        return view('dashboard.settings', compact('walletBalance'));
+        return view('dashboard.settings', compact('walletBalance', 'user', 'seller'));
+    }
+
+    public function updateProfile(Request $request)
+    {
+        $user = Auth::user();
+        $seller = $user->seller;
+
+        // Only sellers can update profile
+        if (!$seller) {
+            return back()->with('error', 'Only sellers can update profile information.');
+        }
+
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'pfp' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+        ]);
+
+        // Update name
+        $user->update([
+            'name' => $request->name,
+        ]);
+
+        // Handle profile picture upload
+        if ($request->hasFile('pfp')) {
+            $file = $request->file('pfp');
+            $filename = time() . '_' . $file->getClientOriginalName();
+            $path = $file->storeAs('profile_pictures', $filename, 'public');
+            
+            $seller->update([
+                'pfp' => '/storage/' . $path,
+            ]);
+        }
+
+        return back()->with('success', 'Profile updated successfully!');
     }
 
     /**
