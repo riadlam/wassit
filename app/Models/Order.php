@@ -14,6 +14,7 @@ class Order extends Model
         'account_id',
         'amount_dzd',
         'status',
+        'delivery_status',
         'chargily_checkout_id',
         'chargily_payment_id',
         'paid_at',

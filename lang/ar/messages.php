@@ -260,7 +260,13 @@ return [
     'search_conversations' => 'البحث في المحادثات',
     'loading' => 'جاري التحميل',
     // Chat Paid Badges
-    'you_paid_badge' => 'لقد دفعت — يرجى تأكيد استلام الحساب',
-    'buyer_paid_badge' => 'المشتري دفع — يرجى متابعة تسليم الحساب',
+    'you_paid_badge' => 'لقد دفعت — يرجى انتظار التسليم',
+    'buyer_paid_badge' => 'المشتري دفع — يرجى المتابعة لتسليم الحساب',
+    'delivery_confirmed_buyer' => 'تم تأكيد التسليم — اكتملت المعاملة',
+    'delivery_confirmed_seller' => 'أكد المشتري التسليم — اكتملت المعاملة',
+    'confirm_delivery' => 'تأكيد التسليم',
+    'confirming' => 'جاري التأكيد...',
+    'confirm_delivery_dialog' => 'هل أنت متأكد من أنك تلقيت الحساب وأنه يعمل بشكل صحيح؟ لا يمكن التراجع عن هذا الإجراء.',
+    'delivery_confirm_error' => 'فشل تأكيد التسليم. الرجاء المحاولة مرة أخرى.',
 ];
 

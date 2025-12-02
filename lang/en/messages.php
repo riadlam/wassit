@@ -266,7 +266,13 @@ return [
     'loading' => 'Loading',
     'login_here' => 'Login here',
     // Chat Paid Badges
-    'you_paid_badge' => 'You paid — please confirm receiving the account',
+    'you_paid_badge' => 'You paid — please await delivery',
     'buyer_paid_badge' => 'Buyer paid — please proceed to deliver the account',
+    'delivery_confirmed_buyer' => 'Delivery confirmed — Transaction complete',
+    'delivery_confirmed_seller' => 'Buyer confirmed delivery — Transaction complete',
+    'confirm_delivery' => 'Confirm Delivery',
+    'confirming' => 'Confirming...',
+    'confirm_delivery_dialog' => 'Are you sure you received the account and it\'s working correctly? This action cannot be undone.',
+    'delivery_confirm_error' => 'Failed to confirm delivery. Please try again.',
 ];
 

@@ -164,6 +164,7 @@ class ChatController extends Controller
             // Determine paid status: an order exists for this account by this buyer and is completed
             $isPaid = false;
             $paidOrderId = null;
+            $deliveryStatus = null;
             if ($conversation->accountForSale) {
                 $orderQuery = Order::where('account_id', $conversation->accountForSale->id)
                     ->where('buyer_id', $conversation->buyer_id)
@@ -172,6 +173,7 @@ class ChatController extends Controller
                 if ($paidOrder) {
                     $isPaid = true;
                     $paidOrderId = $paidOrder->id;
+                    $deliveryStatus = $paidOrder->delivery_status;
                 }
             }
 
@@ -195,6 +197,7 @@ class ChatController extends Controller
                 'status' => 'offline', // TODO: Implement online status
                 'paid' => $isPaid,
                 'paidOrderId' => $paidOrderId,
+                'deliveryStatus' => $deliveryStatus,
                 'currentRole' => $isBuyer ? 'buyer' : 'seller',
                 // Explicit ids for robust client-side role checks
                 'buyerId' => (int)$conversation->buyer_id,
@@ -680,6 +683,83 @@ class ChatController extends Controller
         // Return the actual content (text), not attachment placeholders
         // Attachments are handled separately in the attachments array
         return $message->content ?? '';
+    }
+
+    /**
+     * Confirm delivery of an order by the buyer
+     */
+    public function confirmDelivery(Request $request, $conversationId)
+    {
+        $user = Auth::user();
+        $user->loadMissing('seller');
+
+        $conversation = Conversation::with(['seller', 'accountForSale'])->findOrFail($conversationId);
+        
+        // Only buyer can confirm delivery
+        if ((int)$conversation->buyer_id !== (int)$user->id) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        // Find the completed order for this conversation
+        if (!$conversation->accountForSale) {
+            return response()->json(['error' => 'No account linked to this conversation'], 404);
+        }
+
+        $order = Order::where('account_id', $conversation->accountForSale->id)
+            ->where('buyer_id', $conversation->buyer_id)
+            ->where('status', 'completed')
+            ->latest('id')
+            ->first();
+
+        if (!$order) {
+            return response()->json(['error' => 'No completed order found'], 404);
+        }
+
+        if ($order->delivery_status === 'delivered') {
+            return response()->json(['error' => 'Delivery already confirmed'], 400);
+        }
+
+        // Update delivery status
+        $order->update([
+            'delivery_status' => 'delivered',
+        ]);
+
+        // Create system message
+        $sysMsg = \App\Models\Message::create([
+            'conversation_id' => $conversation->id,
+            'sender_id' => null,
+            'sender_type' => 'system',
+            'message_type' => 'text',
+            'content' => 'Buyer confirmed account delivery for Order #' . $order->id . '. Transaction completed successfully.',
+        ]);
+
+        try {
+            $conversation->last_message_at = now();
+            $conversation->save();
+        } catch (\Throwable $t) {}
+
+        // Broadcast system message
+        $broadcastMessage = [
+            'id' => $sysMsg->id,
+            'type' => 'system',
+            'content' => $sysMsg->content,
+            'timestamp' => 'Just now',
+            'read' => true,
+        ];
+        event(new \App\Events\MessageSent($conversation, $broadcastMessage));
+
+        // Broadcast delivery status update
+        event(new \App\Events\PaymentStatusUpdated($conversation, [
+            'paid' => true,
+            'orderId' => $order->id,
+            'deliveryStatus' => 'delivered',
+        ]));
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Delivery confirmed successfully',
+            'deliveryStatus' => 'delivered',
+        ]);
     }
 
     /**

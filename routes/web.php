@@ -45,6 +45,7 @@ Route::prefix('account')->name('account.')->middleware('auth')->group(function (
         Route::get('/find-conversation', [\App\Http\Controllers\ChatController::class, 'findConversation'])->name('find');
         Route::post('/conversations', [\App\Http\Controllers\ChatController::class, 'createConversation'])->name('create');
         Route::post('/conversations/{id}/messages', [\App\Http\Controllers\ChatController::class, 'sendMessage'])->name('send');
+        Route::post('/conversations/{id}/confirm-delivery', [\App\Http\Controllers\ChatController::class, 'confirmDelivery'])->name('confirm-delivery');
     });
     
     Route::get('/wallet', [DashboardController::class, 'wallet'])->name('wallet');

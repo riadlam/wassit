@@ -135,18 +135,32 @@
                                 </template>
                                 <!-- Paid badge -->
                                 <template x-if="getSelectedConversation() && getSelectedConversation().paid">
-                                    <div class="ml-4">
+                                    <div class="ml-4 flex items-center gap-3">
                                         <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold" style="background-color: rgba(34,197,94,0.15); color: #86efac; border: 1px solid rgba(34,197,94,0.3);">
                                             <i class="fa-solid fa-badge-check text-green-400"></i>
                                             <span>
                                                 <template x-if="getSelectedConversation().buyerId && Number(getSelectedConversation().buyerId) === Number(currentUserId)">
-                                                    <span>{{ __('messages.you_paid_badge') }}</span>
+                                                    <span x-text="getSelectedConversation().deliveryStatus === 'delivered' ? '{{ __('messages.delivery_confirmed_buyer') }}' : '{{ __('messages.you_paid_badge') }}'"></span>
                                                 </template>
                                                 <template x-if="!getSelectedConversation().buyerId || Number(getSelectedConversation().buyerId) !== Number(currentUserId)">
-                                                    <span>{{ __('messages.buyer_paid_badge') }}</span>
+                                                    <span x-text="getSelectedConversation().deliveryStatus === 'delivered' ? '{{ __('messages.delivery_confirmed_seller') }}' : '{{ __('messages.buyer_paid_badge') }}'"></span>
                                                 </template>
                                             </span>
                                         </span>
+                                        <!-- Confirm delivery button (buyer only, when not yet delivered) -->
+                                        <template x-if="getSelectedConversation().buyerId && Number(getSelectedConversation().buyerId) === Number(currentUserId) && getSelectedConversation().deliveryStatus !== 'delivered'">
+                                            <button 
+                                                @click="confirmDelivery()" 
+                                                :disabled="confirmingDelivery"
+                                                class="inline-flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-semibold transition-all"
+                                                style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: 1px solid rgba(16,185,129,0.3);"
+                                                :style="confirmingDelivery ? 'opacity: 0.6; cursor: not-allowed;' : 'hover:shadow-lg hover:shadow-green-500/20;'"
+                                            >
+                                                <i class="fa-solid fa-circle-check" x-show="!confirmingDelivery"></i>
+                                                <i class="fa-solid fa-spinner fa-spin" x-show="confirmingDelivery"></i>
+                                                <span x-text="confirmingDelivery ? '{{ __('messages.confirming') }}' : '{{ __('messages.confirm_delivery') }}'"></span>
+                                            </button>
+                                        </template>
                                     </div>
                                 </template>
                             </div>
@@ -367,6 +381,7 @@ function chatData() {
         pusherChannels: {},
         loading: true,
         sendingMessage: false,
+        confirmingDelivery: false,
         messageInput: '',
         selectedFiles: [],
         init() {
@@ -559,6 +574,9 @@ function chatData() {
                     }
                     if (typeof data.orderId !== 'undefined') {
                         conversation.paidOrderId = data.orderId;
+                    }
+                    if (typeof data.deliveryStatus !== 'undefined') {
+                        conversation.deliveryStatus = data.deliveryStatus;
                     }
                     // If currently open, trigger header rerender
                     if (this.selectedConversation === convId) {
@@ -782,6 +800,46 @@ function chatData() {
             .catch(error => {
                 console.error('Error sending message:', error);
                 this.sendingMessage = false;
+            });
+        },
+        confirmDelivery() {
+            if (!this.selectedConversation || this.confirmingDelivery) {
+                return;
+            }
+            
+            // Confirm with user
+            if (!confirm('{{ __('messages.confirm_delivery_dialog') }}')) {
+                return;
+            }
+            
+            this.confirmingDelivery = true;
+            
+            fetch(`{{ route('account.chat.confirm-delivery', ['id' => ':id']) }}`.replace(':id', this.selectedConversation), {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                },
+                credentials: 'same-origin'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.deliveryStatus) {
+                    // Update local conversation state
+                    const conversation = this.conversations.find(c => c.id === this.selectedConversation);
+                    if (conversation) {
+                        conversation.deliveryStatus = data.deliveryStatus;
+                    }
+                    // Confirmation broadcast will update other party's UI
+                }
+                this.confirmingDelivery = false;
+            })
+            .catch(error => {
+                console.error('Error confirming delivery:', error);
+                alert('{{ __('messages.delivery_confirm_error') }}');
+                this.confirmingDelivery = false;
             });
         }
     }

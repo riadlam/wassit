@@ -260,7 +260,13 @@ return [
     'search_conversations' => 'Rechercher des conversations',
     'loading' => 'Chargement',
     // Chat Paid Badges
-    'you_paid_badge' => 'Vous avez payé — veuillez confirmer la réception du compte',
-    'buyer_paid_badge' => 'L’acheteur a payé — veuillez procéder à la livraison du compte',
+    'you_paid_badge' => 'Vous avez payé — veuillez attendre la livraison',
+    'buyer_paid_badge' => 'L\'acheteur a payé — veuillez procéder à la livraison du compte',
+    'delivery_confirmed_buyer' => 'Livraison confirmée — Transaction terminée',
+    'delivery_confirmed_seller' => 'L\'acheteur a confirmé la livraison — Transaction terminée',
+    'confirm_delivery' => 'Confirmer la livraison',
+    'confirming' => 'Confirmation...',
+    'confirm_delivery_dialog' => 'Êtes-vous sûr d\'avoir reçu le compte et qu\'il fonctionne correctement ? Cette action ne peut pas être annulée.',
+    'delivery_confirm_error' => 'Échec de la confirmation de livraison. Veuillez réessayer.',
 ];
 
