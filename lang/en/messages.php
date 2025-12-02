@@ -100,7 +100,7 @@ return [
     'no_accounts_available' => 'No accounts available for this game yet.',
     
     // Account Details Page
-    'free_warranty_and_support' => 'Secure Payment Protection - Funds held until delivery confirmed',
+    'free_warranty_and_support' => 'Free warranty and support',
     'instant_delivery' => 'Instant delivery',
     'gallery' => 'Gallery',
     'account_data' => 'Account Data',
@@ -177,7 +177,7 @@ return [
     'faq_mlbb_2_question' => 'How long does it take to recieve a Mobile Legends account?',
     'faq_mlbb_2_answer' => "Lightning quick! Once your payment is confirmed, you'll instantly receive access to your new Mobile Legends account details via our secure customer dashboard. You'll be diving into epic battles before you know it!",
     'faq_mlbb_3_question' => 'Do you provide any assurances or protection for account purchases?',
-    'faq_mlbb_3_answer' => 'Certainly! We offer a robust 14-day warranty on all Mobile Legends accounts in our inventory. Our dedicated support team is available round-the-clock to address any concerns, ensuring your complete satisfaction.',
+    'faq_mlbb_3_answer' => 'Yes! We use a secure escrow system to protect your purchase. When you buy an account, your payment is held securely until you confirm receipt and verify the account details. Only after your confirmation do we release the funds to the seller. This ensures complete protection and peace of mind for every transaction.',
     'faq_mlbb_4_question' => 'Can I start playing on my new account right after buying it?',
     'faq_mlbb_4_answer' => 'Absolutely! Your new Mobile Legends account is ready for immediate use as soon as the purchase is complete.',
     'faq_mlbb_5_question' => "What should I do once I've got my new account?",

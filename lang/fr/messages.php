@@ -100,7 +100,7 @@ return [
     'no_accounts_available' => 'Aucun compte disponible pour ce jeu pour le moment.',
     
     // Account Details Page
-    'free_warranty_and_support' => 'Protection de Paiement Sécurisé - Fonds bloqués jusqu\'à confirmation de livraison',
+    'free_warranty_and_support' => 'Garantie et support gratuits',
     'instant_delivery' => 'Livraison instantanée',
     'gallery' => 'Galerie',
     'account_data' => 'Données du Compte',
@@ -172,7 +172,7 @@ return [
     'faq_mlbb_2_question' => 'Combien de temps faut-il pour recevoir un compte Mobile Legends?',
     'faq_mlbb_2_answer' => "Rapidité éclair! Une fois votre paiement confirmé, vous recevrez instantanément l'accès aux détails de votre nouveau compte Mobile Legends via notre tableau de bord client sécurisé. Vous plongerez dans des batailles épiques avant même de vous en rendre compte!",
     'faq_mlbb_3_question' => 'Offrez-vous des assurances ou une protection pour les achats de comptes?',
-    'faq_mlbb_3_answer' => 'Certainement! Nous offrons une garantie solide de 14 jours sur tous les comptes Mobile Legends de notre inventaire. Notre équipe de support dédiée est disponible 24h/24 pour répondre à toute préoccupation, garantissant votre satisfaction complète.',
+    'faq_mlbb_3_answer' => 'Oui! Nous utilisons un système d\'entiercement sécurisé pour protéger votre achat. Lorsque vous achetez un compte, votre paiement est conservé en toute sécurité jusqu\'à ce que vous confirmiez la réception et vérifiez les détails du compte. Ce n\'est qu\'après votre confirmation que nous libérons les fonds au vendeur. Cela garantit une protection complète et une tranquillité d\'esprit pour chaque transaction.',
     'faq_mlbb_4_question' => 'Puis-je commencer à jouer sur mon nouveau compte juste après l\'avoir acheté?',
     'faq_mlbb_4_answer' => 'Absolument! Votre nouveau compte Mobile Legends est prêt à être utilisé immédiatement dès que l\'achat est terminé.',
     'faq_mlbb_5_question' => 'Que dois-je faire une fois que j\'ai mon nouveau compte?',
