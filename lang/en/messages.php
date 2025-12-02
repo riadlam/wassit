@@ -265,5 +265,8 @@ return [
     'search_conversations' => 'Search conversations',
     'loading' => 'Loading',
     'login_here' => 'Login here',
+    // Chat Paid Badges
+    'you_paid_badge' => 'You paid — please confirm receiving the account',
+    'buyer_paid_badge' => 'Buyer paid — please proceed to deliver the account',
 ];
 

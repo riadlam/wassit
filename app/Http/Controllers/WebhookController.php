@@ -11,6 +11,7 @@ use Chargily\ChargilyPay\ChargilyPay;
 use Chargily\ChargilyPay\Auth\Credentials;
 use Chargily\ChargilyPay\Elements\CheckoutElement;
 use App\Events\MessageSent;
+use App\Events\PaymentStatusUpdated;
 
 class WebhookController extends Controller
 {
@@ -130,6 +131,12 @@ class WebhookController extends Controller
                     'read' => true,
                 ];
                 event(new MessageSent($conversation, $broadcastMessage));
+
+                // Broadcast payment status update so header badge reflects instantly
+                event(new PaymentStatusUpdated($conversation, [
+                    'paid' => true,
+                    'orderId' => $order->id,
+                ]));
 
                 Log::info('WebhookController::handleCheckoutConfirmed - Order completed', [
                     'order_id' => $order->id,

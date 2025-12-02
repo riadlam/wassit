@@ -133,6 +133,22 @@
                                         <div class="text-xs text-gray-400" x-text="getSelectedConversation().status === 'online' ? '{{ __('messages.online') }}' : '{{ __('messages.offline') }}'"></div>
                                     </div>
                                 </template>
+                                <!-- Paid badge -->
+                                <template x-if="getSelectedConversation() && getSelectedConversation().paid">
+                                    <div class="ml-4">
+                                        <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold" style="background-color: rgba(34,197,94,0.15); color: #86efac; border: 1px solid rgba(34,197,94,0.3);">
+                                            <i class="fa-solid fa-badge-check text-green-400"></i>
+                                            <span>
+                                                <template x-if="getSelectedConversation().currentRole === 'buyer'">
+                                                    <span>{{ __('messages.you_paid_badge') }}</span>
+                                                </template>
+                                                <template x-if="getSelectedConversation().currentRole !== 'buyer'">
+                                                    <span>{{ __('messages.buyer_paid_badge') }}</span>
+                                                </template>
+                                            </span>
+                                        </span>
+                                    </div>
+                                </template>
                             </div>
                             <button type="button" class="text-gray-400 hover:text-white transition-colors" aria-label="{{ __('messages.search_in_conversation') }}">
                                 <i class="fa-solid fa-magnifying-glass"></i>
@@ -530,6 +546,24 @@ function chatData() {
                 // Auto-scroll if current conversation is open
                 if (this.selectedConversation === convId) {
                     this.scrollToBottom(true);
+                }
+            });
+
+            // Handle payment status updates (paid badge)
+            channel.bind('payment.status', (data) => {
+                const convId = conversationId;
+                const conversation = this.conversations.find(c => Number(c.id) === Number(convId));
+                if (conversation && data) {
+                    if (typeof data.paid !== 'undefined') {
+                        conversation.paid = !!data.paid;
+                    }
+                    if (typeof data.orderId !== 'undefined') {
+                        conversation.paidOrderId = data.orderId;
+                    }
+                    // If currently open, trigger header rerender
+                    if (this.selectedConversation === convId) {
+                        this.$nextTick(() => {});
+                    }
                 }
             });
 

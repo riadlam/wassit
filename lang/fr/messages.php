@@ -259,5 +259,8 @@ return [
     'search_in_conversation' => 'Rechercher dans cette conversation',
     'search_conversations' => 'Rechercher des conversations',
     'loading' => 'Chargement',
+    // Chat Paid Badges
+    'you_paid_badge' => 'Vous avez payé — veuillez confirmer la réception du compte',
+    'buyer_paid_badge' => 'L’acheteur a payé — veuillez procéder à la livraison du compte',
 ];
 

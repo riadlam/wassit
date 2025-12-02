@@ -259,5 +259,8 @@ return [
     'search_in_conversation' => 'البحث في هذه المحادثة',
     'search_conversations' => 'البحث في المحادثات',
     'loading' => 'جاري التحميل',
+    // Chat Paid Badges
+    'you_paid_badge' => 'لقد دفعت — يرجى تأكيد استلام الحساب',
+    'buyer_paid_badge' => 'المشتري دفع — يرجى متابعة تسليم الحساب',
 ];
 

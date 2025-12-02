@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\MessageAttachment;
+use App\Models\Order;
 use App\Events\MessageSent;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -160,6 +161,20 @@ class ChatController extends Controller
                 ];
             }
             
+            // Determine paid status: an order exists for this account by this buyer and is completed
+            $isPaid = false;
+            $paidOrderId = null;
+            if ($conversation->accountForSale) {
+                $orderQuery = Order::where('account_id', $conversation->accountForSale->id)
+                    ->where('buyer_id', $conversation->buyer_id)
+                    ->where('status', 'completed');
+                $paidOrder = $orderQuery->latest('id')->first();
+                if ($paidOrder) {
+                    $isPaid = true;
+                    $paidOrderId = $paidOrder->id;
+                }
+            }
+
             // Get unread count
             $unreadCount = $isBuyer ? $conversation->buyer_unread_count : $conversation->seller_unread_count;
             
@@ -178,6 +193,9 @@ class ChatController extends Controller
                 'unread' => $unreadCount > 0,
                 'unreadCount' => $unreadCount,
                 'status' => 'offline', // TODO: Implement online status
+                'paid' => $isPaid,
+                'paidOrderId' => $paidOrderId,
+                'currentRole' => $isBuyer ? 'buyer' : 'seller',
             ];
         });
         
