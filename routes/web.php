@@ -22,6 +22,7 @@ Route::get('/locale/{locale}', function ($locale) {
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/games/{slug}', [GameController::class, 'show'])->name('games.show');
 Route::get('/apply', [PartnerController::class, 'apply'])->name('partner.apply');
+Route::post('/apply', [PartnerController::class, 'submitApplication'])->name('partner.apply.submit');
 
 // Authentication Routes
 Route::post('/login', [AuthController::class, 'login'])->name('login');
