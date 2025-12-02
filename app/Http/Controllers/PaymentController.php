@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
 use Chargily\ChargilyPay\ChargilyPay;
 use Chargily\ChargilyPay\Auth\Credentials;
+use App\Events\MessageSent;
 
 class PaymentController extends Controller
 {
@@ -135,13 +136,29 @@ class PaymentController extends Controller
             ]);
 
             // Post a system message notifying payment initiation success (final confirmation via webhook)
-            \App\Models\Message::create([
+            $sysMsg = \App\Models\Message::create([
                 'conversation_id' => $conversation->id,
                 'sender_id' => null, // system
                 'sender_type' => 'system',
                 'message_type' => 'text',
                 'content' => 'Payment initiated for Order #' . $order->id . '. Awaiting confirmation.',
             ]);
+
+            // Optionally bump conversation last_message_at for ordering
+            try {
+                $conversation->last_message_at = now();
+                $conversation->save();
+            } catch (\Throwable $t) {}
+
+            // Broadcast system message so chat updates in real-time
+            $broadcastMessage = [
+                'id' => $sysMsg->id,
+                'type' => 'system',
+                'content' => $sysMsg->content,
+                'timestamp' => 'Just now',
+                'read' => true,
+            ];
+            event(new MessageSent($conversation, $broadcastMessage));
 
             // Focus chat UI to the conversation
             session(['active_chat_conversation_id' => $conversation->id]);

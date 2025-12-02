@@ -4,10 +4,13 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Order;
+use App\Models\ChargilyPayment;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Chargily\ChargilyPay\ChargilyPay;
 use Chargily\ChargilyPay\Auth\Credentials;
 use Chargily\ChargilyPay\Elements\CheckoutElement;
+use App\Events\MessageSent;
 
 class WebhookController extends Controller
 {
@@ -94,6 +97,7 @@ class WebhookController extends Controller
             if ($order->status === 'pending') {
                 $order->update([
                     'status' => 'completed',
+                    'paid_at' => now(),
                 ]);
 
                 // Create/find conversation and notify seller with system message
@@ -102,13 +106,29 @@ class WebhookController extends Controller
                     'seller_id' => (int)$order->seller_id,
                 ]);
 
-                \App\Models\Message::create([
+                $sysMsg = \App\Models\Message::create([
                     'conversation_id' => $conversation->id,
                     'sender_id' => null,
                     'sender_type' => 'system',
                     'message_type' => 'text',
                     'content' => 'Payment confirmed for Order #' . $order->id . '. Seller, please proceed to deliver the account.',
                 ]);
+
+                // Update conversation ordering timestamp
+                try {
+                    $conversation->last_message_at = now();
+                    $conversation->save();
+                } catch (\Throwable $t) {}
+
+                // Broadcast system message for real-time update in chat
+                $broadcastMessage = [
+                    'id' => $sysMsg->id,
+                    'type' => 'system',
+                    'content' => $sysMsg->content,
+                    'timestamp' => 'Just now',
+                    'read' => true,
+                ];
+                event(new MessageSent($conversation, $broadcastMessage));
 
                 Log::info('WebhookController::handleCheckoutConfirmed - Order completed', [
                     'order_id' => $order->id,

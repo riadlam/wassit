@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Order extends Model
 {
@@ -49,5 +50,21 @@ class Order extends Model
     public function account(): BelongsTo
     {
         return $this->belongsTo(AccountForSale::class, 'account_id');
+    }
+
+    /**
+     * Latest/primary Chargily payment linked to this order.
+     */
+    public function chargilyPayment(): BelongsTo
+    {
+        return $this->belongsTo(ChargilyPayment::class, 'chargily_payment_id');
+    }
+
+    /**
+     * All Chargily payment webhook records for this order.
+     */
+    public function chargilyPayments(): HasMany
+    {
+        return $this->hasMany(ChargilyPayment::class);
     }
 }
