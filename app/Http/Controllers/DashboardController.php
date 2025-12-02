@@ -306,8 +306,6 @@ class DashboardController extends Controller
                             // Store the image directly in public/storage/account_images
                             $filename = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
                             $image->move(public_path('storage/account_images'), $filename);
-                            $path = 'account_images/' . $filename;->getClientOriginalExtension();
-                            $image->move(public_path('storage/account_images'), $filename);
                             $path = 'account_images/' . $filename;
                             
                             // Prepare for bulk insert
