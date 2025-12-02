@@ -435,12 +435,11 @@
                 
                 <!-- Edit Profile Modal -->
                 <div x-show="showEditModal" 
-                     x-cloak
-                     @click.away="showEditModal = false"
-                     style="display: none;"
+                     x-transition
                      class="fixed inset-0 z-50 overflow-y-auto">
                     <!-- Backdrop -->
-                    <div class="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity"></div>
+                    <div class="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity"
+                         @click="showEditModal = false"></div>
                     
                     <!-- Modal -->
                     <div class="flex min-h-full items-center justify-center p-4">
