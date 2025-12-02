@@ -40,7 +40,8 @@ use Illuminate\Support\Facades\Storage;
                                 Please login or create an account to apply as a seller.
                             </p>
                             <button 
-                                onclick="document.getElementById('auth-modal').style.display='flex'; window.authRedirectUrl='{{ route('partner.apply') }}'"
+                                type="button"
+                                onclick="window.authRedirectUrl='{{ route('partner.apply') }}'; window.Alpine.store('authModal').open = true; window.Alpine.store('authModal').mode = 'login';"
                                 class="inline-flex items-center gap-2 px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-colors">
                                 <i class="fa-solid fa-right-to-bracket"></i>
                                 Login or Sign Up
