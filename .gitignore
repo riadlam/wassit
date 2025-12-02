@@ -16,16 +16,15 @@
 /public/hot
 /storage/*.key
 /storage/pail
-/vendor
 Homestead.json
 Homestead.yaml
 Thumbs.db
-/public/hot
-/public/storage
-!/public/storage/mlbbskins.json
-/storage/*.key
-/storage/pail
-/vendor
+ /public/hot
+ /public/storage
+ !/public/storage/mlbbskins.json
+ /storage/*.key
+ /storage/pail
+ # vendor allowed temporarily
 Homestead.json
 Homestead.yaml
 Thumbs.db
