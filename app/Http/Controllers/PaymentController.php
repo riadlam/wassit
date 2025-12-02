@@ -4,18 +4,27 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Order;
-use App\Services\ChargilyService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
+use Chargily\ChargilyPay\ChargilyPay;
+use Chargily\ChargilyPay\Auth\Credentials;
 
 class PaymentController extends Controller
 {
-    protected $chargilyService;
-
-    public function __construct(ChargilyService $chargilyService)
+    /**
+     * Build ChargilyPay SDK instance from env/config.
+     */
+    protected function chargilyPayInstance(): ChargilyPay
     {
-        $this->chargilyService = $chargilyService;
+        $mode = config('chargily.mode', env('CHARGILY_MODE', 'live'));
+        $public = config('chargily.api_key', env('CHARGILY_EPAY_KEY'));
+        $secret = config('chargily.api_secret', env('CHARGILY_EPAY_SECRET'));
+        return new ChargilyPay(new Credentials([
+            'mode' => $mode,
+            'public' => (string)$public,
+            'secret' => (string)$secret,
+        ]));
     }
 
     /**
@@ -66,46 +75,31 @@ class PaymentController extends Controller
             $processorFee = $subtotal * ($processorFeePercent / 100);
             $totalAmount = $subtotal + $processorFee;
 
-            // Create Chargily checkout
-            $checkoutParams = [
-                'amount' => (int)($totalAmount * 100), // Convert to cents
+            // Create Chargily checkout via SDK
+            $checkout = $this->chargilyPayInstance()->checkouts()->create([
+                'metadata' => [
+                    'order_id' => (string)$order->id,
+                ],
+                'locale' => app()->getLocale() ?? 'en',
+                'amount' => (string) (int)($totalAmount * 100),
                 'currency' => 'dzd',
-                'payment_method' => 'edahabia', // Default to edahabia (Barid EL Jazair)
                 'description' => 'Account Purchase - Order #' . $order->id,
                 'success_url' => route('payment.success', ['encryptedOrderId' => $encryptedOrderId]),
                 'failure_url' => route('payment.failure', ['encryptedOrderId' => $encryptedOrderId]),
-                'webhook_endpoint' => config('chargily.webhook_url'),
-                'locale' => 'en',
-                'chargily_pay_fees_allocation' => 'customer', // Customer pays fees
-                'metadata' => [
-                    'order_id' => (string)$order->id,
-                    'buyer_id' => (string)$order->buyer_id,
-                    'account_id' => (string)$order->account_id,
-                    'buyer_email' => $buyerEmail,
-                ],
-            ];
+                'webhook_endpoint' => config('chargily.webhook_url') ?: route('webhook.chargily'),
+            ]);
 
-            $checkout = $this->chargilyService->createCheckout($checkoutParams);
-
-            if (!$checkout || !isset($checkout['checkout_url'])) {
+            if (!$checkout) {
                 throw new \Exception('Failed to create Chargily checkout');
             }
 
-            // Store checkout ID on the order for later reference
-            $order->update([
-                'chargily_checkout_id' => $checkout['id'] ?? null,
-                'metadata' => json_encode($checkout),
-            ]);
-
             Log::info('PaymentController::initiatePayment - Checkout created successfully', [
                 'order_id' => $order->id,
-                'checkout_id' => $checkout['id'] ?? null,
-                'checkout_url' => $checkout['checkout_url'] ?? null,
             ]);
 
             return response()->json([
                 'success' => true,
-                'checkout_url' => $checkout['checkout_url'],
+                'checkout_url' => $checkout->getUrl(),
             ]);
         } catch (\Exception $e) {
             Log::error('PaymentController::initiatePayment - Exception', [
@@ -133,7 +127,7 @@ class PaymentController extends Controller
             $orderId = Crypt::decryptString($encryptedOrderId);
             $order = Order::findOrFail($orderId);
 
-            return redirect()->route('checkout.success', ['encryptedOrderId' => $encryptedOrderId])
+            return redirect()->route('checkout.show', ['encryptedOrderId' => $encryptedOrderId])
                 ->with('success', 'Payment initiated successfully. Awaiting confirmation.');
         } catch (\Exception $e) {
             Log::error('PaymentController::paymentSuccess - Exception', [

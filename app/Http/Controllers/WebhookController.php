@@ -4,16 +4,24 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Order;
-use App\Services\ChargilyService;
 use Illuminate\Support\Facades\Log;
+use Chargily\ChargilyPay\ChargilyPay;
+use Chargily\ChargilyPay\Auth\Credentials;
+use Chargily\ChargilyPay\Elements\CheckoutElement;
 
 class WebhookController extends Controller
 {
-    protected $chargilyService;
-
-    public function __construct(ChargilyService $chargilyService)
+    /** Build SDK instance */
+    protected function chargilyPayInstance(): ChargilyPay
     {
-        $this->chargilyService = $chargilyService;
+        $mode = config('chargily.mode', env('CHARGILY_MODE', 'live'));
+        $public = config('chargily.api_key', env('CHARGILY_EPAY_KEY'));
+        $secret = config('chargily.api_secret', env('CHARGILY_EPAY_SECRET'));
+        return new ChargilyPay(new Credentials([
+            'mode' => $mode,
+            'public' => (string)$public,
+            'secret' => (string)$secret,
+        ]));
     }
 
     /**
@@ -27,44 +35,32 @@ class WebhookController extends Controller
         ]);
 
         try {
-            // Get the raw body and signature
-            $payload = $request->getContent();
-            $signature = $request->header('X-Signature-SHA256');
-
-            if (!$signature) {
-                Log::warning('WebhookController::chargilyWebhook - Missing signature header');
-                return response()->json(['error' => 'Missing signature'], 400);
+            $webhook = $this->chargilyPayInstance()->webhook()->get();
+            if (!$webhook) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Invalid Webhook request',
+                ], 403);
             }
 
-            // Validate webhook signature
-            if (!$this->chargilyService->validateWebhookSignature($payload, $signature)) {
-                Log::warning('WebhookController::chargilyWebhook - Invalid signature');
-                return response()->json(['error' => 'Invalid signature'], 403);
+            $checkout = $webhook->getData();
+            if (!$checkout || !($checkout instanceof CheckoutElement)) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Invalid Webhook payload',
+                ], 400);
             }
 
-            // Parse JSON payload
-            $data = json_decode($payload, true);
-            
-            Log::info('WebhookController::chargilyWebhook - Valid webhook', [
-                'event' => $data['event'] ?? null,
-                'checkout_id' => $data['data']['checkout_id'] ?? null,
-                'status' => $data['data']['status'] ?? null,
-            ]);
-
-            // Handle different webhook events
-            $event = $data['event'] ?? null;
-
-            switch ($event) {
-                case 'checkout.confirmed':
-                    return $this->handleCheckoutConfirmed($data['data']);
-                case 'checkout.failed':
-                    return $this->handleCheckoutFailed($data['data']);
-                case 'checkout.expired':
-                    return $this->handleCheckoutExpired($data['data']);
-                default:
-                    Log::info('WebhookController::chargilyWebhook - Unknown event', ['event' => $event]);
-                    return response()->json(['status' => 'received']);
+            $status = $checkout->getStatus();
+            if ($status === 'paid') {
+                return $this->handleCheckoutConfirmed($checkout);
+            } elseif (in_array($status, ['failed', 'canceled'])) {
+                return $this->handleCheckoutFailed($checkout);
+            } elseif ($status === 'expired') {
+                return $this->handleCheckoutExpired($checkout);
             }
+
+            return response()->json(['status' => 'ignored']);
         } catch (\Exception $e) {
             Log::error('WebhookController::chargilyWebhook - Exception', [
                 'error' => $e->getMessage(),
@@ -76,21 +72,20 @@ class WebhookController extends Controller
     /**
      * Handle successful payment checkout confirmation
      */
-    protected function handleCheckoutConfirmed($checkoutData)
+    protected function handleCheckoutConfirmed(CheckoutElement $checkout)
     {
         Log::info('WebhookController::handleCheckoutConfirmed - Processing confirmed checkout', [
-            'checkout_id' => $checkoutData['checkout_id'] ?? null,
-            'status' => $checkoutData['status'] ?? null,
+            'status' => $checkout->getStatus(),
+            'metadata' => $checkout->getMetadata(),
         ]);
 
         try {
-            // Find order by checkout ID
-            $order = Order::where('chargily_checkout_id', $checkoutData['checkout_id'])
-                ->first();
+            $metadata = $checkout->getMetadata();
+            $order = isset($metadata['order_id']) ? Order::find($metadata['order_id']) : null;
 
             if (!$order) {
                 Log::warning('WebhookController::handleCheckoutConfirmed - Order not found', [
-                    'checkout_id' => $checkoutData['checkout_id'],
+                    'metadata' => $metadata,
                 ]);
                 return response()->json(['error' => 'Order not found'], 404);
             }
@@ -99,8 +94,6 @@ class WebhookController extends Controller
             if ($order->status === 'pending') {
                 $order->update([
                     'status' => 'completed',
-                    'chargily_payment_id' => $checkoutData['id'] ?? null,
-                    'paid_at' => now(),
                 ]);
 
                 Log::info('WebhookController::handleCheckoutConfirmed - Order completed', [
@@ -121,24 +114,21 @@ class WebhookController extends Controller
     /**
      * Handle failed payment checkout
      */
-    protected function handleCheckoutFailed($checkoutData)
+    protected function handleCheckoutFailed(CheckoutElement $checkout)
     {
         Log::warning('WebhookController::handleCheckoutFailed - Checkout failed', [
-            'checkout_id' => $checkoutData['checkout_id'] ?? null,
-            'reason' => $checkoutData['reason'] ?? null,
+            'status' => $checkout->getStatus(),
+            'metadata' => $checkout->getMetadata(),
         ]);
 
         try {
-            $order = Order::where('chargily_checkout_id', $checkoutData['checkout_id'])
-                ->first();
+            $metadata = $checkout->getMetadata();
+            $order = isset($metadata['order_id']) ? Order::find($metadata['order_id']) : null;
 
             if ($order) {
                 // Log the failure but keep order in pending status for retry
                 $order->update([
-                    'metadata' => json_encode([
-                        'last_failure_reason' => $checkoutData['reason'] ?? null,
-                        'last_failure_at' => now(),
-                    ]),
+                    // If you add a JSON metadata column later, you can persist failure info.
                 ]);
             }
 
@@ -154,22 +144,18 @@ class WebhookController extends Controller
     /**
      * Handle expired checkout
      */
-    protected function handleCheckoutExpired($checkoutData)
+    protected function handleCheckoutExpired(CheckoutElement $checkout)
     {
         Log::warning('WebhookController::handleCheckoutExpired - Checkout expired', [
-            'checkout_id' => $checkoutData['checkout_id'] ?? null,
+            'status' => $checkout->getStatus(),
+            'metadata' => $checkout->getMetadata(),
         ]);
 
         try {
-            $order = Order::where('chargily_checkout_id', $checkoutData['checkout_id'])
-                ->first();
+            $metadata = $checkout->getMetadata();
+            $order = isset($metadata['order_id']) ? Order::find($metadata['order_id']) : null;
 
-            if ($order && $order->status === 'pending') {
-                // Keep order in pending, allow user to retry
-                $order->update([
-                    'chargily_checkout_id' => null,
-                ]);
-            }
+            // Keep order pending; no DB changes required here
 
             return response()->json(['status' => 'processed']);
         } catch (\Exception $e) {
