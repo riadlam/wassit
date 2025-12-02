@@ -111,7 +111,18 @@ class WebhookController extends Controller
         }
     }
 
+                        // Create/find conversation and notify seller with system message
+                        $conversation = \App\Models\Conversation::firstOrCreate([
+                            'buyer_id' => (int)$order->buyer_id,
+                            'seller_id' => (int)$order->seller_id,
+                        ]);
     /**
+                        \App\Models\Message::create([
+                            'conversation_id' => $conversation->id,
+                            'user_id' => null,
+                            'content' => 'Payment confirmed for Order #' . $order->id . '. Seller, please proceed to deliver the account.',
+                            'type' => 'system',
+                        ]);
      * Handle failed payment checkout
      */
     protected function handleCheckoutFailed(CheckoutElement $checkout)

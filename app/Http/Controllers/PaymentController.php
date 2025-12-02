@@ -20,6 +20,13 @@ class PaymentController extends Controller
         $mode = config('chargily.mode', env('CHARGILY_MODE', 'live'));
         $public = config('chargily.api_key', env('CHARGILY_EPAY_KEY'));
         $secret = config('chargily.api_secret', env('CHARGILY_EPAY_SECRET'));
+        if (!class_exists(\Chargily\ChargilyPay\ChargilyPay::class)) {
+            Log::error('Chargily SDK class not found. Have you run composer install on server?', [
+                'expected_class' => 'Chargily\\ChargilyPay\\ChargilyPay',
+                'mode' => $mode,
+            ]);
+            throw new \RuntimeException('Payment provider temporarily unavailable. Please retry later.');
+        }
         return new ChargilyPay(new Credentials([
             'mode' => $mode,
             'public' => (string)$public,
@@ -125,10 +132,27 @@ class PaymentController extends Controller
 
         try {
             $orderId = Crypt::decryptString($encryptedOrderId);
-            $order = Order::findOrFail($orderId);
+            $order = Order::with(['buyer', 'seller'])->findOrFail($orderId);
 
-            return redirect()->route('checkout.show', ['encryptedOrderId' => $encryptedOrderId])
-                ->with('success', 'Payment initiated successfully. Awaiting confirmation.');
+            // Ensure there is a conversation between buyer and seller
+            $conversation = \App\Models\Conversation::firstOrCreate([
+                'buyer_id' => (int)$order->buyer_id,
+                'seller_id' => (int)$order->seller_id,
+            ]);
+
+            // Post a system message notifying payment initiation success (final confirmation via webhook)
+            \App\Models\Message::create([
+                'conversation_id' => $conversation->id,
+                'user_id' => null, // system
+                'content' => 'Payment initiated for Order #' . $order->id . '. Awaiting confirmation.',
+                'type' => 'system',
+            ]);
+
+            // Focus chat UI to the conversation
+            session(['active_chat_conversation_id' => $conversation->id]);
+
+            return redirect()->route('account.chat')
+                ->with('success', 'Payment initiated. Chat opened to notify the seller.');
         } catch (\Exception $e) {
             Log::error('PaymentController::paymentSuccess - Exception', [
                 'error' => $e->getMessage(),
@@ -150,6 +174,7 @@ class PaymentController extends Controller
             $orderId = Crypt::decryptString($encryptedOrderId);
             $order = Order::findOrFail($orderId);
 
+            // Do not open chat on failure; show a clear failure screen
             return redirect()->route('checkout.show', ['encryptedOrderId' => $encryptedOrderId])
                 ->with('error', 'Payment was cancelled or failed. Please try again.');
         } catch (\Exception $e) {
