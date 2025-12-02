@@ -455,7 +455,9 @@ class ChatController extends Controller
         // Handle file attachments
         if ($request->hasFile('attachments')) {
             foreach ($request->file('attachments') as $file) {
-                $filePath = $file->store('chat_attachments', 'public');
+                $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                $file->move(public_path('storage/chat_attachments'), $filename);
+                $filePath = 'chat_attachments/' . $filename;
                 $fileType = $file->getMimeType();
                 
                 // Generate thumbnail for images/videos if needed
