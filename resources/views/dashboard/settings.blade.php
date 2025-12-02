@@ -268,42 +268,6 @@
                                         </div>
                                     </div>
                                 </div>
-                                
-                                <!-- Other Notification Settings -->
-                                <div class="sm:rounded-xl sm:mx-0 -mx-4 border" style="background-color: #0e1015; border-color: #2d2c31;">
-                                    <div class="flex flex-col space-y-1.5 px-4 sm:px-6 py-6 border-b sm:rounded-t-xl" style="border-color: #2d2c31; background-color: rgba(27, 26, 30, 0.2);">
-                                        <h3 class="font-semibold font-display leading-none text-white">Email Notifications</h3>
-                                    </div>
-                                    <div class="sm:px-6 px-4 py-6 space-y-4">
-                                        <div class="flex items-center justify-between">
-                                            <div>
-                                                <p class="text-sm font-medium text-white">Order Updates</p>
-                                                <p class="text-xs text-gray-400 mt-0.5">Receive email notifications when your order status changes</p>
-                                            </div>
-                                            <label class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2" style="background-color: #dc2626;" role="switch" aria-checked="true">
-                                                <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out translate-x-5"></span>
-                                            </label>
-                                        </div>
-                                        <div class="flex items-center justify-between border-t pt-4" style="border-color: #2d2c31;">
-                                            <div>
-                                                <p class="text-sm font-medium text-white">Payment Confirmations</p>
-                                                <p class="text-xs text-gray-400 mt-0.5">Get notified when payments are confirmed</p>
-                                            </div>
-                                            <label class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2" style="background-color: #dc2626;" role="switch" aria-checked="true">
-                                                <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out translate-x-5"></span>
-                                            </label>
-                                        </div>
-                                        <div class="flex items-center justify-between border-t pt-4" style="border-color: #2d2c31;">
-                                            <div>
-                                                <p class="text-sm font-medium text-white">Marketing Emails</p>
-                                                <p class="text-xs text-gray-400 mt-0.5">Receive updates about new features and promotions</p>
-                                            </div>
-                                            <label class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2" style="background-color: rgba(45, 44, 49, 0.5);" role="switch" aria-checked="false">
-                                                <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out translate-x-0"></span>
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div>
                             </div>
                             
                             <!-- Connected Accounts Tab Content -->
