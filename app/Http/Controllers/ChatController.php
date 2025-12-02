@@ -207,6 +207,14 @@ class ChatController extends Controller
         );
         
         if (!$isBuyer && !$isSeller) {
+            Log::warning('ChatController::getMessages unauthorized access', [
+                'conversation_id' => (int)$conversationId,
+                'conv_buyer_id' => (int)$conversation->buyer_id,
+                'conv_seller_id' => (int)$conversation->seller_id,
+                'conv_seller_user_id' => $conversation->seller ? (int)$conversation->seller->user_id : null,
+                'user_id' => (int)$user->id,
+                'user_seller_id' => $user->seller ? (int)$user->seller->id : null,
+            ]);
             return response()->json(['error' => 'Unauthorized'], 403);
         }
         
