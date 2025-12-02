@@ -160,7 +160,8 @@ class DashboardController extends Controller
             'status' => 'required|in:available,disabled,pending',
             'attributes' => 'nullable|array',
             'attributes.*' => 'nullable|string|max:255',
-            'images' => 'required|array|min:1|max:10',
+            // For multiple file uploads, validate each file under images.*
+            'images' => 'required',
             'images.*' => 'image|mimes:jpeg,png,jpg,webp|max:10240', // 10MB max per file
         ], [
             'images.required' => 'At least one image is required.',
