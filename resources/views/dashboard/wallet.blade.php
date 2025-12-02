@@ -64,33 +64,14 @@
                         </div>
                         
                         <!-- Right Column - Transactions Section -->
-                        <div class="space-y-4 lg:space-y-6 lg:col-span-2 lg:row-span-2 lg:row-end-2 xl:col-span-5" x-data="{ activeTab: 'transactions' }">
+                        <div class="space-y-4 lg:space-y-6 lg:col-span-2 lg:row-span-2 lg:row-end-2 xl:col-span-5">
                             <!-- Tabs -->
                             <div class="flex overflow-x-auto -mb-8 pb-8" style="scrollbar-width: none; -ms-overflow-style: none;">
                                 <div class="flex gap-1 min-w-full">
                                     <a href="#" 
-                                       @click.prevent="activeTab = 'transactions'"
-                                       class="flex items-center flex-shrink-0 h-10 px-3 py-2 text-sm font-medium rounded-md transition-colors"
-                                       :class="activeTab === 'transactions' ? 'bg-red-600 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-800/50'"
-                                       style="background-color: rgba(220, 38, 38, 0.1);"
-                                       :style="activeTab === 'transactions' ? 'background-color: #dc2626;' : ''">
-                                        <i class="mr-1.5 fa-solid fa-credit-card text-sm" :class="activeTab === 'transactions' ? 'opacity-100' : 'opacity-75'"></i> <span>Transactions</span>
-                                    </a>
-                                    <a href="#" 
-                                       @click.prevent="activeTab = 'store-credit'"
-                                       class="flex items-center flex-shrink-0 h-10 px-3 py-2 text-sm font-medium rounded-md transition-colors"
-                                       :class="activeTab === 'store-credit' ? 'bg-red-600 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-800/50'"
-                                       style="background-color: rgba(220, 38, 38, 0.1);"
-                                       :style="activeTab === 'store-credit' ? 'background-color: #dc2626;' : ''">
-                                        <i class="mr-1.5 fa-solid fa-dollar-sign text-sm" :class="activeTab === 'store-credit' ? 'opacity-100' : 'opacity-75'"></i> <span>Store Credit History</span>
-                                    </a>
-                                    <a href="#" 
-                                       @click.prevent="activeTab = 'coins'"
-                                       class="flex items-center flex-shrink-0 h-10 px-3 py-2 text-sm font-medium rounded-md transition-colors"
-                                       :class="activeTab === 'coins' ? 'bg-red-600 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-800/50'"
-                                       style="background-color: rgba(220, 38, 38, 0.1);"
-                                       :style="activeTab === 'coins' ? 'background-color: #dc2626;' : ''">
-                                        <i class="mr-1.5 fa-solid fa-coins text-sm" :class="activeTab === 'coins' ? 'opacity-100' : 'opacity-75'"></i> <span>Coins History</span>
+                                       class="flex items-center flex-shrink-0 h-10 px-3 py-2 text-sm font-medium rounded-md transition-colors bg-red-600 text-white"
+                                       style="background-color: #dc2626;">
+                                        <i class="mr-1.5 fa-solid fa-credit-card text-sm opacity-100"></i> <span>Transactions</span>
                                     </a>
                                 </div>
                             </div>

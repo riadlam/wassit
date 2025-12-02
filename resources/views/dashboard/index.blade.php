@@ -58,19 +58,6 @@
                         </div>
                     </a>
                     
-                    <!-- Library -->
-                    <a href="{{ route('account.library') }}" class="rounded-xl p-6 transition-all hover:scale-105" style="background-color: #0e1015; border: 1px solid #2d2c31;">
-                        <div class="flex items-center gap-4">
-                            <div class="flex items-center justify-center w-12 h-12 rounded-lg" style="background-color: rgba(59, 130, 246, 0.1);">
-                                <i class="fa-solid fa-books text-blue-500 text-xl"></i>
-                            </div>
-                            <div>
-                                <h3 class="text-lg font-semibold text-white">{{ __('messages.library') }}</h3>
-                                <p class="text-sm text-gray-400">{{ __('messages.your_purchased_accounts') }}</p>
-                            </div>
-                        </div>
-                    </a>
-                    
                     <!-- Settings -->
                     <a href="{{ route('account.settings') }}" class="rounded-xl p-6 transition-all hover:scale-105" style="background-color: #0e1015; border: 1px solid #2d2c31;">
                         <div class="flex items-center gap-4">
