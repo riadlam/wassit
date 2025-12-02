@@ -303,8 +303,12 @@ class DashboardController extends Controller
                     foreach ($images as $image) {
                         // Validate file is actually an image
                         if ($image->isValid() && $image->getMimeType() && strpos($image->getMimeType(), 'image/') === 0) {
-                            // Store the image
-                            $path = $image->store('account_images', 'public');
+                            // Store the image directly in public/storage/account_images
+                            $filename = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
+                            $image->move(public_path('storage/account_images'), $filename);
+                            $path = 'account_images/' . $filename;->getClientOriginalExtension();
+                            $image->move(public_path('storage/account_images'), $filename);
+                            $path = 'account_images/' . $filename;
                             
                             // Prepare for bulk insert
                             $imagesToCreate[] = [
@@ -686,8 +690,9 @@ class DashboardController extends Controller
                 // Delete all associated image files (ignore missing files)
                 foreach ($account->images as $image) {
                     try {
-                        if (Storage::disk('public')->exists($image->url)) {
-                            Storage::disk('public')->delete($image->url);
+                        $filePath = public_path('storage/' . $image->url);
+                        if (file_exists($filePath)) {
+                            unlink($filePath);
                         }
                     } catch (\Throwable $t) {
                         // Ignore storage errors to not block DB deletion
