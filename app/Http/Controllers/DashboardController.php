@@ -739,23 +739,18 @@ class DashboardController extends Controller
         $user = Auth::user();
         $seller = $user->seller;
 
-        // Only sellers can update profile
-        if (!$seller) {
-            return back()->with('error', 'Only sellers can update profile information.');
-        }
-
         $request->validate([
             'name' => 'required|string|max:255',
             'pfp' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
         ]);
 
-        // Update name
+        // Update name for all users
         $user->update([
             'name' => $request->name,
         ]);
 
-        // Handle profile picture upload
-        if ($request->hasFile('pfp')) {
+        // Handle profile picture upload (sellers only)
+        if ($seller && $request->hasFile('pfp')) {
             $file = $request->file('pfp');
             $filename = time() . '_' . $file->getClientOriginalName();
             $path = $file->storeAs('profile_pictures', $filename, 'public');

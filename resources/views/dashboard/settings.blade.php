@@ -119,11 +119,9 @@
                             <div class="sm:rounded-xl sm:mx-0 -mx-4 border" style="background-color: #0e1015; border-color: #2d2c31;">
                                 <div class="space-y-1.5 px-4 sm:px-6 border-b sm:rounded-t-xl flex flex-row items-center justify-between py-3" style="border-color: #2d2c31; background-color: rgba(27, 26, 30, 0.2);">
                                     <h3 class="font-semibold font-display leading-none text-white">User Information</h3>
-                                    @if($seller)
                                     <button type="button" @click="showEditModal = true" class="inline-flex items-center justify-center transition-colors focus:outline focus:outline-offset-2 focus-visible:outline outline-none disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden font-medium active:translate-y-px whitespace-nowrap py-2 px-4 text-sm rounded-md ring-1 hover:bg-gray-800/50 text-white focus:outline-secondary" style="background-color: rgba(27, 26, 30, 0.5); border-color: #2d2c31;">
                                         <i class="mr-1.5 fa-solid fa-pencil"></i> Edit Profile
                                     </button>
-                                    @endif
                                 </div>
                                 <div class="px-0 sm:px-6 pt-0">
                                     <div class="grid grid-cols-2 lg:grid-cols-3">
@@ -139,18 +137,15 @@
                                             <dt class="text-sm font-medium capitalize text-white">User ID</dt>
                                             <dd class="mt-1 text-sm leading-6 text-gray-400 sm:col-span-2 sm:mt-0">#{{ $user->id }}</dd>
                                         </div>
-                                        @if($seller)
                                         <div class="px-4 py-6 sm:col-span-1 sm:px-0">
                                             <dt class="text-sm font-medium capitalize text-white">Profile Picture</dt>
                                             <dd class="mt-1 text-sm leading-6 text-gray-400 sm:col-span-2 sm:mt-0">
-                                                @if($seller->pfp)
-                                                    <img src="{{ $seller->pfp }}" alt="Profile" class="w-12 h-12 rounded-full object-cover border-2" style="border-color: #2d2c31;">
-                                                @else
-                                                    <span class="text-gray-500">No profile picture</span>
-                                                @endif
+                                                @php
+                                                    $pfpUrl = $seller && $seller->pfp ? $seller->pfp : 'https://ui-avatars.com/api/?name=' . urlencode($user->name) . '&size=200&background=3b82f6&color=fff';
+                                                @endphp
+                                                <img src="{{ $pfpUrl }}" alt="Profile" class="w-12 h-12 rounded-full object-cover border-2" style="border-color: #2d2c31;">
                                             </dd>
                                         </div>
-                                        @endif
                                     </div>
                                 </div>
                             </div>
@@ -429,8 +424,7 @@
                     </div>
                 </div>
                 
-                <!-- Edit Profile Modal (Sellers Only) -->
-                @if($seller)
+                <!-- Edit Profile Modal -->
                 <div x-show="showEditModal" 
                      x-cloak
                      class="fixed inset-0 z-50 overflow-y-auto" 
@@ -501,16 +495,18 @@
                                         @enderror
                                     </div>
                                     
+                                    @if($seller)
                                     <!-- Current Profile Picture -->
-                                    @if($seller->pfp)
                                     <div>
                                         <label class="block text-sm font-medium text-white mb-2">Current Profile Picture</label>
-                                        <img src="{{ $seller->pfp }}" 
+                                        @php
+                                            $currentPfp = $seller->pfp ?? 'https://ui-avatars.com/api/?name=' . urlencode($user->name) . '&size=200&background=3b82f6&color=fff';
+                                        @endphp
+                                        <img src="{{ $currentPfp }}" 
                                              alt="Current Profile" 
                                              class="w-24 h-24 rounded-full object-cover border-2"
                                              style="border-color: #2d2c31;">
                                     </div>
-                                    @endif
                                     
                                     <!-- Profile Picture Upload -->
                                     <div>
@@ -527,6 +523,7 @@
                                         <p class="mt-1 text-xs text-red-400">{{ $message }}</p>
                                         @enderror
                                     </div>
+                                    @endif
                                 </div>
                                 
                                 <!-- Footer -->
@@ -554,7 +551,6 @@
                         </div>
                     </div>
                 </div>
-                @endif
             </div>
         </div>
     </div>
