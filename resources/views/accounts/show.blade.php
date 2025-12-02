@@ -167,7 +167,7 @@ if ($seller && !empty($seller->pfp)) {
             this.messagingModalOpen = true;
         },
         async submitContactToSeller() {
-            if (this.sendingContact || !this.guidelinesChecked || this.message.length < 40) return;
+            if (this.sendingContact || !this.guidelinesChecked || this.message.length < 4) return;
             this.sendingContact = true;
             try {
                 const formData = new FormData();
@@ -911,14 +911,9 @@ if ($seller && !empty($seller->pfp)) {
                                             x-model="message"
                                             placeholder="{{ str_replace(':seller', $account->seller->user->name ?? 'Game Market Store', __('messages.ask_seller_about_product')) }}" 
                                             class="py-3 !text-sm sm:!text-base rounded-b-none block w-full rounded-md border-0 shadow-sm disabled:opacity-50 disabled:pointer-events-none text-white placeholder:text-gray-500 focus:ring-2 focus:ring-red-500 focus:outline-none transition-all" 
-                                            min="40" 
                                             rows="3" 
-                                            maxlength="1500"
                                             style="background-color: #1b1a1e; border: 1px solid #2d2c31; height: 76px; resize: none; padding-left: 12px;"
                                         ></textarea>
-                                        <div class="absolute bottom-1 right-1 px-1.5 py-0.5 text-xs rounded" style="background-color: rgba(27, 26, 30, 0.5); color: rgba(255, 255, 255, 0.6);">
-                                            <span x-text="messageCount"></span> / 1500
-                                        </div>
                                     </div>
                                 </div>
                                 <div class="flex gap-x-2 justify-center items-center px-2 py-1.5 text-xs sm:text-sm rounded-b-lg" style="background-color: rgba(27, 26, 30, 0.5); border: 1px solid #2d2c31; border-top: none; color: rgba(255, 255, 255, 0.7);">
@@ -1063,9 +1058,9 @@ if ($seller && !empty($seller->pfp)) {
                             <button 
                                 type="button" 
                                 @click="submitContactToSeller"
-                                :disabled="!guidelinesChecked || message.length < 40 || sendingContact"
+                                :disabled="!guidelinesChecked || message.length < 4 || sendingContact"
                                 class="items-center justify-center transition-colors focus:outline focus:outline-offset-2 focus-visible:outline outline-none disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden font-medium active:translate-y-px whitespace-nowrap shadow-sm focus:outline-red-600 py-3 px-4 sm:px-5 w-full text-sm sm:text-base rounded-lg flex"
-                                :class="guidelinesChecked && message.length >= 40 && !sendingContact ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-gray-600 text-gray-400'"
+                                :class="guidelinesChecked && message.length >= 4 && !sendingContact ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-gray-600 text-gray-400'"
                             >
                                 <span x-show="!sendingContact" class="flex items-center justify-center gap-2">
                                     <span>{{ __('messages.send_message') }}</span>
