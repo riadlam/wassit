@@ -134,15 +134,17 @@
                                             <dt class="text-sm font-medium capitalize text-white">User ID</dt>
                                             <dd class="mt-1 text-sm leading-6 text-gray-400 sm:col-span-2 sm:mt-0">#{{ $user->id }}</dd>
                                         </div>
+                                        @if($seller)
                                         <div class="px-4 py-6 sm:col-span-1 sm:px-0">
                                             <dt class="text-sm font-medium capitalize text-white">Profile Picture</dt>
                                             <dd class="mt-1 text-sm leading-6 text-gray-400 sm:col-span-2 sm:mt-0">
                                                 @php
-                                                    $pfpUrl = $seller && $seller->pfp ? $seller->pfp : asset('storage/examplepfp.webp');
+                                                    $pfpUrl = $seller->pfp ?? asset('storage/examplepfp.webp');
                                                 @endphp
                                                 <img src="{{ $pfpUrl }}" alt="Profile" class="w-12 h-12 rounded-full object-cover border-2" style="border-color: #2d2c31;">
                                             </dd>
                                         </div>
+                                        @endif
                                     </div>
                                 </div>
                             </div>
