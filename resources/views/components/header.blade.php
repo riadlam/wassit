@@ -35,7 +35,7 @@
                 <!-- Logo -->
                 <div class="flex items-center">
                     <a href="{{ route('home') }}" class="text-2xl font-bold">
-                        <span class="text-red-600">Wasit</span>
+                        <span class="text-red-600">Wassit</span>
                         <span class="text-xs text-gray-400 ml-2 hidden sm:inline">by Diaszone</span>
                     </a>
                 </div>
@@ -44,7 +44,7 @@
                 <div class="hidden md:flex items-center space-x-6 ml-5">
                     <a href="{{ route('home') }}" class="text-gray-300 hover:text-white transition-colors font-medium">{{ __('messages.home') }}</a>
                     <a href="{{ route('home') }}" class="text-gray-300 hover:text-white transition-colors font-medium">{{ __('messages.browse_accounts') }}</a>
-                    <a href="{{ Auth::check() ? route('account.listed-accounts') : route('partner.apply') }}" class="text-gray-300 hover:text-white transition-colors font-medium">{{ __('messages.sell_account') }}</a>
+                    <a href="{{ (Auth::check() && Auth::user()->role === 'seller') ? route('account.listed-accounts') : route('partner.apply') }}" class="text-gray-300 hover:text-white transition-colors font-medium">{{ __('messages.sell_account') }}</a>
                 </div>
             </div>
             
@@ -159,7 +159,7 @@
             <!-- Menu Header -->
             <div class="flex items-center justify-between p-4 border-b" style="border-color: rgba(45, 44, 49, 0.3);">
                 <a href="{{ route('home') }}" class="text-xl font-bold">
-                    <span class="text-red-600">Wasit</span>
+                    <span class="text-red-600">Wassit</span>
                 </a>
                 <button 
                     @click="closeMenu()"
@@ -187,7 +187,7 @@
                     {{ __('messages.browse_accounts') }}
                 </a>
                 <a 
-                    href="{{ Auth::check() ? route('account.listed-accounts') : route('partner.apply') }}" 
+                    href="{{ (Auth::check() && Auth::user()->role === 'seller') ? route('account.listed-accounts') : route('partner.apply') }}" 
                     @click="closeMenu()"
                     class="block text-gray-300 hover:text-white transition-colors font-medium py-2"
                 >

@@ -4,7 +4,7 @@
             <!-- Brand Section -->
             <div class="mb-4 sm:mb-0">
                 <h3 class="text-lg sm:text-xl font-bold mb-2">
-                    <span class="text-red-600">Wasit</span>
+                    <span class="text-red-600">Wassit</span>
                     <span class="text-xs text-gray-400 ml-2">by Diaszone</span>
                 </h3>
                 <p class="text-gray-400 text-xs sm:text-sm mt-2">{{ __('messages.footer_tagline') }}</p>
@@ -63,7 +63,7 @@
         
         <!-- Copyright -->
         <div class="border-t mt-6 sm:mt-8 pt-4 sm:pt-6 text-center text-xs sm:text-sm text-gray-400" style="border-color: #2d2c31;">
-            <p>&copy; {{ date('Y') }} Wasit by Diaszone. {{ __('messages.all_rights_reserved') }}</p>
+            <p>&copy; {{ date('Y') }} Wassit by Diaszone. {{ __('messages.all_rights_reserved') }}</p>
         </div>
     </div>
 </footer>

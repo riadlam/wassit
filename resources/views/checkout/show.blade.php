@@ -23,7 +23,7 @@ use Illuminate\Support\Facades\Storage;
                         <div class="flex justify-between items-center mb-6">
                             <a class="relative" href="{{ route('home') }}">
                                 <span class="text-2xl font-bold">
-                                    <span class="text-red-600">Wasit</span>
+                                    <span class="text-red-600">Wassit</span>
                                     <span class="text-xs text-gray-400 ml-2">by Diaszone</span>
                                 </span>
                             </a>
@@ -44,7 +44,7 @@ use Illuminate\Support\Facades\Storage;
                             <svg xmlns="http://www.w3.org/2000/svg" width="11" height="12" viewBox="0 0 11 12" fill="none" class="text-red-600">
                                 <path d="M5.49991 0.352869C5.60017 0.352869 5.69327 0.374928 5.77921 0.419045L9.83975 2.18375C10.0832 2.28669 10.2766 2.44846 10.4198 2.66905C10.5774 2.88963 10.6562 3.14699 10.6562 3.4411C10.6705 4.1911 10.5487 5.07346 10.2909 6.08816C10.0331 7.10287 9.56762 8.08816 8.89444 9.04405C8.23559 10.0146 7.29027 10.8161 6.0585 11.4485C5.68611 11.6249 5.31371 11.6249 4.94132 11.4485C3.70955 10.8161 2.76423 10.0146 2.10538 9.04405C1.4322 8.08816 0.966707 7.10287 0.708894 6.08816C0.451082 5.07346 0.329337 4.1911 0.34366 3.4411C0.34366 3.14699 0.422436 2.88963 0.579988 2.66905C0.723217 2.44846 0.916577 2.28669 1.16007 2.18375L5.22061 0.419045C5.30655 0.374928 5.39965 0.352869 5.49991 0.352869ZM5.49991 1.83081V10.169C6.47387 9.65434 7.24014 8.99993 7.79874 8.20581C8.34301 7.41169 8.72973 6.59552 8.95889 5.75728C9.17374 4.90434 9.28116 4.13963 9.28116 3.46316L5.49991 1.83081Z" fill="currentColor"></path>
                             </svg>
-                            <span>Your account purchase is protected under Wasit's Comprehensive Warranty.</span>
+                            <span>Your account purchase is protected under Wassit's Comprehensive Warranty.</span>
                         </div>
                     </div>
                     
