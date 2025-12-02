@@ -20,6 +20,7 @@ class SellerApplication extends Model
         'preferred_location',
         'account_count',
         'status',
+        'telegram_message',
         'admin_notes',
     ];
 

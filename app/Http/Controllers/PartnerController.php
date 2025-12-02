@@ -131,12 +131,21 @@ class PartnerController extends Controller
                 'reply_markup' => [
                     'inline_keyboard' => [
                         [
-                            ['text' => 'Approve', 'url' => $approveUrl],
-                            ['text' => 'Reject', 'url' => $rejectUrl],
+                            ['text' => "✅ Approve", 'url' => $approveUrl],
+                            ['text' => "❌ Reject", 'url' => $rejectUrl],
                         ],
                     ],
                 ],
             ]);
+
+            // Save telegram message id if available
+            if ($resp->successful()) {
+                $body = $resp->json();
+                if (isset($body['result']['message_id'])) {
+                    $application->telegram_message = (string)$body['result']['message_id'];
+                    $application->save();
+                }
+            }
         } catch (\Throwable $t) {}
 
         return response()->json([
