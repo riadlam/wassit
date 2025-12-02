@@ -563,8 +563,14 @@
     </div>
 @endsection
 
-
 @push('scripts')
-<!-- Alpine.js -->
-<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<script>
+    // Debug: Check if Alpine is loaded
+    console.log('Alpine loaded?', typeof window.Alpine !== 'undefined');
+    
+    // Test the modal state
+    document.addEventListener('alpine:init', () => {
+        console.log('Alpine initialized on settings page');
+    });
+</script>
 @endpush
