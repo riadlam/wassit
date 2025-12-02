@@ -29,34 +29,28 @@
                 </div>
                 
                 <!-- Settings Content -->
-                <div class="mt-8" x-data="{ activeTab: 'general', showEditModal: false, uploading: false }">
+                <div class="mt-8">
                     <!-- Tabs -->
                     <div class="mb-4">
                         <div class="flex overflow-x-auto -mb-8 pb-8" style="scrollbar-width: none; -ms-overflow-style: none;">
                             <div class="flex gap-1 min-w-full">
                                 <a href="#" 
-                                   @click.prevent="activeTab = 'general'"
-                                   class="flex items-center flex-shrink-0 h-10 px-3 py-2 text-sm font-medium rounded-md transition-colors"
-                                   :class="activeTab === 'general' ? 'bg-red-600 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-800/50'"
-                                   style="background-color: rgba(220, 38, 38, 0.1);"
-                                   :style="activeTab === 'general' ? 'background-color: #dc2626;' : ''">
-                                    <i class="mr-1.5 fa-solid fa-rectangle-vertical-history text-sm" :class="activeTab === 'general' ? 'opacity-100' : 'opacity-75'"></i> <span>General</span>
+                                   onclick="document.getElementById('general-tab').style.display='block'; document.getElementById('notifications-tab').style.display='none'; document.getElementById('connected-accounts-tab').style.display='none'; this.classList.add('bg-red-600'); return false;"
+                                   class="flex items-center flex-shrink-0 h-10 px-3 py-2 text-sm font-medium rounded-md transition-colors bg-red-600 text-white"
+                                   style="background-color: #dc2626;">
+                                    <i class="mr-1.5 fa-solid fa-rectangle-vertical-history text-sm"></i> <span>General</span>
                                 </a>
                                 <a href="#" 
-                                   @click.prevent="activeTab = 'notifications'"
-                                   class="flex items-center flex-shrink-0 h-10 px-3 py-2 text-sm font-medium rounded-md transition-colors"
-                                   :class="activeTab === 'notifications' ? 'bg-red-600 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-800/50'"
-                                   style="background-color: rgba(220, 38, 38, 0.1);"
-                                   :style="activeTab === 'notifications' ? 'background-color: #dc2626;' : ''">
-                                    <i class="mr-1.5 fa-solid fa-bell text-sm" :class="activeTab === 'notifications' ? 'opacity-100' : 'opacity-75'"></i> <span>Notifications</span>
+                                   onclick="document.getElementById('general-tab').style.display='none'; document.getElementById('notifications-tab').style.display='block'; document.getElementById('connected-accounts-tab').style.display='none'; return false;"
+                                   class="flex items-center flex-shrink-0 h-10 px-3 py-2 text-sm font-medium rounded-md transition-colors text-gray-400 hover:text-white hover:bg-gray-800/50"
+                                   style="background-color: rgba(220, 38, 38, 0.1);">
+                                    <i class="mr-1.5 fa-solid fa-bell text-sm"></i> <span>Notifications</span>
                                 </a>
                                 <a href="#" 
-                                   @click.prevent="activeTab = 'connected-accounts'"
-                                   class="flex items-center flex-shrink-0 h-10 px-3 py-2 text-sm font-medium rounded-md transition-colors"
-                                   :class="activeTab === 'connected-accounts' ? 'bg-red-600 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-800/50'"
-                                   style="background-color: rgba(220, 38, 38, 0.1);"
-                                   :style="activeTab === 'connected-accounts' ? 'background-color: #dc2626;' : ''">
-                                    <i class="mr-1.5 fa-solid fa-link text-sm" :class="activeTab === 'connected-accounts' ? 'opacity-100' : 'opacity-75'"></i> <span>Connected Accounts</span>
+                                   onclick="document.getElementById('general-tab').style.display='none'; document.getElementById('notifications-tab').style.display='none'; document.getElementById('connected-accounts-tab').style.display='block'; return false;"
+                                   class="flex items-center flex-shrink-0 h-10 px-3 py-2 text-sm font-medium rounded-md transition-colors text-gray-400 hover:text-white hover:bg-gray-800/50"
+                                   style="background-color: rgba(220, 38, 38, 0.1);">
+                                    <i class="mr-1.5 fa-solid fa-link text-sm"></i> <span>Connected Accounts</span>
                                 </a>
                             </div>
                         </div>
@@ -114,13 +108,13 @@
                         <!-- Main Content Area -->
                         <div class="space-y-4 lg:space-y-6 lg:col-span-2 lg:row-span-2 lg:row-end-2 order-1 lg:order-2">
                             <!-- General Tab Content -->
-                            <div x-show="activeTab === 'general'">
+                            <div id="general-tab">
                                 <!-- User Information Section -->
                             <div class="sm:rounded-xl sm:mx-0 -mx-4 border" style="background-color: #0e1015; border-color: #2d2c31;">
                                 <div class="space-y-1.5 px-4 sm:px-6 border-b sm:rounded-t-xl flex flex-row items-center justify-between py-3" style="border-color: #2d2c31; background-color: rgba(27, 26, 30, 0.2);">
                                     <h3 class="font-semibold font-display leading-none text-white">User Information</h3>
                                     <button type="button" 
-                                            @click="showEditModal = true" 
+                                            onclick="document.getElementById('editModal').style.display='flex'" 
                                             class="inline-flex items-center justify-center transition-colors focus:outline focus:outline-offset-2 focus-visible:outline outline-none disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden font-medium active:translate-y-px whitespace-nowrap py-2 px-4 text-sm rounded-md ring-1 hover:bg-gray-800/50 text-white focus:outline-secondary" 
                                             style="background-color: rgba(27, 26, 30, 0.5); border-color: #2d2c31;">
                                         <i class="mr-1.5 fa-solid fa-pencil"></i> Edit Profile
@@ -226,7 +220,7 @@
                             </div>
                             
                             <!-- Notifications Tab Content -->
-                            <div x-show="activeTab === 'notifications'">
+                            <div id="notifications-tab" style="display: none;">
                                 <!-- Telegram Notifications Section -->
                                 <div class="sm:rounded-xl sm:mx-0 -mx-4 border" style="background-color: #0e1015; border-color: #2d2c31;">
                                     <div class="flex flex-col space-y-1.5 px-4 sm:px-6 py-6 border-b sm:rounded-t-xl" style="border-color: #2d2c31; background-color: rgba(27, 26, 30, 0.2);">
@@ -318,7 +312,7 @@
                             </div>
                             
                             <!-- Connected Accounts Tab Content -->
-                            <div x-show="activeTab === 'connected-accounts'">
+                            <div id="connected-accounts-tab" style="display: none;">
                                 <div class="sm:rounded-xl sm:mx-0 -mx-4 border max-w-2xl" style="background-color: #0e1015; border-color: #2d2c31;">
                                     <div class="flex flex-col space-y-1.5 px-4 sm:px-6 py-6 border-b sm:rounded-t-xl" style="border-color: #2d2c31; background-color: rgba(27, 26, 30, 0.2);">
                                         <h3 class="font-semibold font-display leading-none text-white">Connected Accounts</h3>
@@ -428,12 +422,12 @@
                 </div>
                 
                 <!-- Edit Profile Modal -->
-                <div x-show="showEditModal" 
-                     x-transition
-                     class="fixed inset-0 z-50 overflow-y-auto">
+                <div id="editModal" 
+                     class="fixed inset-0 z-50 overflow-y-auto" 
+                     style="display: none;">
                     <!-- Backdrop -->
                     <div class="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity"
-                         @click="showEditModal = false"></div>
+                         onclick="document.getElementById('editModal').style.display='none'"></div>
                     
                     <!-- Modal -->
                     <div class="flex min-h-full items-center justify-center p-4">
@@ -444,7 +438,7 @@
                             <form action="{{ route('account.settings.update-profile') }}" 
                                   method="POST" 
                                   enctype="multipart/form-data"
-                                  @submit="uploading = true">
+                                  onsubmit="document.getElementById('submitBtn').disabled=true">
                                 @csrf
                                 
                                 <!-- Header -->
@@ -459,7 +453,7 @@
                                         </div>
                                     </div>
                                     <button type="button" 
-                                            @click="showEditModal = false"
+                                            onclick="document.getElementById('editModal').style.display='none'"
                                             class="text-gray-400 hover:text-white transition-colors">
                                         <i class="fa-solid fa-times text-xl"></i>
                                     </button>
@@ -531,22 +525,16 @@
                                 <!-- Footer -->
                                 <div class="flex items-center justify-end gap-3 px-6 py-4 border-t" style="border-color: #2d2c31; background-color: rgba(27, 26, 30, 0.3);">
                                     <button type="button" 
-                                            @click="showEditModal = false"
-                                            :disabled="uploading"
+                                            onclick="document.getElementById('editModal').style.display='none'"
                                             class="px-4 py-2 text-sm font-medium rounded-lg transition-colors text-gray-400 hover:text-white hover:bg-gray-800/50"
                                             style="background-color: rgba(27, 26, 30, 0.5);">
                                         Cancel
                                     </button>
                                     <button type="submit"
-                                            :disabled="uploading"
-                                            class="px-6 py-2 text-sm font-medium rounded-lg text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                            id="submitBtn"
+                                            class="px-6 py-2 text-sm font-medium rounded-lg text-white transition-all"
                                             style="background: linear-gradient(135deg, #3b82f6, #2563eb);">
-                                        <span x-show="!uploading">
-                                            <i class="fa-solid fa-save mr-2"></i>Save Changes
-                                        </span>
-                                        <span x-show="uploading">
-                                            <i class="fa-solid fa-spinner fa-spin mr-2"></i>Saving...
-                                        </span>
+                                        <i class="fa-solid fa-save mr-2"></i>Save Changes
                                     </button>
                                 </div>
                             </form>
@@ -562,5 +550,4 @@
 <style>
     [x-cloak] { display: none !important; }
 </style>
-<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 @endsection
