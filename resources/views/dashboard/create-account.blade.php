@@ -97,14 +97,6 @@
                                                 return false;
                                             }
                                             
-                                            // Validate at least one image is selected
-                                            const fileInput = document.getElementById('images');
-                                            if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
-                                                e.preventDefault();
-                                                alert('At least one image is required. Please upload at least one image before submitting.');
-                                                return false;
-                                            }
-                                            
                                             console.log('Form submitting...', {
                                                 game_id: selectedGameId,
                                                 mlbbId: mlbbId,
