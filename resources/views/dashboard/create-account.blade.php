@@ -652,29 +652,58 @@
                                     const allowed = this.maxImages - this.imageCount;
                                     if (files.length > allowed) {
                                         alert(`Maximum ${this.maxImages} images allowed. You can only add ${allowed} more.`);
-                                        // Keep current selection; clear the input to avoid accidental replacement
-                                        event.target.value = '';
                                         return;
                                     }
                                     // Append new files to existing selection
                                     this.selectedFiles = [...this.selectedFiles, ...files];
                                     this.imageCount = this.selectedFiles.length;
-                                    // Sync back to the file input so form submits all selected files
-                                    const input = document.getElementById('images');
-                                    const dt = new DataTransfer();
-                                    this.selectedFiles.forEach(file => dt.items.add(file));
-                                    input.files = dt.files;
-                                    // Clear the native input to allow re-selecting the same file again if needed
-                                    event.target.value = '';
+                                    console.log('Files selected:', this.selectedFiles.length, this.selectedFiles);
                                 },
                                 removeFile(index) {
                                     this.selectedFiles.splice(index, 1);
                                     this.imageCount = this.selectedFiles.length;
-                                    // Update the file input
-                                    const input = document.getElementById('images');
-                                    const dt = new DataTransfer();
-                                    this.selectedFiles.forEach(file => dt.items.add(file));
-                                    input.files = dt.files;
+                                    console.log('Files after removal:', this.selectedFiles.length, this.selectedFiles);
+                                },
+                                init() {
+                                    // Intercept form submission to manually attach files
+                                    const form = document.getElementById('createAccountForm');
+                                    if (form) {
+                                        form.addEventListener('submit', (e) => {
+                                            if (this.selectedFiles.length > 0) {
+                                                e.preventDefault();
+                                                const formData = new FormData(form);
+                                                // Remove the placeholder images[] that may be empty
+                                                formData.delete('images[]');
+                                                // Add all selected files
+                                                this.selectedFiles.forEach((file, idx) => {
+                                                    formData.append('images[]', file);
+                                                });
+                                                console.log('Submitting with files:', this.selectedFiles.length);
+                                                // Submit via fetch
+                                                fetch(form.action, {
+                                                    method: 'POST',
+                                                    body: formData,
+                                                    headers: {
+                                                        'X-Requested-With': 'XMLHttpRequest'
+                                                    }
+                                                }).then(response => response.json())
+                                                  .then(data => {
+                                                      if (data.success) {
+                                                          window.location.href = '{{ route("account.listed-accounts") }}';
+                                                      } else {
+                                                          alert(data.message || 'An error occurred');
+                                                          if (data.errors) {
+                                                              console.error('Validation errors:', data.errors);
+                                                          }
+                                                      }
+                                                  })
+                                                  .catch(err => {
+                                                      console.error('Submit error:', err);
+                                                      alert('Failed to create account. Please try again.');
+                                                  });
+                                            }
+                                        });
+                                    }
                                 }
                             }">
                                 <h2 class="text-xl font-semibold text-white mb-6 flex items-center">
