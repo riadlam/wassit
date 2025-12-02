@@ -170,8 +170,8 @@
                                                 <tr class="border-b transition-colors hover:bg-gray-800/50" style="border-color: #2d2c31;">
                                                     <td class="px-2.5 py-3 align-middle first:pl-4 last:pr-4">
                                                         <div class="flex items-center gap-2">
-                                                            <div class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center" style="background-color: rgba(34, 197, 94, 0.2);">
-                                                                <i class="fa-solid fa-credit-card text-green-400 text-xs"></i>
+                                                            <div class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center" style="background-color: {{ $transaction['type'] === 'earning' ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)' }};">
+                                                                <i class="fa-solid fa-credit-card {{ $transaction['type'] === 'earning' ? 'text-green-400' : 'text-red-400' }} text-xs"></i>
                                                             </div>
                                                             <span class="text-sm text-white font-medium">{{ $transaction['payment_method'] }}</span>
                                                         </div>
@@ -179,12 +179,16 @@
                                                     <td class="px-2.5 py-3 align-middle first:pl-4 last:pr-4">
                                                         <div class="text-sm text-gray-300">
                                                             <p class="font-medium">{{ $transaction['account_title'] }}</p>
-                                                            <p class="text-xs text-gray-500">Buyer: {{ $transaction['buyer_name'] }}</p>
+                                                            @if(isset($transaction['buyer_name']))
+                                                                <p class="text-xs text-gray-500">Buyer: {{ $transaction['buyer_name'] }}</p>
+                                                            @elseif(isset($transaction['seller_name']))
+                                                                <p class="text-xs text-gray-500">Seller: {{ $transaction['seller_name'] }}</p>
+                                                            @endif
                                                         </div>
                                                     </td>
                                                     <td class="px-2.5 py-3 align-middle first:pl-4 last:pr-4">
-                                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold" style="background-color: rgba(34, 197, 94, 0.15); color: #86efac; border: 1px solid rgba(34, 197, 94, 0.3);">
-                                                            <i class="fa-solid fa-circle-check mr-1"></i> {{ $transaction['status'] }}
+                                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold" style="background-color: {{ $transaction['status'] === 'Completed' || $transaction['status'] === 'Delivered' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(234, 179, 8, 0.15)' }}; color: {{ $transaction['status'] === 'Completed' || $transaction['status'] === 'Delivered' ? '#86efac' : '#fde047' }}; border: 1px solid {{ $transaction['status'] === 'Completed' || $transaction['status'] === 'Delivered' ? 'rgba(34, 197, 94, 0.3)' : 'rgba(234, 179, 8, 0.3)' }};">
+                                                            <i class="fa-solid {{ $transaction['status'] === 'Completed' || $transaction['status'] === 'Delivered' ? 'fa-circle-check' : 'fa-clock' }} mr-1"></i> {{ $transaction['status'] }}
                                                         </span>
                                                     </td>
                                                     <td class="px-2.5 py-3 align-middle text-right first:pl-4 last:pr-4">
@@ -194,7 +198,9 @@
                                                         <span class="text-sm text-gray-400 font-mono">#{{ $transaction['order_id'] }}</span>
                                                     </td>
                                                     <td class="px-2.5 py-3 align-middle text-right first:pl-4 last:pr-4">
-                                                        <span class="text-sm text-white font-semibold">{{ number_format($transaction['amount'], 2, ',', ' ') }} DZD</span>
+                                                        <span class="text-sm font-semibold {{ $transaction['type'] === 'earning' ? 'text-green-400' : 'text-red-400' }}">
+                                                            {{ $transaction['type'] === 'earning' ? '+' : '-' }} {{ number_format($transaction['amount'], 2, ',', ' ') }} DZD
+                                                        </span>
                                                     </td>
                                                     <td class="px-2.5 py-3 align-middle text-right first:pl-4 last:pr-4">
                                                         <span class="text-sm text-gray-400">{{ $transaction['updated_at']->diffForHumans() }}</span>

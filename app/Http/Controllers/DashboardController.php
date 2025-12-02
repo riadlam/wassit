@@ -40,6 +40,7 @@ class DashboardController extends Controller
         $transactions = collect();
         
         if ($seller) {
+            // Seller wallet: show balance and completed/delivered orders (earnings)
             $walletBalance = $seller->wallet ?? 0;
             
             // Get completed orders where seller received payment (delivery confirmed)
@@ -61,8 +62,34 @@ class DashboardController extends Controller
                         'payment_method' => 'Chargily',
                         'status' => 'Completed',
                         'amount' => $payout,
+                        'type' => 'earning',
                         'updated_at' => $order->updated_at,
                         'buyer_name' => $order->buyer->name ?? 'Unknown',
+                        'account_title' => $order->account->title ?? 'Account #' . $order->account_id,
+                    ];
+                });
+        } else {
+            // Buyer view: wallet stays 0, but show purchase transactions with full amount paid
+            $transactions = \App\Models\Order::where('buyer_id', $user->id)
+                ->where('status', 'completed')
+                ->with(['seller.user', 'account'])
+                ->orderBy('updated_at', 'desc')
+                ->get()
+                ->map(function($order) {
+                    $baseAmount = (float) $order->amount_dzd;
+                    $processingFee = round($baseAmount * 0.039, 2);
+                    $totalPaid = $baseAmount + $processingFee;
+                    
+                    return [
+                        'id' => $order->id,
+                        'order_id' => $order->id,
+                        'transaction_id' => $order->chargily_payment_id ?? 'N/A',
+                        'payment_method' => 'Chargily',
+                        'status' => $order->delivery_status === 'delivered' ? 'Delivered' : 'Pending Delivery',
+                        'amount' => $totalPaid,
+                        'type' => 'purchase',
+                        'updated_at' => $order->updated_at,
+                        'seller_name' => $order->seller && $order->seller->user ? $order->seller->user->name : 'Unknown',
                         'account_title' => $order->account->title ?? 'Account #' . $order->account_id,
                     ];
                 });
