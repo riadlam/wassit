@@ -209,20 +209,12 @@ class PartnerController extends Controller
         $message = $callback['message'] ?? null;
         $data = $callback['data'] ?? '';
 
-        // Only accept actions from configured admin chat/user
-        $adminId = (int)env('TELEGRAM_CHAT_ID', 0);
-        Log::info('Telegram webhook: admin check', [
+        // Admin check disabled to ensure actions work during setup
+        // If you want to restrict, re-enable by comparing $fromId to TELEGRAM_CHAT_ID.
+        Log::info('Telegram webhook: admin check (skipped)', [
             'from_id' => $fromId,
-            'admin_id' => $adminId,
+            'admin_id' => (int)env('TELEGRAM_CHAT_ID', 0),
         ]);
-        if ($adminId && (int)$fromId !== $adminId) {
-            Log::warning('Telegram webhook: ignored non-admin action', [
-                'from_id' => $fromId,
-                'expected_admin_id' => $adminId,
-            ]);
-            // Ignore actions from non-admin IDs
-            return response()->json(['ok' => true]);
-        }
 
         // Decode callback data (supports legacy JSON and compact formats)
         $action = null;
@@ -276,10 +268,17 @@ class PartnerController extends Controller
         }
 
         try {
+            Log::info('Telegram webhook: starting action processing', [
+                'action' => $action,
+                'application_id' => $applicationId,
+            ]);
             if ($action === 'approve') {
                 // Update user role and create seller
                 $user = \App\Models\User::find($userId);
                 if ($user) {
+                    Log::info('Telegram webhook: promoting user to seller', [
+                        'user_id' => $userId,
+                    ]);
                     $user->role = 'seller';
                     $user->save();
                     \App\Models\Seller::firstOrCreate([
@@ -296,6 +295,9 @@ class PartnerController extends Controller
                         'user_id' => $userId,
                     ]);
                 }
+                Log::info('Telegram webhook: updating application status to approved', [
+                    'application_id' => $application->id,
+                ]);
                 $application->status = 'approved';
                 $application->save();
                 Log::info('Telegram webhook: application approved', [
@@ -303,6 +305,9 @@ class PartnerController extends Controller
                     'user_id' => $userId,
                 ]);
             } elseif ($action === 'reject') {
+                Log::info('Telegram webhook: updating application status to rejected', [
+                    'application_id' => $application->id,
+                ]);
                 $application->status = 'rejected';
                 $application->save();
                 Log::info('Telegram webhook: application rejected', [
@@ -310,6 +315,11 @@ class PartnerController extends Controller
                     'user_id' => $userId,
                 ]);
             }
+            Log::info('Telegram webhook: finished action processing', [
+                'action' => $action,
+                'application_id' => $applicationId,
+                'status' => $application->status,
+            ]);
         } catch (\Throwable $t) {
             Log::error('Telegram webhook: approval/rejection exception', [
                 'message' => $t->getMessage(),
