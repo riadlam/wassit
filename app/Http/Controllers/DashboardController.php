@@ -21,7 +21,26 @@ class DashboardController extends Controller
     
     public function orders()
     {
-        return view('dashboard.orders');
+        $user = Auth::user();
+        $seller = $user->seller;
+        
+        if ($seller) {
+            // Seller view: show orders where they are the seller
+            $orders = \App\Models\Order::where('seller_id', $seller->id)
+                ->with(['buyer', 'account.game'])
+                ->orderBy('created_at', 'desc')
+                ->paginate(15);
+            $isSeller = true;
+        } else {
+            // Buyer view: show orders where they are the buyer
+            $orders = \App\Models\Order::where('buyer_id', $user->id)
+                ->with(['seller.user', 'account.game'])
+                ->orderBy('created_at', 'desc')
+                ->paginate(15);
+            $isSeller = false;
+        }
+        
+        return view('dashboard.orders', compact('orders', 'isSeller'));
     }
     
     public function chat()
