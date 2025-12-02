@@ -1,11 +1,5 @@
 @extends('layouts.app')
 
-@push('styles')
-<style>
-    [x-cloak] { display: none !important; }
-</style>
-@endpush
-
 @section('content')
     <!-- Full Screen Background Image -->
     <div id="background-image" class="fixed inset-0 z-0 pointer-events-none">
@@ -126,7 +120,7 @@
                                 <div class="space-y-1.5 px-4 sm:px-6 border-b sm:rounded-t-xl flex flex-row items-center justify-between py-3" style="border-color: #2d2c31; background-color: rgba(27, 26, 30, 0.2);">
                                     <h3 class="font-semibold font-display leading-none text-white">User Information</h3>
                                     <button type="button" 
-                                            @click="showEditModal = !showEditModal; console.log('Button clicked, showEditModal:', showEditModal)" 
+                                            @click="showEditModal = true" 
                                             class="inline-flex items-center justify-center transition-colors focus:outline focus:outline-offset-2 focus-visible:outline outline-none disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden font-medium active:translate-y-px whitespace-nowrap py-2 px-4 text-sm rounded-md ring-1 hover:bg-gray-800/50 text-white focus:outline-secondary" 
                                             style="background-color: rgba(27, 26, 30, 0.5); border-color: #2d2c31;">
                                         <i class="mr-1.5 fa-solid fa-pencil"></i> Edit Profile
@@ -564,14 +558,9 @@
     </div>
 @endsection
 
-@push('scripts')
-<script>
-    // Debug: Check if Alpine is loaded
-    console.log('Alpine loaded?', typeof window.Alpine !== 'undefined');
-    
-    // Test the modal state
-    document.addEventListener('alpine:init', () => {
-        console.log('Alpine initialized on settings page');
-    });
-</script>
-@endpush
+@section('scripts')
+<style>
+    [x-cloak] { display: none !important; }
+</style>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+@endsection
