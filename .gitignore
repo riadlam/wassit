@@ -24,7 +24,8 @@ Thumbs.db
  !/public/storage/mlbbskins.json
  /storage/*.key
  /storage/pail
- # vendor allowed temporarily
+ /vendor
+# vendor re-ignored (remains in history)
 Homestead.json
 Homestead.yaml
 Thumbs.db
