@@ -43,8 +43,8 @@
                 <!-- Navigation Links (Desktop Only) -->
                 <div class="hidden md:flex items-center space-x-6 ml-5">
                     <a href="{{ route('home') }}" class="text-gray-300 hover:text-white transition-colors font-medium">{{ __('messages.home') }}</a>
-                    <a href="#" class="text-gray-300 hover:text-white transition-colors font-medium">{{ __('messages.browse_accounts') }}</a>
-                    <a href="#" class="text-gray-300 hover:text-white transition-colors font-medium">{{ __('messages.sell_account') }}</a>
+                    <a href="{{ route('home') }}" class="text-gray-300 hover:text-white transition-colors font-medium">{{ __('messages.browse_accounts') }}</a>
+                    <a href="{{ route('partner.apply') }}" class="text-gray-300 hover:text-white transition-colors font-medium">{{ __('messages.sell_account') }}</a>
                 </div>
             </div>
             
@@ -180,14 +180,14 @@
                     {{ __('messages.home') }}
                 </a>
                 <a 
-                    href="#" 
+                    href="{{ route('home') }}" 
                     @click="closeMenu()"
                     class="block text-gray-300 hover:text-white transition-colors font-medium py-2"
                 >
                     {{ __('messages.browse_accounts') }}
                 </a>
                 <a 
-                    href="#" 
+                    href="{{ route('partner.apply') }}" 
                     @click="closeMenu()"
                     class="block text-gray-300 hover:text-white transition-colors font-medium py-2"
                 >
