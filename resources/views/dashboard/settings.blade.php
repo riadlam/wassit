@@ -1,5 +1,11 @@
 @extends('layouts.app')
 
+@push('styles')
+<style>
+    [x-cloak] { display: none !important; }
+</style>
+@endpush
+
 @section('content')
     <!-- Full Screen Background Image -->
     <div id="background-image" class="fixed inset-0 z-0 pointer-events-none">
@@ -425,10 +431,8 @@
                 </div>
                 
                 <!-- Edit Profile Modal -->
-                <div x-show="showEditModal" 
-                     x-cloak
-                     class="fixed inset-0 z-50 overflow-y-auto" 
-                     style="display: none;">
+                <template x-if="showEditModal">
+                <div class="fixed inset-0 z-50 overflow-y-auto">
                     <!-- Backdrop -->
                     <div class="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity"
                          @click="showEditModal = false"></div>
@@ -551,6 +555,7 @@
                         </div>
                     </div>
                 </div>
+                </template>
             </div>
         </div>
     </div>
