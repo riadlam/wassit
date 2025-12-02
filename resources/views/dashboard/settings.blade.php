@@ -125,7 +125,10 @@
                             <div class="sm:rounded-xl sm:mx-0 -mx-4 border" style="background-color: #0e1015; border-color: #2d2c31;">
                                 <div class="space-y-1.5 px-4 sm:px-6 border-b sm:rounded-t-xl flex flex-row items-center justify-between py-3" style="border-color: #2d2c31; background-color: rgba(27, 26, 30, 0.2);">
                                     <h3 class="font-semibold font-display leading-none text-white">User Information</h3>
-                                    <button type="button" @click="showEditModal = true" class="inline-flex items-center justify-center transition-colors focus:outline focus:outline-offset-2 focus-visible:outline outline-none disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden font-medium active:translate-y-px whitespace-nowrap py-2 px-4 text-sm rounded-md ring-1 hover:bg-gray-800/50 text-white focus:outline-secondary" style="background-color: rgba(27, 26, 30, 0.5); border-color: #2d2c31;">
+                                    <button type="button" 
+                                            @click="showEditModal = !showEditModal; console.log('Button clicked, showEditModal:', showEditModal)" 
+                                            class="inline-flex items-center justify-center transition-colors focus:outline focus:outline-offset-2 focus-visible:outline outline-none disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden font-medium active:translate-y-px whitespace-nowrap py-2 px-4 text-sm rounded-md ring-1 hover:bg-gray-800/50 text-white focus:outline-secondary" 
+                                            style="background-color: rgba(27, 26, 30, 0.5); border-color: #2d2c31;">
                                         <i class="mr-1.5 fa-solid fa-pencil"></i> Edit Profile
                                     </button>
                                 </div>
@@ -431,11 +434,11 @@
                 </div>
                 
                 <!-- Edit Profile Modal -->
-                <template x-if="showEditModal">
-                <div class="fixed inset-0 z-50 overflow-y-auto">
+                <div x-show="showEditModal" 
+                     @click.away="showEditModal = false"
+                     class="fixed inset-0 z-50 overflow-y-auto">
                     <!-- Backdrop -->
-                    <div class="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity"
-                         @click="showEditModal = false"></div>
+                    <div class="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity"></div>
                     
                     <!-- Modal -->
                     <div class="flex min-h-full items-center justify-center p-4">
@@ -555,7 +558,6 @@
                         </div>
                     </div>
                 </div>
-                </template>
             </div>
         </div>
     </div>
