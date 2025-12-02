@@ -138,7 +138,7 @@
                                             <dt class="text-sm font-medium capitalize text-white">Profile Picture</dt>
                                             <dd class="mt-1 text-sm leading-6 text-gray-400 sm:col-span-2 sm:mt-0">
                                                 @php
-                                                    $pfpUrl = $seller && $seller->pfp ? $seller->pfp : 'https://ui-avatars.com/api/?name=' . urlencode($user->name) . '&size=200&background=3b82f6&color=fff';
+                                                    $pfpUrl = $seller && $seller->pfp ? $seller->pfp : asset('storage/examplepfp.webp');
                                                 @endphp
                                                 <img src="{{ $pfpUrl }}" alt="Profile" class="w-12 h-12 rounded-full object-cover border-2" style="border-color: #2d2c31;">
                                             </dd>
@@ -495,7 +495,7 @@
                                     <div>
                                         <label class="block text-sm font-medium text-white mb-2">Current Profile Picture</label>
                                         @php
-                                            $currentPfp = $seller->pfp ?? 'https://ui-avatars.com/api/?name=' . urlencode($user->name) . '&size=200&background=3b82f6&color=fff';
+                                            $currentPfp = $seller->pfp ?? asset('storage/examplepfp.webp');
                                         @endphp
                                         <img src="{{ $currentPfp }}" 
                                              alt="Current Profile" 
