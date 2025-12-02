@@ -64,6 +64,8 @@ Route::prefix('account')->name('account.')->middleware('auth')->group(function (
     
     Route::get('/settings', [DashboardController::class, 'settings'])->name('settings');
     Route::post('/settings/update-profile', [DashboardController::class, 'updateProfile'])->name('settings.update-profile');
+    Route::post('/settings/logout-all', [DashboardController::class, 'logoutAllDevices'])->name('settings.logout-all');
+    Route::delete('/settings/logout-session/{sessionId}', [DashboardController::class, 'logoutSession'])->name('settings.logout-session');
 });
 
 // Order creation route (web-based, uses session auth) - must be authenticated

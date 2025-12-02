@@ -147,19 +147,6 @@
                                 </div>
                             </div>
                             
-                            <!-- Two-Factor Authentication Section -->
-                            <div class="sm:rounded-xl sm:mx-0 -mx-4 border" style="background-color: #0e1015; border-color: #2d2c31;">
-                                <div class="flex flex-col space-y-1.5 px-4 sm:px-6 py-6 border-b sm:rounded-t-xl" style="border-color: #2d2c31; background-color: rgba(27, 26, 30, 0.2);">
-                                    <h3 class="font-semibold font-display leading-none text-white">Two-Factor Authentication</h3>
-                                </div>
-                                <div class="sm:px-6 flex items-center w-full px-4 py-6">
-                                    <span class="text-sm text-gray-400">Add an extra layer of security to your account by enabling two-factor authentication.</span>
-                                    <button type="button" class="inline-flex items-center justify-center transition-colors focus:outline focus:outline-offset-2 focus-visible:outline outline-none disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden font-medium active:translate-y-px whitespace-nowrap py-2 px-4 text-sm rounded-md ml-auto ring-1 shrink-0 bg-red-600/20 hover:bg-red-600/30 text-red-400 border-red-500/30">
-                                        <i class="mr-2 fa-solid fa-shield-check"></i> Enable
-                                    </button>
-                                </div>
-                            </div>
-                            
                             <!-- Delete Account Section -->
                             <div class="px-4 py-5 rounded-lg sm:p-6 shadow" style="background: linear-gradient(to bottom right, #0e1015 0%, #1b1a1e 50%, #0e1015 100%); border: 1px solid #ef4444;">
                                 <div class="flex flex-col gap-6 sm:items-center sm:justify-between sm:flex-row">
@@ -178,42 +165,63 @@
                                 <div class="flex space-y-1.5 px-4 sm:px-6 border-b sm:rounded-t-xl flex-row items-center py-4" style="border-color: #2d2c31; background-color: rgba(27, 26, 30, 0.2);">
                                     <h3 class="font-semibold font-display leading-none text-white">Login Sessions</h3>
                                     <div class="flex items-center ml-auto gap-x-1.5">
-                                        <button type="button" class="inline-flex items-center justify-center transition-colors focus:outline focus:outline-offset-2 focus-visible:outline outline-none disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden font-medium active:translate-y-px whitespace-nowrap py-1.5 px-2 text-xs rounded-md ring-1 hover:bg-gray-800/50 text-white focus:outline-secondary" style="background-color: rgba(27, 26, 30, 0.5); border-color: #2d2c31;">
+                                        <button type="button" 
+                                                onclick="document.querySelectorAll('.session-ip').forEach(el => el.style.display = el.style.display === 'none' ? 'inline' : 'none')"
+                                                class="inline-flex items-center justify-center transition-colors focus:outline focus:outline-offset-2 focus-visible:outline outline-none disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden font-medium active:translate-y-px whitespace-nowrap py-1.5 px-2 text-xs rounded-md ring-1 hover:bg-gray-800/50 text-white focus:outline-secondary" 
+                                                style="background-color: rgba(27, 26, 30, 0.5); border-color: #2d2c31;">
                                             <i class="mr-2 fa-solid fa-eye"></i> Show IPs
                                         </button>
-                                        <button type="button" class="inline-flex items-center justify-center transition-colors focus:outline focus:outline-offset-2 focus-visible:outline outline-none disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden font-medium active:translate-y-px whitespace-nowrap bg-red-600/20 hover:bg-red-600/30 text-red-400 border-red-500/30 py-1.5 px-2 text-xs rounded-md ring-1">
-                                            <i class="mr-2 fa-solid fa-xmark"></i> Logout All Devices
-                                        </button>
+                                        <form action="{{ route('account.settings.logout-all') }}" method="POST" class="inline">
+                                            @csrf
+                                            <button type="submit" 
+                                                    onclick="return confirm('Are you sure you want to logout from all devices?')"
+                                                    class="inline-flex items-center justify-center transition-colors focus:outline focus:outline-offset-2 focus-visible:outline outline-none disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden font-medium active:translate-y-px whitespace-nowrap bg-red-600/20 hover:bg-red-600/30 text-red-400 border-red-500/30 py-1.5 px-2 text-xs rounded-md ring-1">
+                                                <i class="mr-2 fa-solid fa-xmark"></i> Logout All Devices
+                                            </button>
+                                        </form>
                                     </div>
                                 </div>
                                 <div class="px-0 sm:px-6 pt-0">
                                     <ul role="list" class="divide-y rounded-md" style="border-color: #2d2c31;">
+                                        @foreach($sessions as $session)
                                         <li class="flex flex-wrap items-center justify-between px-4 py-4 leading-6 gap-x-4 sm:px-0 gap-y-2">
                                             <div class="flex items-center flex-1 min-w-[150px]">
                                                 <div class="flex items-center justify-center p-3 overflow-hidden border rounded-full shadow-sm w-14 h-14" style="background-color: #1b1a1e; border-color: #2d2c31;">
-                                                    <i class="text-xl text-white fa-solid fa-desktop" aria-hidden="true"></i>
+                                                    <i class="text-xl text-white {{ $session['device_icon'] }}" aria-hidden="true"></i>
                                                 </div>
                                                 <div class="flex flex-col flex-1 min-w-0 ml-4">
                                                     <span class="items-center font-medium truncate font-display sm:flex text-white">
-                                                        Windows 
-                                                        <span class="sm:px-1.5 px-0.5 text-gray-400">·</span> Chrome 
+                                                        {{ $session['platform'] }}
+                                                        <span class="sm:px-1.5 px-0.5 text-gray-400">·</span> {{ $session['browser'] }}
+                                                        @if($session['is_current'])
                                                         <span class="inline-flex items-center font-medium ring-1 ring-inset px-2 py-1 text-xs rounded-md ml-1 font-sans sm:ml-2 bg-red-600/20 text-red-400 border-red-500/30">
                                                             <svg class="-ml-0.5 mr-1 h-2 w-2 shrink-0" fill="currentColor" viewBox="0 0 8 8">
                                                                 <circle cx="4" cy="4" r="3"></circle>
                                                             </svg>
                                                             <span class="flex-1 truncate shrink-0">Current</span>
                                                         </span>
+                                                        @endif
                                                     </span>
                                                     <span class="sm:flex items-center truncate flex-shrink-0 text-sm text-gray-400 gap-x-1.5">
-                                                        Algeria, Algiers 
-                                                        <span class="text-gray-400">·</span> 2 seconds ago
+                                                        <span class="session-ip" style="display: none;">{{ $session['ip_address'] }}</span>
+                                                        <span class="text-gray-400">·</span> {{ $session['last_active'] }}
                                                     </span>
                                                 </div>
                                             </div>
                                             <div class="flex items-center flex-shrink-0 gap-x-3">
-                                                <div class="block w-24 rounded-md h-9" style="background-color: rgba(27, 26, 30, 0.5);"></div>
+                                                @if(!$session['is_current'])
+                                                <form action="{{ route('account.settings.logout-session', $session['id']) }}" method="POST">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" 
+                                                            class="text-red-400 hover:text-red-300 text-sm transition-colors">
+                                                        Logout
+                                                    </button>
+                                                </form>
+                                                @endif
                                             </div>
                                         </li>
+                                        @endforeach
                                     </ul>
                                 </div>
                             </div>

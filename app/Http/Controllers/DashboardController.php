@@ -731,7 +731,102 @@ class DashboardController extends Controller
         // Get wallet balance (sellers only)
         $walletBalance = $seller ? ($seller->wallet ?? 0) : 0;
         
-        return view('dashboard.settings', compact('walletBalance', 'user', 'seller'));
+        // Get user sessions
+        $sessions = DB::table('sessions')
+            ->where('user_id', $user->id)
+            ->orderBy('last_activity', 'desc')
+            ->get()
+            ->map(function ($session) use ($user) {
+                $agent = $this->parseUserAgent($session->user_agent);
+                return [
+                    'id' => $session->id,
+                    'ip_address' => $session->ip_address,
+                    'user_agent' => $session->user_agent,
+                    'platform' => $agent['platform'],
+                    'browser' => $agent['browser'],
+                    'device_icon' => $agent['icon'],
+                    'last_active' => \Carbon\Carbon::createFromTimestamp($session->last_activity)->diffForHumans(),
+                    'is_current' => $session->id === session()->getId(),
+                ];
+            });
+        
+        return view('dashboard.settings', compact('walletBalance', 'user', 'seller', 'sessions'));
+    }
+
+    private function parseUserAgent($userAgent)
+    {
+        $platform = 'Unknown';
+        $browser = 'Unknown';
+        $icon = 'fa-solid fa-desktop';
+
+        // Detect platform
+        if (stripos($userAgent, 'Windows') !== false) {
+            $platform = 'Windows';
+            $icon = 'fa-brands fa-windows';
+        } elseif (stripos($userAgent, 'Mac') !== false) {
+            $platform = 'macOS';
+            $icon = 'fa-brands fa-apple';
+        } elseif (stripos($userAgent, 'Linux') !== false) {
+            $platform = 'Linux';
+            $icon = 'fa-brands fa-linux';
+        } elseif (stripos($userAgent, 'Android') !== false) {
+            $platform = 'Android';
+            $icon = 'fa-brands fa-android';
+        } elseif (stripos($userAgent, 'iPhone') !== false || stripos($userAgent, 'iPad') !== false) {
+            $platform = 'iOS';
+            $icon = 'fa-brands fa-apple';
+        }
+
+        // Detect browser
+        if (stripos($userAgent, 'Chrome') !== false && stripos($userAgent, 'Edg') === false) {
+            $browser = 'Chrome';
+        } elseif (stripos($userAgent, 'Firefox') !== false) {
+            $browser = 'Firefox';
+        } elseif (stripos($userAgent, 'Safari') !== false && stripos($userAgent, 'Chrome') === false) {
+            $browser = 'Safari';
+        } elseif (stripos($userAgent, 'Edg') !== false) {
+            $browser = 'Edge';
+        } elseif (stripos($userAgent, 'Opera') !== false || stripos($userAgent, 'OPR') !== false) {
+            $browser = 'Opera';
+        }
+
+        return [
+            'platform' => $platform,
+            'browser' => $browser,
+            'icon' => $icon,
+        ];
+    }
+
+    public function logoutAllDevices()
+    {
+        $user = Auth::user();
+        $currentSessionId = session()->getId();
+        
+        // Delete all sessions except current
+        DB::table('sessions')
+            ->where('user_id', $user->id)
+            ->where('id', '!=', $currentSessionId)
+            ->delete();
+        
+        return back()->with('success', 'Successfully logged out from all other devices.');
+    }
+
+    public function logoutSession($sessionId)
+    {
+        $user = Auth::user();
+        
+        // Prevent logging out current session
+        if ($sessionId === session()->getId()) {
+            return back()->with('error', 'Cannot logout from current session.');
+        }
+        
+        // Delete the specific session
+        DB::table('sessions')
+            ->where('user_id', $user->id)
+            ->where('id', $sessionId)
+            ->delete();
+        
+        return back()->with('success', 'Session logged out successfully.');
     }
 
     public function updateProfile(Request $request)
