@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Log;
 
 class PartnerController extends Controller
 {
@@ -113,6 +114,14 @@ class PartnerController extends Controller
                 "Application ID: {$application->id}";
 
             $apiUrl = "https://api.telegram.org/bot{$botToken}/sendMessage";
+            // Pre-log before calling Telegram
+            Log::info('Telegram sendMessage: preparing', [
+                'has_token' => (bool)$botToken,
+                'chat_id' => $chatId,
+                'application_id' => $application->id,
+                'user_id' => $user->id,
+            ]);
+
             // Use callback_data for webhook handling
             $resp = Http::post($apiUrl, [
                 'chat_id' => $chatId,
@@ -145,15 +154,37 @@ class PartnerController extends Controller
                 ],
             ]);
 
+            // Log raw response from Telegram
+            Log::info('Telegram sendMessage: response', [
+                'http_status' => $resp->status(),
+                'body' => $resp->body(),
+            ]);
+
             // Save telegram message id if available
             if ($resp->successful()) {
                 $body = $resp->json();
                 if (isset($body['result']['message_id'])) {
                     $application->telegram_message = (string)$body['result']['message_id'];
                     $application->save();
+                    Log::info('Telegram sendMessage: stored message_id', [
+                        'message_id' => $application->telegram_message,
+                        'application_id' => $application->id,
+                    ]);
+                } else {
+                    Log::warning('Telegram sendMessage: no message_id in success response');
                 }
+            } else {
+                Log::error('Telegram sendMessage: failed', [
+                    'http_status' => $resp->status(),
+                    'body' => $resp->body(),
+                ]);
             }
-        } catch (\Throwable $t) {}
+        } catch (\Throwable $t) {
+            Log::error('Telegram sendMessage: exception', [
+                'message' => $t->getMessage(),
+                'code' => $t->getCode(),
+            ]);
+        }
 
         return response()->json([
             'success' => true,
@@ -168,10 +199,16 @@ class PartnerController extends Controller
     {
         $botToken = env('TELEGRAM_BOT_TOKEN', '');
         if (!$botToken) {
+            Log::error('Telegram webhook: missing bot token');
             return response()->json(['ok' => false], 400);
         }
 
         $update = $request->all();
+        Log::info('Telegram webhook: received update', [
+            'has_callback_query' => isset($update['callback_query']),
+            'keys' => array_keys($update),
+        ]);
+
         if (!isset($update['callback_query'])) {
             return response()->json(['ok' => true]);
         }
@@ -184,6 +221,10 @@ class PartnerController extends Controller
         // Only accept actions from configured admin chat/user
         $adminId = (int)env('TELEGRAM_CHAT_ID', 0);
         if ($adminId && (int)$fromId !== $adminId) {
+            Log::warning('Telegram webhook: ignored non-admin action', [
+                'from_id' => $fromId,
+                'expected_admin_id' => $adminId,
+            ]);
             // Ignore actions from non-admin IDs
             return response()->json(['ok' => true]);
         }
@@ -192,10 +233,12 @@ class PartnerController extends Controller
         try {
             $payload = json_decode($data, true, 512, JSON_THROW_ON_ERROR);
         } catch (\Throwable $t) {
+            Log::error('Telegram webhook: invalid callback_data', ['data' => $data]);
             return response()->json(['ok' => false], 400);
         }
 
         if (($payload['type'] ?? '') !== 'application_action') {
+            Log::info('Telegram webhook: non-application action', ['payload' => $payload]);
             return response()->json(['ok' => true]);
         }
 
@@ -203,8 +246,19 @@ class PartnerController extends Controller
         $applicationId = (int)($payload['application_id'] ?? 0);
         $userId = (int)($payload['user_id'] ?? 0);
 
+        Log::info('Telegram webhook: action parsed', [
+            'action' => $action,
+            'application_id' => $applicationId,
+            'user_id' => $userId,
+        ]);
+
         $application = SellerApplication::find($applicationId);
         if (!$application || $application->user_id !== $userId) {
+            Log::error('Telegram webhook: invalid application or user mismatch', [
+                'application_exists' => (bool)$application,
+                'application_user_id' => $application->user_id ?? null,
+                'payload_user_id' => $userId,
+            ]);
             return response()->json(['ok' => false, 'error' => 'Invalid application'], 400);
         }
 
@@ -226,9 +280,17 @@ class PartnerController extends Controller
 
             $application->status = 'approved';
             $application->save();
+            Log::info('Telegram webhook: application approved', [
+                'application_id' => $application->id,
+                'user_id' => $userId,
+            ]);
         } elseif ($action === 'reject') {
             $application->status = 'rejected';
             $application->save();
+            Log::info('Telegram webhook: application rejected', [
+                'application_id' => $application->id,
+                'user_id' => $userId,
+            ]);
         }
 
         // Edit original message to reflect status
@@ -258,25 +320,46 @@ class PartnerController extends Controller
 
         try {
             if ($chatId && $messageId) {
-                Http::post($apiEdit, [
+                $editResp = Http::post($apiEdit, [
                     'chat_id' => $chatId,
                     'message_id' => (int)$messageId,
                     'text' => $newText,
                     'parse_mode' => 'HTML',
                     'disable_web_page_preview' => true,
                 ]);
+                Log::info('Telegram webhook: editMessageText response', [
+                    'status' => $editResp->status(),
+                    'body' => $editResp->body(),
+                ]);
+            } else {
+                Log::warning('Telegram webhook: missing chat_id or message_id for edit', [
+                    'chat_id' => $chatId,
+                    'message_id' => $messageId,
+                ]);
             }
-        } catch (\Throwable $t) {}
+        } catch (\Throwable $t) {
+            Log::error('Telegram webhook: editMessageText exception', [
+                'message' => $t->getMessage(),
+            ]);
+        }
 
         // Answer callback query to remove loading in Telegram client
         $apiAnswer = "https://api.telegram.org/bot{$botToken}/answerCallbackQuery";
         try {
-            Http::post($apiAnswer, [
+            $ansResp = Http::post($apiAnswer, [
                 'callback_query_id' => $callback['id'] ?? '',
                 'text' => $action === 'approve' ? 'Approved ✅' : 'Rejected ❌',
                 'show_alert' => false,
             ]);
-        } catch (\Throwable $t) {}
+            Log::info('Telegram webhook: answerCallbackQuery response', [
+                'status' => $ansResp->status(),
+                'body' => $ansResp->body(),
+            ]);
+        } catch (\Throwable $t) {
+            Log::error('Telegram webhook: answerCallbackQuery exception', [
+                'message' => $t->getMessage(),
+            ]);
+        }
 
         return response()->json(['ok' => true]);
     }
