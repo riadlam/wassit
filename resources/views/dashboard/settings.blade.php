@@ -147,19 +147,6 @@
                                 </div>
                             </div>
                             
-                            <!-- Delete Account Section -->
-                            <div class="px-4 py-5 rounded-lg sm:p-6 shadow" style="background: linear-gradient(to bottom right, #0e1015 0%, #1b1a1e 50%, #0e1015 100%); border: 1px solid #ef4444;">
-                                <div class="flex flex-col gap-6 sm:items-center sm:justify-between sm:flex-row">
-                                    <div>
-                                        <h3 class="text-base font-semibold leading-6 text-white">Delete Account</h3>
-                                        <div class="max-w-xl mt-2 text-sm text-gray-400">This is irreversible. We will permanently remove your account, you will lose all the store credit and loyalty coins you have.</div>
-                                    </div>
-                                    <button type="button" class="inline-flex items-center justify-center transition-colors focus:outline focus:outline-offset-2 focus-visible:outline outline-none disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden font-medium active:translate-y-px whitespace-nowrap bg-red-600 hover:bg-red-700 text-white shadow-sm focus:outline-red-600 py-2 px-4 text-sm rounded-md">
-                                        <i class="mr-2 fa-solid fa-trash-alt"></i> Delete Account
-                                    </button>
-                                </div>
-                            </div>
-                            
                             <!-- Login Sessions Section -->
                             <div class="sm:rounded-xl sm:mx-0 -mx-4 border" style="background-color: #0e1015; border-color: #2d2c31;">
                                 <div class="flex space-y-1.5 px-4 sm:px-6 border-b sm:rounded-t-xl flex-row items-center py-4" style="border-color: #2d2c31; background-color: rgba(27, 26, 30, 0.2);">
