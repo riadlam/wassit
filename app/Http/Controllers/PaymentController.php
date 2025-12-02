@@ -76,19 +76,13 @@ class PaymentController extends Controller
                 ], 400);
             }
 
-            // Calculate amounts (convert from cents to DZD)
-            $subtotal = $order->amount_dzd / 100;
-            $processorFeePercent = 3.9;
-            $processorFee = $subtotal * ($processorFeePercent / 100);
-            $totalAmount = $subtotal + $processorFee;
-
             // Create Chargily checkout via SDK
             $checkout = $this->chargilyPayInstance()->checkouts()->create([
                 'metadata' => [
                     'order_id' => (string)$order->id,
                 ],
                 'locale' => app()->getLocale() ?? 'en',
-                'amount' => (string) (int)($totalAmount * 100),
+                'amount' => (string) (int) $order->amount_dzd,
                 'currency' => 'dzd',
                 'description' => 'Account Purchase - Order #' . $order->id,
                 'success_url' => route('payment.success', ['encryptedOrderId' => $encryptedOrderId]),
