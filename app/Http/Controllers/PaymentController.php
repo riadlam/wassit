@@ -79,7 +79,7 @@ class PaymentController extends Controller
 
             // Calculate total amount including 3.9% processing fee
             $baseAmount = (float) $order->amount_dzd;
-            $processingFee = round($baseAmount * 0.039, 2);
+            $processingFee = ceil($baseAmount * 0.039);
             $totalAmount = $baseAmount + $processingFee;
 
             // Create Chargily checkout via SDK

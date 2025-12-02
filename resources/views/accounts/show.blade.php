@@ -167,7 +167,7 @@ if ($seller && !empty($seller->pfp)) {
             this.messagingModalOpen = true;
         },
         async submitContactToSeller() {
-            if (this.sendingContact || !this.guidelinesChecked || this.message.length < 4) return;
+            if (this.sendingContact || !this.guidelinesChecked || this.message.trim().length < 4) return;
             this.sendingContact = true;
             try {
                 const formData = new FormData();
