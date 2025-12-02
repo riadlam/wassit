@@ -192,13 +192,19 @@ class ChatController extends Controller
     public function getMessages(Request $request, $conversationId)
     {
         $user = Auth::user();
-        
+        // Ensure seller relation is available for robust auth checks
+        $user->loadMissing('seller');
+
         $conversation = Conversation::with(['buyer', 'seller.user', 'accountForSale.game'])
             ->findOrFail($conversationId);
         
         // Check if user is part of this conversation
-        $isBuyer = $conversation->buyer_id === $user->id;
-        $isSeller = $user->seller && $conversation->seller_id === $user->seller->id;
+        $isBuyer = (int)$conversation->buyer_id === (int)$user->id;
+        // Allow seller either by matching seller.id or by seller.user_id
+        $isSeller = (
+            ($user->seller && (int)$conversation->seller_id === (int)$user->seller->id)
+            || ($conversation->seller && (int)$conversation->seller->user_id === (int)$user->id)
+        );
         
         if (!$isBuyer && !$isSeller) {
             return response()->json(['error' => 'Unauthorized'], 403);
