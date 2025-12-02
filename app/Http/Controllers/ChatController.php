@@ -242,8 +242,9 @@ class ChatController extends Controller
         }
         
         $formattedMessages = $messages->map(function ($message) use ($user, $conversation) {
-            $isSender = $message->sender_id === $user->id;
+            $isSender = (int)$message->sender_id === (int)$user->id;
             $senderType = $message->sender_type;
+            $currentRole = ((int)$conversation->buyer_id === (int)$user->id) ? 'buyer' : 'seller';
             
             // Get sender avatar
             // - For seller messages: use seller pfp or examplepfp.webp
@@ -288,16 +289,8 @@ class ChatController extends Controller
             // - type 'system' => system/info messages
             $formattedType = 'system';
             if ($message->message_type !== 'system') {
-                $formattedType = $isSender ? 'user' : 'seller';
-                // Fallback alignment correction for legacy rows where sender_id may not match user ids
-                // If current user is the seller and the message was sent by seller, force 'user'
-                if ($formattedType === 'seller' && $conversation->seller && (int)$conversation->seller->user_id === (int)$user->id && $senderType === 'seller') {
-                    $formattedType = 'user';
-                }
-                // If current user is the buyer and the message was sent by buyer, force 'user'
-                if ($formattedType === 'seller' && (int)$conversation->buyer_id === (int)$user->id && $senderType === 'buyer') {
-                    $formattedType = 'user';
-                }
+                // Prefer sender_type vs current user's role for robust alignment across reloads
+                $formattedType = ($senderType === $currentRole) ? 'user' : 'seller';
             }
 
             $formatted = [
