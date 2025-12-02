@@ -1537,9 +1537,9 @@ use Illuminate\Support\Facades\Storage;
                         ? Math.round((seller.rating / 5) * 100)
                         : 0;
                     
-                    // Price formatting - no commas, just the raw number
-                    const priceDzd = account.price_dzd;
-                    const formattedPrice = String(priceDzd).replace(/,/g, '');
+                    // Price formatting: stored as cents -> show whole DZD with no decimals/separators
+                    const priceCents = Number(account.price_dzd || 0);
+                    const formattedPrice = Math.round(priceCents / 100).toString();
                     
                     // Build attributes display
                     const attributes = {};
