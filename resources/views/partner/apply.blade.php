@@ -41,7 +41,7 @@ use Illuminate\Support\Facades\Storage;
                             </p>
                             <button 
                                 type="button"
-                                onclick="window.authRedirectUrl='{{ route('partner.apply') }}'; window.Alpine.store('authModal').open = true; window.Alpine.store('authModal').mode = 'login';"
+                                onclick="window.authRedirectUrl='{{ route('partner.apply') }}'; window.dispatchEvent(new CustomEvent('open-login-modal', {bubbles: true, cancelable: true}));"
                                 class="inline-flex items-center gap-2 px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-colors">
                                 <i class="fa-solid fa-right-to-bracket"></i>
                                 Login or Sign Up
