@@ -100,14 +100,7 @@
                 <div class="absolute h-6 opacity-30 blur -translate-x-1/2 -top-4 left-1/2 w-16" style="background-color: #3b82f6;"></div>
             @endif
         </a>
-        <a class="relative flex flex-col items-center justify-center gap-1 px-2 py-2 rounded-lg transition-colors min-w-0 flex-1 group {{ $currentRoute === 'account.library' ? 'text-white bg-gradient-to-t from-blue-500/10' : 'text-gray-400 hover:text-white hover:bg-gradient-to-t from-accent' }}" href="{{ route('account.library') }}">
-            <i class="text-base fa-solid fa-books {{ $currentRoute === 'account.library' ? 'text-white' : 'text-gray-400/50 group-hover:text-white' }}" aria-hidden="true"></i>
-            <span class="text-[10px] font-medium leading-tight truncate w-full text-center">{{ __('messages.library') }}</span>
-            @if($currentRoute === 'account.library')
-                <div class="absolute h-[2px] -translate-x-1/2 rounded-t-full top-0 left-1/2 w-8" style="background-color: #3b82f6;"></div>
-                <div class="absolute h-6 opacity-30 blur -translate-x-1/2 -top-4 left-1/2 w-16" style="background-color: #3b82f6;"></div>
-            @endif
-        </a>
+
         @if($isSeller)
         <a class="relative flex flex-col items-center justify-center gap-1 px-2 py-2 rounded-lg transition-colors min-w-0 flex-1 group {{ $currentRoute === 'account.listed-accounts' ? 'text-white bg-gradient-to-t from-blue-500/10' : 'text-gray-400 hover:text-white hover:bg-gradient-to-t from-accent' }}" href="{{ route('account.listed-accounts') }}">
             <i class="text-base fa-solid fa-list {{ $currentRoute === 'account.listed-accounts' ? 'text-white' : 'text-gray-400/50 group-hover:text-white' }}" aria-hidden="true"></i>
