@@ -272,7 +272,12 @@ return [
     'delivery_confirmed_seller' => 'Buyer confirmed delivery — Transaction complete',
     'confirm_delivery' => 'Confirm Delivery',
     'confirming' => 'Confirming...',
-    'confirm_delivery_dialog' => 'Are you sure you received the account and it\'s working correctly? This action cannot be undone.',
+    'confirm_delivery_title' => 'Confirm Account Delivery',
+    'confirm_delivery_subtitle' => 'Please verify before confirming',
+    'confirm_delivery_dialog' => 'Are you sure you received the account and it\'s working correctly? Once confirmed, this transaction will be marked as complete.',
+    'confirm_delivery_warning' => 'This action cannot be undone. Only confirm if you have successfully accessed the account.',
+    'confirm' => 'Confirm',
+    'cancel' => 'Cancel',
     'delivery_confirm_error' => 'Failed to confirm delivery. Please try again.',
 ];
 

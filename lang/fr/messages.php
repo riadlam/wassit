@@ -266,7 +266,12 @@ return [
     'delivery_confirmed_seller' => 'L\'acheteur a confirmé la livraison — Transaction terminée',
     'confirm_delivery' => 'Confirmer la livraison',
     'confirming' => 'Confirmation...',
-    'confirm_delivery_dialog' => 'Êtes-vous sûr d\'avoir reçu le compte et qu\'il fonctionne correctement ? Cette action ne peut pas être annulée.',
+    'confirm_delivery_title' => 'Confirmer la livraison du compte',
+    'confirm_delivery_subtitle' => 'Veuillez vérifier avant de confirmer',
+    'confirm_delivery_dialog' => 'Êtes-vous sûr d\'avoir reçu le compte et qu\'il fonctionne correctement ? Une fois confirmée, cette transaction sera marquée comme terminée.',
+    'confirm_delivery_warning' => 'Cette action ne peut pas être annulée. Confirmez uniquement si vous avez accédé avec succès au compte.',
+    'confirm' => 'Confirmer',
+    'cancel' => 'Annuler',
     'delivery_confirm_error' => 'Échec de la confirmation de livraison. Veuillez réessayer.',
 ];
 
