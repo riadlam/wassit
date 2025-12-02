@@ -578,7 +578,10 @@ class DashboardController extends Controller
                     
                     foreach ($images as $image) {
                         if ($image->isValid() && $image->getMimeType() && strpos($image->getMimeType(), 'image/') === 0) {
-                            $path = $image->store('account_images', 'public');
+                            // Store with timestamp_uniqueid.extension format (same as storeAccount)
+                            $filename = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
+                            $image->move(public_path('storage/account_images'), $filename);
+                            $path = 'account_images/' . $filename;
                             
                             $imagesToCreate[] = [
                                 'account_id' => $account->id,
