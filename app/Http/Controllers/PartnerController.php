@@ -268,6 +268,12 @@ class PartnerController extends Controller
             return response()->json(['ok' => false, 'error' => 'Invalid application'], 400);
         }
 
+        // Ensure we have the correct user id from the application record (compact callbacks don't include user_id)
+        $userId = (int)$application->user_id;
+        Log::info('Telegram webhook: resolved user id from application', [
+            'user_id' => $userId,
+        ]);
+
         try {
             Log::info('Telegram webhook: starting action processing', [
                 'action' => $action,
