@@ -137,9 +137,10 @@ class PaymentController extends Controller
             // Post a system message notifying payment initiation success (final confirmation via webhook)
             \App\Models\Message::create([
                 'conversation_id' => $conversation->id,
-                'user_id' => null, // system
+                'sender_id' => null, // system
+                'sender_type' => 'system',
+                'message_type' => 'text',
                 'content' => 'Payment initiated for Order #' . $order->id . '. Awaiting confirmation.',
-                'type' => 'system',
             ]);
 
             // Focus chat UI to the conversation

@@ -96,6 +96,20 @@ class WebhookController extends Controller
                     'status' => 'completed',
                 ]);
 
+                // Create/find conversation and notify seller with system message
+                $conversation = \App\Models\Conversation::firstOrCreate([
+                    'buyer_id' => (int)$order->buyer_id,
+                    'seller_id' => (int)$order->seller_id,
+                ]);
+
+                \App\Models\Message::create([
+                    'conversation_id' => $conversation->id,
+                    'sender_id' => null,
+                    'sender_type' => 'system',
+                    'message_type' => 'text',
+                    'content' => 'Payment confirmed for Order #' . $order->id . '. Seller, please proceed to deliver the account.',
+                ]);
+
                 Log::info('WebhookController::handleCheckoutConfirmed - Order completed', [
                     'order_id' => $order->id,
                     'buyer_id' => $order->buyer_id,
@@ -111,18 +125,7 @@ class WebhookController extends Controller
         }
     }
 
-                        // Create/find conversation and notify seller with system message
-                        $conversation = \App\Models\Conversation::firstOrCreate([
-                            'buyer_id' => (int)$order->buyer_id,
-                            'seller_id' => (int)$order->seller_id,
-                        ]);
     /**
-                        \App\Models\Message::create([
-                            'conversation_id' => $conversation->id,
-                            'user_id' => null,
-                            'content' => 'Payment confirmed for Order #' . $order->id . '. Seller, please proceed to deliver the account.',
-                            'type' => 'system',
-                        ]);
      * Handle failed payment checkout
      */
     protected function handleCheckoutFailed(CheckoutElement $checkout)
