@@ -725,7 +725,13 @@ class DashboardController extends Controller
     
     public function settings()
     {
-        return view('dashboard.settings');
+        $user = Auth::user();
+        $seller = $user->seller;
+        
+        // Get wallet balance (sellers only)
+        $walletBalance = $seller ? ($seller->wallet ?? 0) : 0;
+        
+        return view('dashboard.settings', compact('walletBalance'));
     }
 
     /**

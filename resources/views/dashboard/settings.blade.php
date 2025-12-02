@@ -71,20 +71,28 @@
                                 <div class="sm:px-6 px-4 py-6">
                                     <dt class="text-sm font-medium leading-6" style="color: #9ca3af;">Store Credit</dt>
                                     <dd class="flex-none w-full mt-2">
-                                        <span class="pr-0.5 text-3xl font-semibold" style="color: #9ca3af;">€</span>
-                                        <span class="text-3xl font-semibold leading-10 tracking-tight text-white">0,00</span>
-                                        <span class="pl-1 text-sm font-medium" style="color: #9ca3af;">EUR</span>
+                                        <span class="text-3xl font-semibold leading-10 tracking-tight text-white">{{ number_format($walletBalance, 2, ',', ' ') }}</span>
+                                        <span class="pl-1 text-sm font-medium" style="color: #9ca3af;">DZD</span>
                                     </dd>
                                 </div>
                                 <div class="flex items-center px-4 sm:px-6 py-3 border-t sm:rounded-b-xl" style="border-color: #2d2c31; background-color: rgba(27, 26, 30, 0.2);">
-                                    <a href="#" class="inline-flex items-center justify-center transition-colors focus:outline focus:outline-offset-2 focus-visible:outline outline-none disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden font-medium active:translate-y-px whitespace-nowrap bg-transparent hover:bg-gray-800/50 text-white focus:outline-secondary py-1.5 px-2 text-xs rounded-md">
+                                    <a href="{{ route('dashboard.wallet') }}" class="inline-flex items-center justify-center transition-colors focus:outline focus:outline-offset-2 focus-visible:outline outline-none disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden font-medium active:translate-y-px whitespace-nowrap bg-transparent hover:bg-gray-800/50 text-white focus:outline-secondary py-1.5 px-2 text-xs rounded-md">
                                         <i class="mr-2 fa-solid fa-receipt"></i> View History
                                     </a>
                                 </div>
                             </div>
                             
                             <!-- Coins Card -->
-                            <div class="sm:rounded-xl sm:mx-0 -mx-4 border" style="background-color: #0e1015; border-color: #2d2c31;">
+                            <div class="sm:rounded-xl sm:mx-0 -mx-4 border relative" style="background-color: #0e1015; border-color: #2d2c31;">
+                                <!-- Coming Soon Overlay -->
+                                <div class="absolute inset-0 bg-black/40 backdrop-blur-[2px] rounded-xl z-10 flex items-center justify-center">
+                                    <div class="text-center px-4">
+                                        <i class="fa-solid fa-clock text-4xl text-blue-400 mb-2"></i>
+                                        <p class="text-white font-bold text-lg">Coming Soon</p>
+                                        <p class="text-gray-400 text-sm mt-1">This feature will be available soon</p>
+                                    </div>
+                                </div>
+                                
                                 <div class="sm:px-6 px-4 py-6">
                                     <dt class="text-sm font-medium leading-6" style="color: #9ca3af;">Coins</dt>
                                     <dd class="flex items-center w-full mt-2">
