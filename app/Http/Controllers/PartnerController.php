@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use App\Models\SellerApplication;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Config;
 
 class PartnerController extends Controller
 {
@@ -90,6 +92,33 @@ class PartnerController extends Controller
             'account_count' => $request->account_count,
             'status' => 'pending',
         ]);
+
+        // Send Telegram notification
+        try {
+            $botToken = env('TELEGRAM_BOT_TOKEN', '8489541435:AAF7jQMKYZVuJH9KQ4sf5AWPBFQ3Lj8fu9g');
+            $chatId = env('TELEGRAM_CHAT_ID', '8147422935');
+
+            $message = "New Seller Application\n" .
+                "User ID: {$user->id}\n" .
+                "Name: {$request->full_name}\n" .
+                "Email: {$request->email}\n" .
+                "Phone: {$request->phone}\n" .
+                "Country: {$request->country}\n" .
+                "Business: " . ($request->business_name ?: '-') . "\n" .
+                "Website: " . ($request->website ?: '-') . "\n" .
+                "Experience: {$request->experience}\n" .
+                "Games: {$request->games}\n" .
+                "Preferred Location: " . ($request->preferred_location ?: '-') . "\n" .
+                "Accounts to List: {$request->account_count}";
+
+            $apiUrl = "https://api.telegram.org/bot{$botToken}/sendMessage";
+            $resp = Http::post($apiUrl, [
+                'chat_id' => $chatId,
+                'text' => $message,
+                'parse_mode' => 'HTML',
+                'disable_web_page_preview' => true,
+            ]);
+        } catch (\Throwable $t) {}
 
         return response()->json([
             'success' => true,

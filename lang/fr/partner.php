@@ -1,0 +1,28 @@
+<?php
+
+return [
+    'title' => 'Devenir Partenaire',
+    'subtitle' => "Rejoignez notre marketplace et commencez à vendre des comptes de jeux. Accédez à des milliers d'acheteurs et développez votre activité.",
+    'personal_information' => 'Informations personnelles',
+    'full_name' => 'Nom complet',
+    'email' => 'Adresse e-mail',
+    'phone' => 'Numéro de téléphone',
+    'country' => 'Pays',
+    'business_information' => "Informations d'entreprise",
+    'business_name' => "Nom de l'entreprise",
+    'website' => 'Site web',
+    'experience' => 'Expérience de vente',
+    'games' => 'Jeux que vous vendez',
+    'preferred_location' => 'Emplacement préféré',
+    'account_count' => 'Comptes listés (estimé)',
+    'agree_terms' => "J'accepte les Conditions et Politiques",
+    'submit' => 'Soumettre la candidature',
+    'login_required_title' => 'Connexion requise',
+    'login_required_message' => "Veuillez vous connecter ou créer un compte pour postuler en tant que vendeur.",
+    'login_or_signup' => 'Se connecter ou S’inscrire',
+    'under_review_title' => 'Candidature en cours de revue',
+    'under_review_thanks' => "Merci pour votre intérêt à devenir vendeur sur Wassit !",
+    'under_review_message' => "Votre candidature est actuellement examinée par notre équipe. Nous vous informerons une fois la décision prise.",
+    'status' => 'Statut',
+    'back_home' => "Retour à l'accueil",
+];

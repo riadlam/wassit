@@ -1,0 +1,28 @@
+<?php
+
+return [
+    'title' => 'Become a Partner',
+    'subtitle' => 'Join our marketplace and start selling gaming accounts. Get access to thousands of buyers and grow your business.',
+    'personal_information' => 'Personal Information',
+    'full_name' => 'Full Name',
+    'email' => 'Email Address',
+    'phone' => 'Phone Number',
+    'country' => 'Country',
+    'business_information' => 'Business Information',
+    'business_name' => 'Business Name',
+    'website' => 'Website',
+    'experience' => 'Selling Experience',
+    'games' => 'Games You Sell',
+    'preferred_location' => 'Preferred Location',
+    'account_count' => 'Accounts Listed (estimated)',
+    'agree_terms' => 'I agree to the Terms & Policies',
+    'submit' => 'Submit Application',
+    'login_required_title' => 'Login Required',
+    'login_required_message' => 'Please login or create an account to apply as a seller.',
+    'login_or_signup' => 'Login or Sign Up',
+    'under_review_title' => 'Application Under Review',
+    'under_review_thanks' => 'Thank you for your interest in becoming a seller on Wassit!',
+    'under_review_message' => "Your application is currently being reviewed by our team. We'll notify you once a decision has been made.",
+    'status' => 'Status',
+    'back_home' => 'Back to Home',
+];

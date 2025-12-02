@@ -17,10 +17,10 @@ use Illuminate\Support\Facades\Storage;
             <!-- Header -->
             <div class="text-center mb-8">
                 <h1 class="text-3xl font-bold tracking-tight text-white sm:text-4xl lg:text-5xl mb-4">
-                    Become a <span class="text-transparent bg-clip-text bg-gradient-to-br from-[#A3DFFF] via-[#6CB9FF] to-[#0185FF]">Partner</span>
+                    {{ __('partner.title') }}
                 </h1>
                 <p class="text-lg text-gray-400 max-w-2xl mx-auto">
-                    Join our marketplace and start selling gaming accounts. Get access to thousands of buyers and grow your business.
+                    {{ __('partner.subtitle') }}
                 </p>
             </div>
             
@@ -35,16 +35,14 @@ use Illuminate\Support\Facades\Storage;
                                     <i class="fa-solid fa-lock text-4xl text-red-500"></i>
                                 </div>
                             </div>
-                            <h2 class="text-2xl font-bold text-white mb-3">Login Required</h2>
-                            <p class="text-gray-400 text-lg mb-6">
-                                Please login or create an account to apply as a seller.
-                            </p>
+                            <h2 class="text-2xl font-bold text-white mb-3">{{ __('partner.login_required_title') }}</h2>
+                            <p class="text-gray-400 text-lg mb-6">{{ __('partner.login_required_message') }}</p>
                             <button 
                                 type="button"
                                 onclick="window.authRedirectUrl='{{ route('partner.apply') }}'; window.dispatchEvent(new CustomEvent('open-login-modal', {bubbles: true, cancelable: true}));"
                                 class="inline-flex items-center gap-2 px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-colors">
                                 <i class="fa-solid fa-right-to-bracket"></i>
-                                Login or Sign Up
+                                {{ __('partner.login_or_signup') }}
                             </button>
                         </div>
                     @elseif(isset($hasApplication) && $hasApplication)
@@ -55,22 +53,18 @@ use Illuminate\Support\Facades\Storage;
                                     <i class="fa-solid fa-clock text-4xl text-red-500"></i>
                                 </div>
                             </div>
-                            <h2 class="text-2xl font-bold text-white mb-3">Application Under Review</h2>
-                            <p class="text-gray-400 text-lg mb-2">
-                                Thank you for your interest in becoming a seller on Wassit!
-                            </p>
-                            <p class="text-gray-400 mb-6">
-                                Your application is currently being reviewed by our team. We'll notify you once a decision has been made.
-                            </p>
+                            <h2 class="text-2xl font-bold text-white mb-3">{{ __('partner.under_review_title') }}</h2>
+                            <p class="text-gray-400 text-lg mb-2">{{ __('partner.under_review_thanks') }}</p>
+                            <p class="text-gray-400 mb-6">{{ __('partner.under_review_message') }}</p>
                             <div class="inline-flex items-center px-4 py-2 rounded-lg" style="background-color: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3);">
                                 <span class="text-red-500 font-medium">
-                                    Status: <span class="capitalize">{{ $application->status }}</span>
+                                    {{ __('partner.status') }}: <span class="capitalize">{{ $application->status }}</span>
                                 </span>
                             </div>
                             <div class="mt-8">
                                 <a href="{{ route('home') }}" class="inline-flex items-center gap-2 px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-colors">
                                     <i class="fa-solid fa-arrow-left"></i>
-                                    Back to Home
+                                    {{ __('partner.back_home') }}
                                 </a>
                             </div>
                         </div>
@@ -112,14 +106,14 @@ use Illuminate\Support\Facades\Storage;
                         <div class="mb-8">
                             <h2 class="text-xl font-semibold text-white mb-6 flex items-center">
                                 <i class="fa-solid fa-user mr-3 text-red-600"></i>
-                                Personal Information
+                                {{ __('partner.personal_information') }}
                             </h2>
                             
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <!-- Full Name -->
                                 <div>
                                     <label for="full_name" class="block text-sm font-medium text-gray-300 mb-2">
-                                        Full Name <span class="text-red-500">*</span>
+                                        {{ __('partner.full_name') }} <span class="text-red-500">*</span>
                                     </label>
                                     <input 
                                         type="text" 
@@ -135,7 +129,7 @@ use Illuminate\Support\Facades\Storage;
                                 <!-- Email -->
                                 <div>
                                     <label for="email" class="block text-sm font-medium text-gray-300 mb-2">
-                                        Email Address <span class="text-red-500">*</span>
+                                        {{ __('partner.email') }} <span class="text-red-500">*</span>
                                     </label>
                                     <input 
                                         type="email" 
@@ -151,7 +145,7 @@ use Illuminate\Support\Facades\Storage;
                                 <!-- Phone -->
                                 <div>
                                     <label for="phone" class="block text-sm font-medium text-gray-300 mb-2">
-                                        Phone Number <span class="text-red-500">*</span>
+                                        {{ __('partner.phone') }} <span class="text-red-500">*</span>
                                     </label>
                                     <input 
                                         type="tel" 
@@ -167,7 +161,7 @@ use Illuminate\Support\Facades\Storage;
                                 <!-- Country -->
                                 <div>
                                     <label for="country" class="block text-sm font-medium text-gray-300 mb-2">
-                                        Country <span class="text-red-500">*</span>
+                                        {{ __('partner.country') }} <span class="text-red-500">*</span>
                                     </label>
                                     <select 
                                         id="country" 
@@ -297,14 +291,14 @@ use Illuminate\Support\Facades\Storage;
                         <div class="mb-8">
                             <h2 class="text-xl font-semibold text-white mb-6 flex items-center">
                                 <i class="fa-solid fa-briefcase mr-3 text-red-600"></i>
-                                Business Information
+                                {{ __('partner.business_information') }}
                             </h2>
                             
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <!-- Business Name -->
                                 <div>
                                     <label for="business_name" class="block text-sm font-medium text-gray-300 mb-2">
-                                        Business/Store Name <span class="text-red-500">*</span>
+                                        {{ __('partner.business_name') }} <span class="text-red-500">*</span>
                                     </label>
                                     <input 
                                         type="text" 
@@ -320,7 +314,7 @@ use Illuminate\Support\Facades\Storage;
                                 <!-- Website/Social Media -->
                                 <div>
                                     <label for="website" class="block text-sm font-medium text-gray-300 mb-2">
-                                        Website / Social Media (Optional)
+                                        {{ __('partner.website') }}
                                     </label>
                                     <input 
                                         type="url" 
@@ -335,7 +329,7 @@ use Illuminate\Support\Facades\Storage;
                                 <!-- Years of Experience -->
                                 <div>
                                     <label for="experience" class="block text-sm font-medium text-gray-300 mb-2">
-                                        Years of Experience <span class="text-red-500">*</span>
+                                        {{ __('partner.experience') }} <span class="text-red-500">*</span>
                                     </label>
                                     <select 
                                         id="experience" 
@@ -355,7 +349,7 @@ use Illuminate\Support\Facades\Storage;
                                 <!-- Games You Sell -->
                                 <div>
                                     <label for="games" class="block text-sm font-medium text-gray-300 mb-2">
-                                        Games You Sell <span class="text-red-500">*</span>
+                                        {{ __('partner.games') }} <span class="text-red-500">*</span>
                                     </label>
                                     <input 
                                         type="text" 
@@ -375,14 +369,14 @@ use Illuminate\Support\Facades\Storage;
                         <div class="mb-8">
                             <h2 class="text-xl font-semibold text-white mb-6 flex items-center">
                                 <i class="fa-solid fa-info-circle mr-3 text-red-600"></i>
-                                Additional Information
+                                {{ __('partner.preferred_location') }}
                             </h2>
                             
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <!-- Where do you prefer -->
                                 <div>
                                     <label for="preferred_location" class="block text-sm font-medium text-gray-300 mb-2">
-                                        Where do you prefer? <span class="text-red-500">*</span>
+                                        {{ __('partner.preferred_location') }} <span class="text-red-500">*</span>
                                     </label>
                                     <input 
                                         type="text" 
@@ -398,7 +392,7 @@ use Illuminate\Support\Facades\Storage;
                                 <!-- How Many Accounts -->
                                 <div>
                                     <label for="account_count" class="block text-sm font-medium text-gray-300 mb-2">
-                                        How many accounts do you plan to list? <span class="text-red-500">*</span>
+                                        {{ __('partner.account_count') }} <span class="text-red-500">*</span>
                                     </label>
                                     <select 
                                         id="account_count" 
@@ -429,7 +423,7 @@ use Illuminate\Support\Facades\Storage;
                                     style="background-color: #1b1a1e; border-color: #2d2c31;"
                                 >
                                 <label for="terms" class="ml-3 text-sm text-gray-300">
-                                    I agree to the <a href="#" class="text-red-600 hover:text-red-500 underline">Terms of Service</a> and <a href="#" class="text-red-600 hover:text-red-500 underline">Privacy Policy</a> <span class="text-red-500">*</span>
+                                    {{ __('partner.agree_terms') }} <span class="text-red-500">*</span>
                                 </label>
                             </div>
                         </div>
@@ -448,7 +442,7 @@ use Illuminate\Support\Facades\Storage;
                                 type="submit"
                                 class="inline-flex items-center justify-center transition-colors focus:outline focus:outline-offset-2 focus-visible:outline outline-none disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden font-medium active:translate-y-px whitespace-nowrap bg-red-600 hover:bg-red-700 text-white shadow-sm focus:outline-red-600 py-3 sm:py-2.5 px-8 text-sm rounded-md"
                             >
-                                <span x-show="!submitted">Submit Application</span>
+                                <span x-show="!submitted">{{ __('partner.submit') }}</span>
                                 <span x-show="submitted" x-cloak>
                                     <i class="fa-solid fa-spinner fa-spin mr-2"></i> Submitting...
                                 </span>
