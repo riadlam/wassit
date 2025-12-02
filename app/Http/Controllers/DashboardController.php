@@ -160,8 +160,8 @@ class DashboardController extends Controller
             'status' => 'required|in:available,disabled,pending',
             'attributes' => 'nullable|array',
             'attributes.*' => 'nullable|string|max:255',
-            // For multiple file uploads, validate each file under images.*
-            'images' => 'required',
+            // For multiple file uploads, validate each file under images.*; rely on hasFile() for required check
+            'images' => 'nullable',
             'images.*' => 'image|mimes:jpeg,png,jpg,webp|max:10240', // 10MB max per file
         ], [
             'images.required' => 'At least one image is required.',
@@ -272,6 +272,11 @@ class DashboardController extends Controller
 
                 // Handle image uploads (required, max 10 images) - using relationship
                 if (!$request->hasFile('images') || count($request->file('images')) === 0) {
+                    \Log::warning('createAccount: no images detected in request', [
+                        'has_files' => $request->hasFile('images'),
+                        'files_count' => is_array($request->file('images')) ? count($request->file('images')) : 0,
+                        'keys' => array_keys($request->all()),
+                    ]);
                     if ($request->expectsJson()) {
                         return response()->json([
                             'success' => false,
@@ -285,6 +290,10 @@ class DashboardController extends Controller
                 
                 if ($request->hasFile('images')) {
                     $images = $request->file('images');
+                    \Log::info('createAccount: images received', [
+                        'count' => is_array($images) ? count($images) : 0,
+                        'types' => array_map(function($f){ return $f->getMimeType(); }, is_array($images) ? $images : []),
+                    ]);
                     
                     // Enforce max 10 images
                     if (count($images) > 10) {
