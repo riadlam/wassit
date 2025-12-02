@@ -724,6 +724,25 @@ class ChatController extends Controller
             'delivery_status' => 'delivered',
         ]);
 
+        // Calculate seller payout (order amount - 3.9% processing fee)
+        $orderAmount = (float) $order->amount_dzd;
+        $processingFee = round($orderAmount * 0.039, 2);
+        $sellerPayout = $orderAmount - $processingFee;
+
+        // Update seller wallet
+        $seller = \App\Models\Seller::find($order->seller_id);
+        if ($seller) {
+            $seller->increment('wallet', $sellerPayout);
+            \Log::info('Seller wallet updated after delivery confirmation', [
+                'seller_id' => $seller->id,
+                'order_id' => $order->id,
+                'order_amount' => $orderAmount,
+                'processing_fee' => $processingFee,
+                'payout' => $sellerPayout,
+                'new_wallet_balance' => $seller->fresh()->wallet,
+            ]);
+        }
+
         // Create system message
         $sysMsg = \App\Models\Message::create([
             'conversation_id' => $conversation->id,

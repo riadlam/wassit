@@ -14,6 +14,7 @@ class Seller extends Model
         'total_sales',
         'bio',
         'verified',
+        'wallet',
     ];
 
     public $incrementing = false;

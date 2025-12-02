@@ -22,11 +22,10 @@
                             <!-- Store Credit Card -->
                             <div class="sm:rounded-xl sm:mx-0 -mx-4 border" style="background-color: #0e1015; border-color: #2d2c31;">
                                 <div class="sm:px-6 px-4 py-6">
-                                    <dt class="text-sm font-medium leading-6" style="color: #9ca3af;">Store Credit</dt>
+                                    <dt class="text-sm font-medium leading-6" style="color: #9ca3af;">Wallet Balance</dt>
                                     <dd class="flex-none w-full mt-2">
-                                        <span class="pr-0.5 text-3xl font-semibold" style="color: #9ca3af;">€</span>
-                                        <span class="text-3xl font-semibold leading-10 tracking-tight text-white">0,00</span>
-                                        <span class="pl-1 text-sm font-medium" style="color: #9ca3af;">EUR</span>
+                                        <span class="text-3xl font-semibold leading-10 tracking-tight text-white">{{ number_format($walletBalance, 2, ',', ' ') }}</span>
+                                        <span class="pl-1 text-sm font-medium" style="color: #9ca3af;">DZD</span>
                                     </dd>
                                 </div>
                                 <div class="flex items-center px-4 sm:px-6 py-3 border-t sm:rounded-b-xl" style="border-color: #2d2c31; background-color: rgba(27, 26, 30, 0.2);">
@@ -37,7 +36,15 @@
                             </div>
                             
                             <!-- Coins Card -->
-                            <div class="sm:rounded-xl sm:mx-0 -mx-4 border" style="background-color: #0e1015; border-color: #2d2c31;">
+                            <div class="sm:rounded-xl sm:mx-0 -mx-4 border relative" style="background-color: #0e1015; border-color: #2d2c31;">
+                                <!-- Coming Soon Overlay -->
+                                <div class="absolute inset-0 bg-black/60 backdrop-blur-sm rounded-xl z-10 flex items-center justify-center">
+                                    <div class="text-center px-4">
+                                        <i class="fa-solid fa-clock text-4xl text-blue-400 mb-2"></i>
+                                        <p class="text-white font-bold text-lg">Coming Soon</p>
+                                        <p class="text-gray-400 text-sm mt-1">This feature will be available soon</p>
+                                    </div>
+                                </div>
                                 <div class="sm:px-6 px-4 py-6">
                                     <dt class="text-sm font-medium leading-6" style="color: #9ca3af;">Coins</dt>
                                     <dd class="flex items-center w-full mt-2">
@@ -178,11 +185,47 @@
                                                 </tr>
                                             </thead>
                                             <tbody style="background-color: rgba(27, 26, 30, 0.3);">
+                                                @forelse($transactions as $transaction)
                                                 <tr class="border-b transition-colors hover:bg-gray-800/50" style="border-color: #2d2c31;">
-                                                    <td class="px-2.5 py-2.5 align-middle h-32 text-center first:pl-4 last:pr-4" colspan="8" style="color: #9ca3af;">
-                                                        No results.
+                                                    <td class="px-2.5 py-3 align-middle first:pl-4 last:pr-4">
+                                                        <div class="flex items-center gap-2">
+                                                            <div class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center" style="background-color: rgba(34, 197, 94, 0.2);">
+                                                                <i class="fa-solid fa-credit-card text-green-400 text-xs"></i>
+                                                            </div>
+                                                            <span class="text-sm text-white font-medium">{{ $transaction['payment_method'] }}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td class="px-2.5 py-3 align-middle first:pl-4 last:pr-4">
+                                                        <div class="text-sm text-gray-300">
+                                                            <p class="font-medium">{{ $transaction['account_title'] }}</p>
+                                                            <p class="text-xs text-gray-500">Buyer: {{ $transaction['buyer_name'] }}</p>
+                                                        </div>
+                                                    </td>
+                                                    <td class="px-2.5 py-3 align-middle first:pl-4 last:pr-4">
+                                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold" style="background-color: rgba(34, 197, 94, 0.15); color: #86efac; border: 1px solid rgba(34, 197, 94, 0.3);">
+                                                            <i class="fa-solid fa-circle-check mr-1"></i> {{ $transaction['status'] }}
+                                                        </span>
+                                                    </td>
+                                                    <td class="px-2.5 py-3 align-middle text-right first:pl-4 last:pr-4">
+                                                        <span class="text-sm text-gray-400 font-mono">{{ $transaction['transaction_id'] }}</span>
+                                                    </td>
+                                                    <td class="px-2.5 py-3 align-middle text-right first:pl-4 last:pr-4">
+                                                        <span class="text-sm text-gray-400 font-mono">#{{ $transaction['order_id'] }}</span>
+                                                    </td>
+                                                    <td class="px-2.5 py-3 align-middle text-right first:pl-4 last:pr-4">
+                                                        <span class="text-sm text-white font-semibold">{{ number_format($transaction['amount'], 2, ',', ' ') }} DZD</span>
+                                                    </td>
+                                                    <td class="px-2.5 py-3 align-middle text-right first:pl-4 last:pr-4">
+                                                        <span class="text-sm text-gray-400">{{ $transaction['updated_at']->diffForHumans() }}</span>
                                                     </td>
                                                 </tr>
+                                                @empty
+                                                <tr class="border-b transition-colors hover:bg-gray-800/50" style="border-color: #2d2c31;">
+                                                    <td class="px-2.5 py-2.5 align-middle h-32 text-center first:pl-4 last:pr-4" colspan="7" style="color: #9ca3af;">
+                                                        No transactions yet.
+                                                    </td>
+                                                </tr>
+                                                @endforelse
                                             </tbody>
                                         </table>
                                     </div>

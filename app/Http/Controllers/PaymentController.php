@@ -77,13 +77,18 @@ class PaymentController extends Controller
                 ], 400);
             }
 
+            // Calculate total amount including 3.9% processing fee
+            $baseAmount = (float) $order->amount_dzd;
+            $processingFee = round($baseAmount * 0.039, 2);
+            $totalAmount = $baseAmount + $processingFee;
+
             // Create Chargily checkout via SDK
             $checkout = $this->chargilyPayInstance()->checkouts()->create([
                 'metadata' => [
                     'order_id' => (string)$order->id,
                 ],
                 'locale' => app()->getLocale() ?? 'en',
-                'amount' => (string) (int) $order->amount_dzd,
+                'amount' => (string) (int) $totalAmount,
                 'currency' => 'dzd',
                 'description' => 'Account Purchase - Order #' . $order->id,
                 'success_url' => route('payment.success', ['encryptedOrderId' => $encryptedOrderId]),

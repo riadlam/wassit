@@ -33,7 +33,42 @@ class DashboardController extends Controller
     
     public function wallet()
     {
-        return view('dashboard.wallet');
+        $user = Auth::user();
+        $seller = $user->seller;
+        
+        $walletBalance = 0;
+        $transactions = collect();
+        
+        if ($seller) {
+            $walletBalance = $seller->wallet ?? 0;
+            
+            // Get completed orders where seller received payment (delivery confirmed)
+            $transactions = \App\Models\Order::where('seller_id', $seller->id)
+                ->where('status', 'completed')
+                ->where('delivery_status', 'delivered')
+                ->with(['buyer', 'account'])
+                ->orderBy('updated_at', 'desc')
+                ->get()
+                ->map(function($order) {
+                    $baseAmount = (float) $order->amount_dzd;
+                    $processingFee = round($baseAmount * 0.039, 2);
+                    $payout = $baseAmount - $processingFee;
+                    
+                    return [
+                        'id' => $order->id,
+                        'order_id' => $order->id,
+                        'transaction_id' => $order->chargily_payment_id ?? 'N/A',
+                        'payment_method' => 'Chargily',
+                        'status' => 'Completed',
+                        'amount' => $payout,
+                        'updated_at' => $order->updated_at,
+                        'buyer_name' => $order->buyer->name ?? 'Unknown',
+                        'account_title' => $order->account->title ?? 'Account #' . $order->account_id,
+                    ];
+                });
+        }
+        
+        return view('dashboard.wallet', compact('walletBalance', 'transactions'));
     }
     
     public function library()
