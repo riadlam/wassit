@@ -133,21 +133,12 @@ class PartnerController extends Controller
                         [
                             [
                                 'text' => "✅ Approve",
-                                'callback_data' => json_encode([
-                                    'type' => 'application_action',
-                                    'action' => 'approve',
-                                    'application_id' => $application->id,
-                                    'user_id' => $user->id,
-                                ]),
+                                // Compact callback_data to satisfy Telegram's 1-64 bytes limit
+                                'callback_data' => 'ap:' . $application->id,
                             ],
                             [
                                 'text' => "❌ Reject",
-                                'callback_data' => json_encode([
-                                    'type' => 'application_action',
-                                    'action' => 'reject',
-                                    'application_id' => $application->id,
-                                    'user_id' => $user->id,
-                                ]),
+                                'callback_data' => 'rj:' . $application->id,
                             ],
                         ],
                     ],
@@ -229,35 +220,49 @@ class PartnerController extends Controller
             return response()->json(['ok' => true]);
         }
 
-        // Decode callback data
+        // Decode callback data (supports legacy JSON and compact formats)
+        $action = null;
+        $applicationId = 0;
+        $userId = 0;
+        $parsedVia = 'unknown';
+
+        // Try legacy JSON first
         try {
             $payload = json_decode($data, true, 512, JSON_THROW_ON_ERROR);
+            if (is_array($payload) && ($payload['type'] ?? '') === 'application_action') {
+                $action = $payload['action'] ?? null;
+                $applicationId = (int)($payload['application_id'] ?? 0);
+                $userId = (int)($payload['user_id'] ?? 0);
+                $parsedVia = 'json';
+            }
         } catch (\Throwable $t) {
-            Log::error('Telegram webhook: invalid callback_data', ['data' => $data]);
+            // fall through to compact parsing
+        }
+
+        if (!$action || !$applicationId) {
+            // Compact format: ap:<id> or rj:<id>
+            if (is_string($data) && preg_match('/^(ap|rj):(\d+)$/', $data, $m)) {
+                $action = $m[1] === 'ap' ? 'approve' : 'reject';
+                $applicationId = (int)$m[2];
+                $parsedVia = 'compact';
+            }
+        }
+
+        if (!$action || !$applicationId) {
+            Log::error('Telegram webhook: unrecognized callback_data', ['data' => $data]);
             return response()->json(['ok' => false], 400);
         }
-
-        if (($payload['type'] ?? '') !== 'application_action') {
-            Log::info('Telegram webhook: non-application action', ['payload' => $payload]);
-            return response()->json(['ok' => true]);
-        }
-
-        $action = $payload['action'] ?? '';
-        $applicationId = (int)($payload['application_id'] ?? 0);
-        $userId = (int)($payload['user_id'] ?? 0);
 
         Log::info('Telegram webhook: action parsed', [
             'action' => $action,
             'application_id' => $applicationId,
-            'user_id' => $userId,
+            'parsed_via' => $parsedVia,
         ]);
 
         $application = SellerApplication::find($applicationId);
-        if (!$application || $application->user_id !== $userId) {
-            Log::error('Telegram webhook: invalid application or user mismatch', [
+        if (!$application) {
+            Log::error('Telegram webhook: invalid application', [
                 'application_exists' => (bool)$application,
-                'application_user_id' => $application->user_id ?? null,
-                'payload_user_id' => $userId,
             ]);
             return response()->json(['ok' => false, 'error' => 'Invalid application'], 400);
         }
