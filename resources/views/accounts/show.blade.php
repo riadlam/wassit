@@ -231,7 +231,7 @@ if ($seller && !empty($seller->pfp)) {
                         <span class="ml-1 sm:ml-2">{{ __('messages.support_24_7') }}</span>
                     </a>
                     <!-- Facebook Group Button -->
-                    <a href="#" target="_blank" class="inline-flex items-center justify-center transition-colors focus:outline focus:outline-offset-2 focus-visible:outline outline-none disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden font-medium active:translate-y-px whitespace-nowrap text-[10px] sm:text-xs rounded-md py-1 sm:py-1.5 px-1.5 sm:px-2 md:px-3 hover:ring-2" style="background-color: #1877f2; color: #ffffff; border: 1px solid #1877f2;">
+                    <a href="https://web.facebook.com/share/g/1DPpV2pJ5G/" target="_blank" class="inline-flex items-center justify-center transition-colors focus:outline focus:outline-offset-2 focus-visible:outline outline-none disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden font-medium active:translate-y-px whitespace-nowrap text-[10px] sm:text-xs rounded-md py-1 sm:py-1.5 px-1.5 sm:px-2 md:px-3 hover:ring-2" style="background-color: #1877f2; color: #ffffff; border: 1px solid #1877f2;">
                         <i class="fa-brands fa-facebook text-[10px] sm:text-xs"></i> 
                         <span class="ml-1 sm:ml-2">{{ __('messages.join_fb_group') }}</span>
                     </a>

@@ -54,7 +54,7 @@
                     <a href="#" class="inline-flex items-center justify-center transition-colors focus:outline focus:outline-offset-2 focus-visible:outline outline-none disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden font-medium active:translate-y-px whitespace-nowrap py-1.5 px-2 text-xs rounded-md w-full sm:w-fit" style="background-color: rgba(27, 26, 30, 0.5); color: rgba(255, 255, 255, 0.9); border: 1px solid rgba(45, 44, 49, 0.5);">
                         <i class="mr-2 fa-solid fa-headset"></i> {{ __('messages.support_24_7') }}
                     </a>
-                    <a href="#" target="_blank" class="inline-flex items-center justify-center transition-colors focus:outline focus:outline-offset-2 focus-visible:outline outline-none disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden font-medium active:translate-y-px whitespace-nowrap py-1.5 px-2 text-xs rounded-md w-full sm:w-fit hover:ring-2" style="background-color: #1877f2; color: #ffffff; border: 1px solid #1877f2;">
+                    <a href="https://web.facebook.com/share/g/1DPpV2pJ5G/" target="_blank" class="inline-flex items-center justify-center transition-colors focus:outline focus:outline-offset-2 focus-visible:outline outline-none disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden font-medium active:translate-y-px whitespace-nowrap py-1.5 px-2 text-xs rounded-md w-full sm:w-fit hover:ring-2" style="background-color: #1877f2; color: #ffffff; border: 1px solid #1877f2;">
                         <i class="mr-2 fa-brands fa-facebook"></i> {{ __('messages.join_fb_group') }}
                     </a>
                 </div>
