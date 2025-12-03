@@ -63,7 +63,7 @@
         
         <!-- Support Buttons (Right - Desktop) -->
         <div class="sm:ml-auto ml-2 flex gap-x-2 h-8 xl:w-[30%] xl:flex lg:hidden justify-end">
-            <a class="inline-flex items-center justify-center transition-colors focus:outline focus:outline-offset-2 focus-visible:outline outline-none disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden font-medium active:translate-y-px whitespace-nowrap py-1.5 px-2 text-xs rounded-md" style="background-color: rgba(27, 26, 30, 0.5); color: rgba(255, 255, 255, 0.9); border: 1px solid rgba(45, 44, 49, 0.5);" href="#">
+            <a class="inline-flex items-center justify-center transition-colors focus:outline focus:outline-offset-2 focus-visible:outline outline-none disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden font-medium active:translate-y-px whitespace-nowrap py-1.5 px-2 text-xs rounded-md" style="background-color: rgba(27, 26, 30, 0.5); color: rgba(255, 255, 255, 0.9); border: 1px solid rgba(45, 44, 49, 0.5);" href="https://wa.me/213556988175" target="_blank">
                 <i class="mr-2 fa-solid fa-headset"></i> {{ __('messages.support_24_7') }}
             </a>
             <a href="#" class="justify-center transition-colors focus:outline focus:outline-offset-2 focus-visible:outline outline-none disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden font-medium active:translate-y-px whitespace-nowrap py-1.5 px-2 text-xs rounded-md !bg-[#5865f2] hidden sm:flex items-center hover:!ring-[#5865f2] hover:!bg-[#6773f4] !text-white" target="_blank">

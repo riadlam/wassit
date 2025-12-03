@@ -226,7 +226,7 @@ if ($seller && !empty($seller->pfp)) {
                 <!-- Right: Support and Join FB Group -->
                 <div class="ml-2 sm:ml-auto flex gap-x-1 sm:gap-x-2 h-7 sm:h-8 lg:w-[30%] justify-end shrink-0">
                     <!-- Support Button -->
-                    <a href="#" class="inline-flex items-center justify-center transition-colors focus:outline focus:outline-offset-2 focus-visible:outline outline-none disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden font-medium active:translate-y-px whitespace-nowrap text-[10px] sm:text-xs rounded-md py-1 sm:py-1.5 px-1.5 sm:px-2 md:px-3" style="background-color: rgba(27, 26, 30, 0.5); color: rgba(255, 255, 255, 0.9); border: 1px solid rgba(45, 44, 49, 0.5);">
+                    <a href="https://wa.me/213556988175" target="_blank" class="inline-flex items-center justify-center transition-colors focus:outline focus:outline-offset-2 focus-visible:outline outline-none disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden font-medium active:translate-y-px whitespace-nowrap text-[10px] sm:text-xs rounded-md py-1 sm:py-1.5 px-1.5 sm:px-2 md:px-3" style="background-color: rgba(27, 26, 30, 0.5); color: rgba(255, 255, 255, 0.9); border: 1px solid rgba(45, 44, 49, 0.5);">
                         <i class="fa-solid fa-headset text-[10px] sm:text-xs"></i> 
                         <span class="ml-1 sm:ml-2">{{ __('messages.support_24_7') }}</span>
                     </a>
