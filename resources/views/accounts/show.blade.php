@@ -167,7 +167,7 @@ if ($seller && !empty($seller->pfp)) {
             this.messagingModalOpen = true;
         },
         async submitContactToSeller() {
-            if (this.sendingContact || !this.guidelinesChecked || this.message.trim().length < 4) return;
+            if (this.sendingContact || !this.guidelinesChecked || this.message.trim().length === 0) return;
             this.sendingContact = true;
             try {
                 const formData = new FormData();
@@ -1058,9 +1058,9 @@ if ($seller && !empty($seller->pfp)) {
                             <button 
                                 type="button" 
                                 @click="submitContactToSeller"
-                                :disabled="!guidelinesChecked || message.length < 4 || sendingContact"
+                                :disabled="!guidelinesChecked || message.trim().length === 0 || sendingContact"
                                 class="items-center justify-center transition-colors focus:outline focus:outline-offset-2 focus-visible:outline outline-none disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden font-medium active:translate-y-px whitespace-nowrap shadow-sm focus:outline-red-600 py-3 px-4 sm:px-5 w-full text-sm sm:text-base rounded-lg flex"
-                                :class="guidelinesChecked && message.length >= 4 && !sendingContact ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-gray-600 text-gray-400'"
+                                :class="guidelinesChecked && message.trim().length > 0 && !sendingContact ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-gray-600 text-gray-400'"
                             >
                                 <span x-show="!sendingContact" class="flex items-center justify-center gap-2">
                                     <span>{{ __('messages.send_message') }}</span>

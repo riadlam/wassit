@@ -612,7 +612,7 @@ class ChatController extends Controller
         $validator = Validator::make($request->all(), [
             'seller_id' => 'required|exists:sellers,id',
             'account_for_sale_id' => 'nullable|exists:accounts_for_sale,id',
-            'initial_message' => 'required|string|min:40|max:1500',
+            'initial_message' => 'required|string|max:1500',
         ]);
         
         if ($validator->fails()) {
