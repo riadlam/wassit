@@ -96,8 +96,8 @@ class PaymentController extends Controller
                 'email' => $buyerEmail,
                 'return_url' => route('payment.sofizpay.cib.return', ['eid' => $encryptedOrderId]),
                 'memo' => 'Wassit Order #' . $order->id,
-                'redirect' => (string) config('services.sofizpay.redirect', 'no'),
-                'keep_return_url' => (string) config('services.sofizpay.keep_return_url', 'True'),
+                'redirect' => $this->normalizeRedirectFlag(config('services.sofizpay.redirect', 'no')),
+                'keep_return_url' => $this->normalizeKeepReturnUrlFlag(config('services.sofizpay.keep_return_url', 'True')),
             ];
 
             Log::info('PaymentController::initiatePayment - SofizPay request payload', [
@@ -359,5 +359,25 @@ class PaymentController extends Controller
         $nameMasked = strlen($name) <= 2 ? str_repeat('*', strlen($name)) : substr($name, 0, 2) . '***';
 
         return $nameMasked . '@' . $domain;
+    }
+
+    protected function normalizeRedirectFlag(mixed $value): string
+    {
+        if (is_bool($value)) {
+            return $value ? 'yes' : 'no';
+        }
+
+        $raw = strtolower(trim((string) $value));
+        return in_array($raw, ['yes', '1', 'true'], true) ? 'yes' : 'no';
+    }
+
+    protected function normalizeKeepReturnUrlFlag(mixed $value): string
+    {
+        if (is_bool($value)) {
+            return $value ? 'True' : 'False';
+        }
+
+        $raw = strtolower(trim((string) $value));
+        return in_array($raw, ['true', '1', 'yes'], true) ? 'True' : 'False';
     }
 }
