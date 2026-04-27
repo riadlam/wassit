@@ -177,10 +177,27 @@ class PartnerController extends Controller
             try {
                 $webhookInfoUrl = "https://api.telegram.org/bot{$botToken}/getWebhookInfo";
                 $wh = Http::get($webhookInfoUrl);
+                $expectedWebhookUrl = route('telegram.webhook');
+                $webhookData = $wh->json('result', []);
                 Log::info('Telegram getWebhookInfo', [
                     'http_status' => $wh->status(),
                     'body' => $wh->body(),
                 ]);
+
+                $currentWebhookUrl = is_array($webhookData) ? (string)($webhookData['url'] ?? '') : '';
+                if ($currentWebhookUrl !== $expectedWebhookUrl) {
+                    $setWebhookUrl = "https://api.telegram.org/bot{$botToken}/setWebhook";
+                    $setResp = Http::post($setWebhookUrl, [
+                        'url' => $expectedWebhookUrl,
+                        'allowed_updates' => json_encode(['callback_query']),
+                    ]);
+                    Log::info('Telegram setWebhook response', [
+                        'expected_url' => $expectedWebhookUrl,
+                        'previous_url' => $currentWebhookUrl,
+                        'http_status' => $setResp->status(),
+                        'body' => $setResp->body(),
+                    ]);
+                }
             } catch (\Throwable $webhookErr) {
                 Log::error('Telegram getWebhookInfo exception', [
                     'message' => $webhookErr->getMessage(),
