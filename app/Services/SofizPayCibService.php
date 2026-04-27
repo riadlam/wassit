@@ -8,11 +8,21 @@ class SofizPayCibService
 {
     public function createPath(): string
     {
+        $configured = trim((string) config('services.sofizpay.create_path', ''));
+        if ($configured !== '') {
+            return str_starts_with($configured, '/') ? $configured : '/' . $configured;
+        }
+
         return $this->isSandbox() ? '/sandbox/make-cib-transaction/' : '/make-cib-transaction/';
     }
 
     public function checkPath(): string
     {
+        $configured = trim((string) config('services.sofizpay.check_path', ''));
+        if ($configured !== '') {
+            return str_starts_with($configured, '/') ? $configured : '/' . $configured;
+        }
+
         return $this->isSandbox() ? '/sandbox/cib-transaction-check/' : '/cib-transaction-check/';
     }
 
@@ -76,10 +86,17 @@ class SofizPayCibService
 
     protected function sendGet(string $path, array $queryParams): array
     {
-        $response = Http::timeout($this->timeoutSeconds())->acceptJson()->get($this->fullUrl($path), $queryParams);
+        $url = $this->fullUrl($path);
+        $response = Http::timeout($this->timeoutSeconds())->acceptJson()->get($url, $queryParams);
 
         if (!$response->ok()) {
-            throw new \RuntimeException('SofizPay request failed with status ' . $response->status());
+            $body = trim((string) $response->body());
+            $snippet = mb_substr($body, 0, 500);
+            throw new \RuntimeException(
+                'SofizPay request failed with status ' . $response->status()
+                . ' on ' . $url
+                . ($snippet !== '' ? ' | body: ' . $snippet : '')
+            );
         }
 
         $json = $response->json();

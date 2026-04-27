@@ -90,9 +90,9 @@ class PaymentController extends Controller
 
             $query = [
                 'account' => $merchantAccount,
-                'amount' => (string) ((int) round($totalAmount)),
+                'amount' => number_format($totalAmount, 2, '.', ''),
                 'full_name' => Auth::check() ? Auth::user()->name : ($request->input('full_name') ?: 'Customer'),
-                'phone' => $request->input('phone', '0000000000'),
+                'phone' => $this->resolveSofizPayPhone($request),
                 'email' => $buyerEmail,
                 'return_url' => route('payment.sofizpay.cib.return', ['eid' => $encryptedOrderId]),
                 'memo' => 'Wassit Order #' . $order->id,
@@ -100,8 +100,21 @@ class PaymentController extends Controller
                 'keep_return_url' => (string) config('services.sofizpay.keep_return_url', 'True'),
             ];
 
+            Log::info('PaymentController::initiatePayment - SofizPay request payload', [
+                'order_id' => $order->id,
+                'account' => $query['account'],
+                'amount' => $query['amount'],
+                'full_name' => $query['full_name'],
+                'phone' => $query['phone'],
+                'email_masked' => $this->maskEmail((string) $query['email']),
+                'return_url' => $query['return_url'],
+                'redirect' => $query['redirect'],
+                'keep_return_url' => $query['keep_return_url'],
+            ]);
+
             $createResponse = $this->sofizPay->createCibTransaction($query);
-            $checkoutUrl = $createResponse['payment_url'] ?? null;
+            $checkoutUrl = $createResponse['payment_url']
+                ?? ($createResponse['cib_response']['formUrl'] ?? null);
             if (!is_string($checkoutUrl) || trim($checkoutUrl) === '') {
                 throw new \RuntimeException('SofizPay did not return payment_url.');
             }
@@ -110,8 +123,13 @@ class PaymentController extends Controller
                 ['order_id' => $order->id],
                 [
                     'transaction_id' => $createResponse['transaction_id'] ?? null,
-                    'cib_order_number' => $createResponse['order_number'] ?? null,
-                    'cib_order_id' => $createResponse['orderId'] ?? ($createResponse['mdOrder'] ?? null),
+                    // SofizPay check endpoint expects "order_number", which is returned as cib_transaction_id.
+                    'cib_order_number' => $createResponse['cib_transaction_id']
+                        ?? $createResponse['order_number']
+                        ?? null,
+                    'cib_order_id' => $createResponse['cib_response']['orderId']
+                        ?? $createResponse['orderId']
+                        ?? ($createResponse['mdOrder'] ?? null),
                     'amount_expected' => (float) $totalAmount,
                     'status' => 'pending',
                     'create_response' => $createResponse,
@@ -309,5 +327,37 @@ class PaymentController extends Controller
         ]);
 
         session(['active_chat_conversation_id' => $conversation->id]);
+    }
+
+    protected function resolveSofizPayPhone(Request $request): string
+    {
+        $phone = (string) ($request->input('phone') ?? config('services.sofizpay.default_phone', ''));
+        $phone = preg_replace('/\s+/', '', trim($phone));
+
+        // Normalize common DZ local forms to international format.
+        if (preg_match('/^0[0-9]{9}$/', $phone)) {
+            $phone = '+213' . substr($phone, 1);
+        } elseif (preg_match('/^213[0-9]{9}$/', $phone)) {
+            $phone = '+' . $phone;
+        }
+
+        if ($phone === '' || !preg_match('/^\+[0-9]{8,15}$/', $phone)) {
+            // Keep a deterministic fallback in international format.
+            $phone = '+213550000000';
+        }
+
+        return $phone;
+    }
+
+    protected function maskEmail(string $email): string
+    {
+        if ($email === '' || !str_contains($email, '@')) {
+            return 'invalid-email';
+        }
+
+        [$name, $domain] = explode('@', $email, 2);
+        $nameMasked = strlen($name) <= 2 ? str_repeat('*', strlen($name)) : substr($name, 0, 2) . '***';
+
+        return $nameMasked . '@' . $domain;
     }
 }

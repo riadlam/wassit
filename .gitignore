@@ -31,3 +31,4 @@ Homestead.yaml
 Thumbs.db
 GOOGLE_OAUTH_SETUP.md
 sofizpay-cib-integration-guide.md
+.env.example
