@@ -114,6 +114,18 @@ class PartnerController extends Controller
                 "Accounts to List: {$request->account_count}\n" .
                 "Application ID: {$application->id}";
 
+            $adminToken = env('ADMIN_ACTION_TOKEN', 'local-dev-token');
+            $approveUrl = route('partner.application.approve', [
+                'applicationId' => $application->id,
+                'token' => $adminToken,
+                'userId' => $user->id,
+            ]);
+            $rejectUrl = route('partner.application.reject', [
+                'applicationId' => $application->id,
+                'token' => $adminToken,
+                'userId' => $user->id,
+            ]);
+
             $apiUrl = "https://api.telegram.org/bot{$botToken}/sendMessage";
             // Pre-log before calling Telegram
             Log::info('Telegram sendMessage: preparing', [
@@ -123,7 +135,7 @@ class PartnerController extends Controller
                 'user_id' => $user->id,
             ]);
 
-            // Use callback_data for webhook handling
+            // Use direct URL buttons so approve/reject works even if webhook callbacks are misconfigured.
             $resp = Http::post($apiUrl, [
                 'chat_id' => $chatId,
                 'text' => $message,
@@ -134,12 +146,11 @@ class PartnerController extends Controller
                         [
                             [
                                 'text' => "✅ Approve",
-                                // Compact callback_data to satisfy Telegram's 1-64 bytes limit
-                                'callback_data' => 'ap:' . $application->id,
+                                'url' => $approveUrl,
                             ],
                             [
                                 'text' => "❌ Reject",
-                                'callback_data' => 'rj:' . $application->id,
+                                'url' => $rejectUrl,
                             ],
                         ],
                     ],
@@ -409,6 +420,11 @@ class PartnerController extends Controller
     {
         $token = $request->query('token');
         $userId = (int)$request->query('userId');
+        Log::info('Partner approveApplication: request', [
+            'application_id' => (int)$applicationId,
+            'user_id' => $userId,
+            'has_token' => (bool)$token,
+        ]);
         if ($token !== env('ADMIN_ACTION_TOKEN', 'local-dev-token')) {
             return response('Forbidden', 403);
         }
@@ -423,10 +439,11 @@ class PartnerController extends Controller
         $user->role = 'seller';
         $user->save();
 
-        // Create seller if not exists
+        // Create seller if not exists. Seller PK is users.id.
         $seller = \App\Models\Seller::firstOrCreate([
-            'user_id' => $userId,
+            'id' => $userId,
         ], [
+            'pfp' => null,
             'rating' => 0,
             'total_sales' => 0,
             'bio' => null,
@@ -437,6 +454,11 @@ class PartnerController extends Controller
         $application->status = 'approved';
         $application->save();
 
+        Log::info('Partner approveApplication: approved', [
+            'application_id' => (int)$application->id,
+            'user_id' => $userId,
+        ]);
+
         return response('Approved', 200);
     }
 
@@ -444,6 +466,11 @@ class PartnerController extends Controller
     {
         $token = $request->query('token');
         $userId = (int)$request->query('userId');
+        Log::info('Partner rejectApplication: request', [
+            'application_id' => (int)$applicationId,
+            'user_id' => $userId,
+            'has_token' => (bool)$token,
+        ]);
         if ($token !== env('ADMIN_ACTION_TOKEN', 'local-dev-token')) {
             return response('Forbidden', 403);
         }
@@ -455,6 +482,11 @@ class PartnerController extends Controller
 
         $application->status = 'rejected';
         $application->save();
+
+        Log::info('Partner rejectApplication: rejected', [
+            'application_id' => (int)$application->id,
+            'user_id' => $userId,
+        ]);
 
         return response('Rejected', 200);
     }
