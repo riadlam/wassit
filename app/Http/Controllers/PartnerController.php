@@ -125,6 +125,13 @@ class PartnerController extends Controller
                 'token' => $adminToken,
                 'userId' => $user->id,
             ]);
+            Log::info('Telegram seller application action URLs', [
+                'application_id' => $application->id,
+                'approve_url' => $approveUrl,
+                'reject_url' => $rejectUrl,
+            ]);
+
+            $message .= "\n\nApprove Link: {$approveUrl}\nReject Link: {$rejectUrl}";
 
             $apiUrl = "https://api.telegram.org/bot{$botToken}/sendMessage";
             // Pre-log before calling Telegram
@@ -135,7 +142,7 @@ class PartnerController extends Controller
                 'user_id' => $user->id,
             ]);
 
-            // Use direct URL buttons so approve/reject works even if webhook callbacks are misconfigured.
+            // Use dual-mode buttons: URL (direct) + callback_data (webhook fallback).
             $resp = Http::post($apiUrl, [
                 'chat_id' => $chatId,
                 'text' => $message,
@@ -145,12 +152,22 @@ class PartnerController extends Controller
                     'inline_keyboard' => [
                         [
                             [
-                                'text' => "✅ Approve",
+                                'text' => "✅ Approve (URL)",
                                 'url' => $approveUrl,
                             ],
                             [
-                                'text' => "❌ Reject",
+                                'text' => "❌ Reject (URL)",
                                 'url' => $rejectUrl,
+                            ],
+                        ],
+                        [
+                            [
+                                'text' => "✅ Approve (Callback)",
+                                'callback_data' => 'ap:' . $application->id,
+                            ],
+                            [
+                                'text' => "❌ Reject (Callback)",
+                                'callback_data' => 'rj:' . $application->id,
                             ],
                         ],
                     ],
