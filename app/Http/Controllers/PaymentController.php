@@ -112,7 +112,7 @@ class PaymentController extends Controller
                 'keep_return_url' => $query['keep_return_url'],
             ]);
 
-            $createResponse = $this->sofizPay->createCibTransaction($query);
+            $createResponse = $this->createSofizPayTransactionWithFallback($query, (int) $order->id);
             $checkoutUrl = $createResponse['payment_url']
                 ?? ($createResponse['cib_response']['formUrl'] ?? null);
             if (!is_string($checkoutUrl) || trim($checkoutUrl) === '') {
@@ -379,5 +379,64 @@ class PaymentController extends Controller
 
         $raw = strtolower(trim((string) $value));
         return in_array($raw, ['true', '1', 'yes'], true) ? 'True' : 'False';
+    }
+
+    /**
+     * SofizPay live accounts can have strict validation differences.
+     * Try safe variants before failing to reduce manual debugging.
+     */
+    protected function createSofizPayTransactionWithFallback(array $baseQuery, int $orderId): array
+    {
+        $attempts = [];
+        $attempts[] = $baseQuery;
+
+        // Variant 2: force redirect=yes (some merchant profiles require redirect flow)
+        if (($baseQuery['redirect'] ?? 'no') !== 'yes') {
+            $variant = $baseQuery;
+            $variant['redirect'] = 'yes';
+            $attempts[] = $variant;
+        }
+
+        // Variant 3: keep_return_url=False (some profiles reject signed-return flow)
+        if (($baseQuery['keep_return_url'] ?? 'True') !== 'False') {
+            $variant = $baseQuery;
+            $variant['keep_return_url'] = 'False';
+            $attempts[] = $variant;
+        }
+
+        // Variant 4: phone without leading plus
+        if (isset($baseQuery['phone']) && is_string($baseQuery['phone']) && str_starts_with($baseQuery['phone'], '+')) {
+            $variant = $baseQuery;
+            $variant['phone'] = ltrim($baseQuery['phone'], '+');
+            $attempts[] = $variant;
+        }
+
+        $lastException = null;
+        foreach ($attempts as $idx => $query) {
+            try {
+                if ($idx > 0) {
+                    Log::warning('PaymentController::initiatePayment - SofizPay fallback attempt', [
+                        'order_id' => $orderId,
+                        'attempt' => $idx + 1,
+                        'redirect' => $query['redirect'] ?? null,
+                        'keep_return_url' => $query['keep_return_url'] ?? null,
+                        'phone' => $query['phone'] ?? null,
+                    ]);
+                }
+
+                return $this->sofizPay->createCibTransaction($query);
+            } catch (\Throwable $e) {
+                $lastException = $e;
+                Log::warning('PaymentController::initiatePayment - SofizPay attempt failed', [
+                    'order_id' => $orderId,
+                    'attempt' => $idx + 1,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        throw new \RuntimeException(
+            $lastException ? $lastException->getMessage() : 'Failed to create SofizPay transaction.'
+        );
     }
 }
