@@ -33,44 +33,10 @@ class WebhookController extends Controller
      */
     public function chargilyWebhook(Request $request)
     {
-        Log::info('WebhookController::chargilyWebhook - Webhook received', [
-            'ip' => $request->ip(),
-            'headers' => $request->headers->all(),
-        ]);
-
-        try {
-            $webhook = $this->chargilyPayInstance()->webhook()->get();
-            if (!$webhook) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Invalid Webhook request',
-                ], 403);
-            }
-
-            $checkout = $webhook->getData();
-            if (!$checkout || !($checkout instanceof CheckoutElement)) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Invalid Webhook payload',
-                ], 400);
-            }
-
-            $status = $checkout->getStatus();
-            if ($status === 'paid') {
-                return $this->handleCheckoutConfirmed($checkout);
-            } elseif (in_array($status, ['failed', 'canceled'])) {
-                return $this->handleCheckoutFailed($checkout);
-            } elseif ($status === 'expired') {
-                return $this->handleCheckoutExpired($checkout);
-            }
-
-            return response()->json(['status' => 'ignored']);
-        } catch (\Exception $e) {
-            Log::error('WebhookController::chargilyWebhook - Exception', [
-                'error' => $e->getMessage(),
-            ]);
-            return response()->json(['error' => 'Processing failed'], 500);
-        }
+        return response()->json([
+            'status' => false,
+            'message' => 'Chargily webhook is disabled. SofizPay return verification is used instead.',
+        ], 410);
     }
 
     /**

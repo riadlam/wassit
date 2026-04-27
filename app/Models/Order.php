@@ -17,6 +17,7 @@ class Order extends Model
         'delivery_status',
         'chargily_checkout_id',
         'chargily_payment_id',
+        'sofizpay_cib_transaction_id',
         'paid_at',
         'metadata',
     ];
@@ -67,5 +68,13 @@ class Order extends Model
     public function chargilyPayments(): HasMany
     {
         return $this->hasMany(ChargilyPayment::class);
+    }
+
+    /**
+     * Primary SofizPay CIB payment session for this order.
+     */
+    public function sofizpayCibTransaction(): BelongsTo
+    {
+        return $this->belongsTo(SofizPayCibTransaction::class, 'sofizpay_cib_transaction_id');
     }
 }

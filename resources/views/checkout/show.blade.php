@@ -341,7 +341,7 @@ use Illuminate\Support\Facades\Storage;
                 .then(response => response.json())
                 .then(data => {
                     if (data.success && data.checkout_url) {
-                        // Redirect to Chargily checkout
+                        // Redirect to SofizPay checkout
                         window.location.href = data.checkout_url;
                     } else {
                         alert(data.message || 'Failed to initiate payment. Please try again.');

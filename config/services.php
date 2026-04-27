@@ -41,4 +41,14 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URL', '/auth/google/callback'),
     ],
 
+    'sofizpay' => [
+        'enabled' => env('SOFIZPAY_ENABLED', false),
+        'sandbox' => env('SOFIZPAY_SANDBOX', false),
+        'base_url' => env('SOFIZPAY_BASE_URL', 'https://sofizpay.com'),
+        'merchant_account' => env('SOFIZPAY_MERCHANT_ACCOUNT'),
+        'timeout' => env('SOFIZPAY_TIMEOUT', 30),
+        'redirect' => env('SOFIZPAY_REDIRECT', 'no'),
+        'keep_return_url' => env('SOFIZPAY_KEEP_RETURN_URL', 'True'),
+    ],
+
 ];

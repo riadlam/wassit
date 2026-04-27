@@ -2,42 +2,28 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\MessageSent;
+use App\Events\PaymentStatusUpdated;
+use App\Models\Conversation;
+use App\Models\Message;
 use Illuminate\Http\Request;
 use App\Models\Order;
+use App\Models\SofizPayCibTransaction;
+use App\Services\SofizPayCibService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Chargily\ChargilyPay\ChargilyPay;
-use Chargily\ChargilyPay\Auth\Credentials;
-use App\Events\MessageSent;
 
 class PaymentController extends Controller
 {
-    /**
-     * Build ChargilyPay SDK instance from env/config.
-     */
-    protected function chargilyPayInstance(): ChargilyPay
+    protected SofizPayCibService $sofizPay;
+
+    public function __construct(SofizPayCibService $sofizPay)
     {
-        $mode = config('chargily.mode', env('CHARGILY_MODE', 'live'));
-        $public = config('chargily.api_key', env('CHARGILY_EPAY_KEY'));
-        $secret = config('chargily.api_secret', env('CHARGILY_EPAY_SECRET'));
-        if (!class_exists(\Chargily\ChargilyPay\ChargilyPay::class)) {
-            Log::error('Chargily SDK class not found. Have you run composer install on server?', [
-                'expected_class' => 'Chargily\\ChargilyPay\\ChargilyPay',
-                'mode' => $mode,
-            ]);
-            throw new \RuntimeException('Payment provider temporarily unavailable. Please retry later.');
-        }
-        return new ChargilyPay(new Credentials([
-            'mode' => $mode,
-            'public' => (string)$public,
-            'secret' => (string)$secret,
-        ]));
+        $this->sofizPay = $sofizPay;
     }
 
-    /**
-     * Initiate payment with Chargily
-     */
     public function initiatePayment(Request $request, $encryptedOrderId)
     {
         Log::info('PaymentController::initiatePayment - Starting payment process', [
@@ -77,28 +63,64 @@ class PaymentController extends Controller
                 ], 400);
             }
 
-            // Calculate total amount including 3.9% processing fee
+            if (!(bool) config('services.sofizpay.enabled', false)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'SofizPay is currently disabled.',
+                ], 503);
+            }
+
+            $merchantAccount = (string) config('services.sofizpay.merchant_account', '');
+            if ($merchantAccount === '') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'SofizPay merchant account is not configured.',
+                ], 500);
+            }
+
             $baseAmount = (float) $order->amount_dzd;
             $processingFee = ceil($baseAmount * 0.039);
             $totalAmount = $baseAmount + $processingFee;
-
-            // Create Chargily checkout via SDK
-            $checkout = $this->chargilyPayInstance()->checkouts()->create([
-                'metadata' => [
-                    'order_id' => (string)$order->id,
-                ],
-                'locale' => app()->getLocale() ?? 'en',
-                'amount' => (string) (int) $totalAmount,
-                'currency' => 'dzd',
-                'description' => 'Account Purchase - Order #' . $order->id,
-                'success_url' => route('payment.success', ['encryptedOrderId' => $encryptedOrderId]),
-                'failure_url' => route('payment.failure', ['encryptedOrderId' => $encryptedOrderId]),
-                'webhook_endpoint' => config('chargily.webhook_url') ?: route('webhook.chargily'),
-            ]);
-
-            if (!$checkout) {
-                throw new \Exception('Failed to create Chargily checkout');
+            if ($totalAmount < 75) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Minimum payable amount is 75 DZD.',
+                ], 400);
             }
+
+            $query = [
+                'account' => $merchantAccount,
+                'amount' => (string) ((int) round($totalAmount)),
+                'full_name' => Auth::check() ? Auth::user()->name : ($request->input('full_name') ?: 'Customer'),
+                'phone' => $request->input('phone', '0000000000'),
+                'email' => $buyerEmail,
+                'return_url' => route('payment.sofizpay.cib.return', ['eid' => $encryptedOrderId]),
+                'memo' => 'Wassit Order #' . $order->id,
+                'redirect' => (string) config('services.sofizpay.redirect', 'no'),
+                'keep_return_url' => (string) config('services.sofizpay.keep_return_url', 'True'),
+            ];
+
+            $createResponse = $this->sofizPay->createCibTransaction($query);
+            $checkoutUrl = $createResponse['payment_url'] ?? null;
+            if (!is_string($checkoutUrl) || trim($checkoutUrl) === '') {
+                throw new \RuntimeException('SofizPay did not return payment_url.');
+            }
+
+            $tx = SofizPayCibTransaction::updateOrCreate(
+                ['order_id' => $order->id],
+                [
+                    'transaction_id' => $createResponse['transaction_id'] ?? null,
+                    'cib_order_number' => $createResponse['order_number'] ?? null,
+                    'cib_order_id' => $createResponse['orderId'] ?? ($createResponse['mdOrder'] ?? null),
+                    'amount_expected' => (float) $totalAmount,
+                    'status' => 'pending',
+                    'create_response' => $createResponse,
+                ]
+            );
+
+            $order->update([
+                'sofizpay_cib_transaction_id' => $tx->id,
+            ]);
 
             Log::info('PaymentController::initiatePayment - Checkout created successfully', [
                 'order_id' => $order->id,
@@ -106,7 +128,7 @@ class PaymentController extends Controller
 
             return response()->json([
                 'success' => true,
-                'checkout_url' => $checkout->getUrl(),
+                'checkout_url' => $checkoutUrl,
             ]);
         } catch (\Exception $e) {
             Log::error('PaymentController::initiatePayment - Exception', [
@@ -122,57 +144,96 @@ class PaymentController extends Controller
     }
 
     /**
-     * Payment success callback
+     * SofizPay CIB return callback.
      */
-    public function paymentSuccess($encryptedOrderId)
+    public function sofizpayCibReturn(Request $request)
     {
-        Log::info('PaymentController::paymentSuccess - Payment success callback', [
+        Log::info('PaymentController::sofizpayCibReturn - Return callback', [
             'user_id' => Auth::id(),
+            'query' => $request->query(),
         ]);
 
         try {
-            $orderId = Crypt::decryptString($encryptedOrderId);
+            $eid = (string) $request->query('eid', '');
+            if ($eid === '') {
+                return redirect()->route('home')->with('error', 'Missing payment token.');
+            }
+
+            $orderId = Crypt::decryptString($eid);
             $order = Order::with(['buyer', 'seller'])->findOrFail($orderId);
 
-            // Ensure there is a conversation for this buyer/seller/account
-            $conversation = \App\Models\Conversation::firstOrCreate([
-                'buyer_id' => (int)$order->buyer_id,
-                'seller_id' => (int)$order->seller_id,
-                'account_for_sale_id' => (int)$order->account_id,
+            if ($order->status === 'completed') {
+                $this->openChatForOrder($order);
+                return redirect()->route('account.chat')->with('success', 'Payment already confirmed.');
+            }
+
+            $tx = $order->sofizpayCibTransaction;
+            if (!$tx || !$tx->cib_order_number) {
+                return redirect()->route('checkout.show', ['encryptedOrderId' => $eid])
+                    ->with('error', 'Payment session not found. Please retry payment.');
+            }
+
+            $checkResponse = $this->sofizPay->checkCibTransaction($tx->cib_order_number);
+            $tx->update([
+                'last_check_response' => $checkResponse,
             ]);
 
-            // Post a system message notifying payment initiation success (final confirmation via webhook)
-            $sysMsg = \App\Models\Message::create([
-                'conversation_id' => $conversation->id,
-                'sender_id' => null, // system
-                'sender_type' => 'system',
-                'message_type' => 'text',
-                'content' => 'Payment initiated for Order #' . $order->id . '. Awaiting confirmation.',
-            ]);
+            if (!$this->sofizPay->isPaidCheck($checkResponse)) {
+                $hint = $this->sofizPay->parsePaymentFailureHint($checkResponse);
+                return redirect()->route('checkout.show', ['encryptedOrderId' => $eid])
+                    ->with('error', $hint);
+            }
 
-            // Optionally bump conversation last_message_at for ordering
-            try {
-                $conversation->last_message_at = now();
-                $conversation->save();
-            } catch (\Throwable $t) {}
+            $paidAmount = $this->sofizPay->parsePaidAmountDzd($checkResponse);
+            if ($paidAmount !== null && abs($paidAmount - (float) $tx->amount_expected) > 1.0) {
+                Log::error('SofizPay amount mismatch', [
+                    'order_id' => $order->id,
+                    'expected' => $tx->amount_expected,
+                    'paid' => $paidAmount,
+                ]);
+                return redirect()->route('checkout.show', ['encryptedOrderId' => $eid])
+                    ->with('error', 'Payment amount mismatch. Please contact support.');
+            }
 
-            // Broadcast system message so chat updates in real-time
-            $broadcastMessage = [
-                'id' => $sysMsg->id,
-                'type' => 'system',
-                'content' => $sysMsg->content,
-                'timestamp' => 'Just now',
-                'read' => true,
-            ];
-            event(new MessageSent($conversation, $broadcastMessage));
+            $destinationAccount = $this->sofizPay->parseDestinationAccount($checkResponse);
+            $merchantAccount = (string) config('services.sofizpay.merchant_account', '');
+            if ($destinationAccount && $merchantAccount !== '' && strcasecmp($destinationAccount, $merchantAccount) !== 0) {
+                Log::error('SofizPay destination account mismatch', [
+                    'order_id' => $order->id,
+                    'expected_account' => $merchantAccount,
+                    'reported_account' => $destinationAccount,
+                ]);
+                return redirect()->route('checkout.show', ['encryptedOrderId' => $eid])
+                    ->with('error', 'Payment account mismatch. Please contact support.');
+            }
 
-            // Focus chat UI to the conversation
-            session(['active_chat_conversation_id' => $conversation->id]);
+            DB::transaction(function () use ($order, $tx, $checkResponse): void {
+                $lockedOrder = Order::whereKey($order->id)->lockForUpdate()->firstOrFail();
+                $lockedTx = SofizPayCibTransaction::whereKey($tx->id)->lockForUpdate()->firstOrFail();
 
-            return redirect()->route('account.chat')
-                ->with('success', 'Payment initiated. Chat opened to notify the seller.');
+                if ($lockedOrder->status === 'completed' || $lockedTx->status === 'paid') {
+                    return;
+                }
+
+                $lockedTx->update([
+                    'status' => 'paid',
+                    'paid_at' => now(),
+                    'last_check_response' => $checkResponse,
+                ]);
+
+                $lockedOrder->update([
+                    'status' => 'completed',
+                    'paid_at' => now(),
+                    'sofizpay_cib_transaction_id' => $lockedTx->id,
+                ]);
+
+                $this->notifyPaymentConfirmed($lockedOrder);
+            });
+
+            $this->openChatForOrder($order);
+            return redirect()->route('account.chat')->with('success', 'Payment confirmed successfully.');
         } catch (\Exception $e) {
-            Log::error('PaymentController::paymentSuccess - Exception', [
+            Log::error('PaymentController::sofizpayCibReturn - Exception', [
                 'error' => $e->getMessage(),
             ]);
             return redirect()->route('home')->with('error', 'Payment process error.');
@@ -201,5 +262,52 @@ class PaymentController extends Controller
             ]);
             return redirect()->route('home')->with('error', 'Payment process error.');
         }
+    }
+
+    protected function notifyPaymentConfirmed(Order $order): void
+    {
+        $conversation = Conversation::firstOrCreate([
+            'buyer_id' => (int) $order->buyer_id,
+            'seller_id' => (int) $order->seller_id,
+            'account_for_sale_id' => (int) $order->account_id,
+        ]);
+
+        $sysMsg = Message::create([
+            'conversation_id' => $conversation->id,
+            'sender_id' => null,
+            'sender_type' => 'system',
+            'message_type' => 'text',
+            'content' => 'Payment confirmed for Order #' . $order->id . '. Seller, please proceed to deliver the account.',
+        ]);
+
+        try {
+            $conversation->last_message_at = now();
+            $conversation->save();
+        } catch (\Throwable $t) {
+        }
+
+        event(new MessageSent($conversation, [
+            'id' => $sysMsg->id,
+            'type' => 'system',
+            'content' => $sysMsg->content,
+            'timestamp' => 'Just now',
+            'read' => true,
+        ]));
+
+        event(new PaymentStatusUpdated($conversation, [
+            'paid' => true,
+            'orderId' => $order->id,
+        ]));
+    }
+
+    protected function openChatForOrder(Order $order): void
+    {
+        $conversation = Conversation::firstOrCreate([
+            'buyer_id' => (int) $order->buyer_id,
+            'seller_id' => (int) $order->seller_id,
+            'account_for_sale_id' => (int) $order->account_id,
+        ]);
+
+        session(['active_chat_conversation_id' => $conversation->id]);
     }
 }

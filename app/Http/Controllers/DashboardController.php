@@ -66,7 +66,7 @@ class DashboardController extends Controller
             $transactions = \App\Models\Order::where('seller_id', $seller->id)
                 ->where('status', 'completed')
                 ->where('delivery_status', 'delivered')
-                ->with(['buyer', 'account'])
+                ->with(['buyer', 'account', 'sofizpayCibTransaction'])
                 ->orderBy('updated_at', 'desc')
                 ->get()
                 ->map(function($order) {
@@ -77,8 +77,11 @@ class DashboardController extends Controller
                     return [
                         'id' => $order->id,
                         'order_id' => $order->id,
-                        'transaction_id' => $order->chargily_payment_id ?? 'N/A',
-                        'payment_method' => 'Chargily',
+                        'transaction_id' => optional($order->sofizpayCibTransaction)->transaction_id
+                            ?? optional($order->sofizpayCibTransaction)->cib_order_number
+                            ?? $order->chargily_payment_id
+                            ?? 'N/A',
+                        'payment_method' => $order->sofizpay_cib_transaction_id ? 'SofizPay' : 'Chargily',
                         'status' => 'Completed',
                         'amount' => $payout,
                         'type' => 'earning',
@@ -91,7 +94,7 @@ class DashboardController extends Controller
             // Buyer view: wallet stays 0, but show purchase transactions with full amount paid
             $transactions = \App\Models\Order::where('buyer_id', $user->id)
                 ->where('status', 'completed')
-                ->with(['seller.user', 'account'])
+                ->with(['seller.user', 'account', 'sofizpayCibTransaction'])
                 ->orderBy('updated_at', 'desc')
                 ->get()
                 ->map(function($order) {
@@ -102,8 +105,11 @@ class DashboardController extends Controller
                     return [
                         'id' => $order->id,
                         'order_id' => $order->id,
-                        'transaction_id' => $order->chargily_payment_id ?? 'N/A',
-                        'payment_method' => 'Chargily',
+                        'transaction_id' => optional($order->sofizpayCibTransaction)->transaction_id
+                            ?? optional($order->sofizpayCibTransaction)->cib_order_number
+                            ?? $order->chargily_payment_id
+                            ?? 'N/A',
+                        'payment_method' => $order->sofizpay_cib_transaction_id ? 'SofizPay' : 'Chargily',
                         'status' => $order->delivery_status === 'delivered' ? 'Delivered' : 'Pending Delivery',
                         'amount' => $totalPaid,
                         'type' => 'purchase',
