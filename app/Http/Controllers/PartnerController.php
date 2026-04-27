@@ -114,25 +114,6 @@ class PartnerController extends Controller
                 "Accounts to List: {$request->account_count}\n" .
                 "Application ID: {$application->id}";
 
-            $adminToken = env('ADMIN_ACTION_TOKEN', 'local-dev-token');
-            $approveUrl = route('partner.application.approve', [
-                'applicationId' => $application->id,
-                'token' => $adminToken,
-                'userId' => $user->id,
-            ]);
-            $rejectUrl = route('partner.application.reject', [
-                'applicationId' => $application->id,
-                'token' => $adminToken,
-                'userId' => $user->id,
-            ]);
-            Log::info('Telegram seller application action URLs', [
-                'application_id' => $application->id,
-                'approve_url' => $approveUrl,
-                'reject_url' => $rejectUrl,
-            ]);
-
-            $message .= "\n\nApprove Link: {$approveUrl}\nReject Link: {$rejectUrl}";
-
             $apiUrl = "https://api.telegram.org/bot{$botToken}/sendMessage";
             // Pre-log before calling Telegram
             Log::info('Telegram sendMessage: preparing', [
@@ -140,9 +121,11 @@ class PartnerController extends Controller
                 'chat_id' => $chatId,
                 'application_id' => $application->id,
                 'user_id' => $user->id,
+                'expected_webhook_url' => route('telegram.webhook'),
+                'app_url' => config('app.url'),
             ]);
 
-            // Use dual-mode buttons: URL (direct) + callback_data (webhook fallback).
+            // Callback-only buttons (original method).
             $resp = Http::post($apiUrl, [
                 'chat_id' => $chatId,
                 'text' => $message,
@@ -152,21 +135,11 @@ class PartnerController extends Controller
                     'inline_keyboard' => [
                         [
                             [
-                                'text' => "✅ Approve (URL)",
-                                'url' => $approveUrl,
-                            ],
-                            [
-                                'text' => "❌ Reject (URL)",
-                                'url' => $rejectUrl,
-                            ],
-                        ],
-                        [
-                            [
-                                'text' => "✅ Approve (Callback)",
+                                'text' => "✅ Approve",
                                 'callback_data' => 'ap:' . $application->id,
                             ],
                             [
-                                'text' => "❌ Reject (Callback)",
+                                'text' => "❌ Reject",
                                 'callback_data' => 'rj:' . $application->id,
                             ],
                         ],
@@ -199,6 +172,20 @@ class PartnerController extends Controller
                     'body' => $resp->body(),
                 ]);
             }
+
+            // Diagnostics: verify Telegram webhook registration/status.
+            try {
+                $webhookInfoUrl = "https://api.telegram.org/bot{$botToken}/getWebhookInfo";
+                $wh = Http::get($webhookInfoUrl);
+                Log::info('Telegram getWebhookInfo', [
+                    'http_status' => $wh->status(),
+                    'body' => $wh->body(),
+                ]);
+            } catch (\Throwable $webhookErr) {
+                Log::error('Telegram getWebhookInfo exception', [
+                    'message' => $webhookErr->getMessage(),
+                ]);
+            }
         } catch (\Throwable $t) {
             Log::error('Telegram sendMessage: exception', [
                 'message' => $t->getMessage(),
@@ -227,6 +214,8 @@ class PartnerController extends Controller
         Log::info('Telegram webhook: received update', [
             'has_callback_query' => isset($update['callback_query']),
             'keys' => array_keys($update),
+            'content_type' => $request->header('content-type'),
+            'raw_body' => $request->getContent(),
         ]);
 
         if (!isset($update['callback_query'])) {
@@ -237,6 +226,13 @@ class PartnerController extends Controller
         $fromId = $callback['from']['id'] ?? null;
         $message = $callback['message'] ?? null;
         $data = $callback['data'] ?? '';
+        Log::info('Telegram webhook: callback payload', [
+            'callback_id' => $callback['id'] ?? null,
+            'from_id' => $fromId,
+            'message_id' => $message['message_id'] ?? null,
+            'chat_id' => $message['chat']['id'] ?? null,
+            'data' => $data,
+        ]);
 
         // Admin check disabled to ensure actions work during setup
         // If you want to restrict, re-enable by comparing $fromId to TELEGRAM_CHAT_ID.
