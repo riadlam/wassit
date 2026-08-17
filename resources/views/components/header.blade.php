@@ -34,8 +34,8 @@
                 
                 <!-- Logo -->
                 <div class="flex items-center">
-                    <a href="{{ route('home') }}" class="text-2xl font-bold">
-                        <span class="text-red-600">Wassit</span>
+                    <a href="{{ route('home') }}" class="text-xl sm:text-2xl font-bold whitespace-nowrap">
+                        <span class="text-red-600">Wassitmarket</span>
                         <span class="text-xs text-gray-400 ml-2 hidden sm:inline">by Diaszone</span>
                     </a>
                 </div>
@@ -158,8 +158,9 @@
         <div class="flex flex-col h-full">
             <!-- Menu Header -->
             <div class="flex items-center justify-between p-4 border-b" style="border-color: rgba(45, 44, 49, 0.3);">
-                <a href="{{ route('home') }}" class="text-xl font-bold">
-                    <span class="text-red-600">Wassit</span>
+                <a href="{{ route('home') }}" class="font-bold">
+                    <span class="block text-xl text-red-600">Wassitmarket</span>
+                    <span class="block text-[10px] font-medium text-gray-400">by Diaszone</span>
                 </a>
                 <button 
                     @click="closeMenu()"

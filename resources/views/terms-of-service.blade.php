@@ -1,4 +1,4 @@
-@extends('layouts.app', ['title' => __('terms.title') . ' | Wassit'])
+@extends('layouts.app', ['title' => __('terms.title') . ' | Wassitmarket'])
 
 @section('content')
     @php

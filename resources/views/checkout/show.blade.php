@@ -23,7 +23,7 @@ use Illuminate\Support\Facades\Storage;
                         <div class="flex justify-between items-center mb-4">
                             <a class="relative" href="{{ route('home') }}">
                                 <span class="text-2xl font-bold">
-                                    <span class="text-red-600">Wassit</span>
+                                    <span class="text-red-600">Wassitmarket</span>
                                     <span class="text-xs text-gray-400 ml-2">by Diaszone</span>
                                 </span>
                             </a>

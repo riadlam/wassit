@@ -103,7 +103,7 @@ class PaymentController extends Controller
                 'phone' => $this->resolveSofizPayPhone($request),
                 'email' => $buyerEmail,
                 'return_url' => route('payment.sofizpay.cib.return', ['eid' => $encryptedOrderId]),
-                'memo' => 'Wassit Order #' . $order->id,
+                'memo' => 'Wassitmarket Order #' . $order->id,
                 'redirect' => $this->normalizeRedirectFlag(config('services.sofizpay.redirect', 'no')),
                 'keep_return_url' => $this->normalizeKeepReturnUrlFlag(config('services.sofizpay.keep_return_url', 'True')),
             ];

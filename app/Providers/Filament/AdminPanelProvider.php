@@ -28,7 +28,7 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
-            ->brandName('Wassit Admin')
+            ->brandName('Wassitmarket Admin')
             ->colors([
                 'primary' => Color::Red,
             ])
