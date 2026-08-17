@@ -12,11 +12,13 @@ use App\Http\Controllers\WithdrawalController;
 // Broadcasting authentication routes (must be first, before any catch-all routes)
 Broadcast::routes(['middleware' => ['web', 'auth']]);
 
-// Language switcher route
-Route::get('/locale/{locale}', function ($locale) {
-    if (in_array($locale, ['en', 'ar', 'fr'])) {
-        session(['locale' => $locale]);
-    }
+// Language switcher route. Storing the locale marks it as an explicit choice,
+// which takes priority over the language detected from the browser or phone.
+Route::get('/locale/{locale}', function (string $locale) {
+    abort_unless(in_array($locale, \App\Http\Middleware\SetLocale::supportedLocales(), true), 404);
+
+    session(['locale' => $locale]);
+
     return redirect()->back();
 })->name('locale.switch');
 

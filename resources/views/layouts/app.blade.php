@@ -56,35 +56,6 @@
                 position: relative !important;
                 z-index: 1 !important;
             }
-            /* Add padding to body when sticky button is present */
-            body {
-                padding-bottom: 60px;
-            }
-        }
-        /* Sticky button styles */
-        #sticky-buy-now-btn {
-            display: none !important;
-        }
-        #sticky-buy-now-btn:not(.hidden) {
-            display: inline-flex !important;
-        }
-        /* Only show on mobile (screens smaller than 768px) */
-        @media (min-width: 768px) {
-            #sticky-buy-now-btn {
-                display: none !important;
-            }
-        }
-        @media (max-width: 767px) {
-            #sticky-buy-now-btn {
-                position: fixed !important;
-                bottom: 0 !important;
-                left: 0 !important;
-                right: 0 !important;
-                z-index: 9999 !important;
-                width: 100% !important;
-                border-radius: 0 !important;
-                margin: 0 !important;
-            }
         }
     </style>
 </head>
@@ -99,23 +70,6 @@
     
     <!-- Footer -->
     @include('components.footer')
-    
-    <!-- Sticky Mobile Buy Now Button -->
-    <button 
-        id="sticky-buy-now-btn"
-        type="button" 
-        class="hidden fixed bottom-0 left-0 right-0 z-50 w-full account-buy-btn-sticky inline-flex items-center justify-center transition-colors focus:outline focus:outline-offset-2 focus-visible:outline outline-none disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden font-medium active:translate-y-px whitespace-nowrap bg-red-600 hover:bg-red-700 text-white shadow-lg focus:outline-red-600 py-3 px-4 text-sm rounded-none"
-        style="border-top: 1px solid #2d2c31;"
-    >
-        <span class="buy-btn-text">Buy Now</span>
-        <i class="buy-btn-loading ml-2 hidden" style="display: none;">
-            <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-        </i>
-        <i class="ml-1 fa-solid fa-chevron-right buy-btn-icon"></i>
-    </button>
     
     <!-- Floating WhatsApp Support Button (Global) -->
     @include('components.whatsapp-float')
@@ -144,115 +98,6 @@
     <!-- Account Card Buy Button Handler -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Mobile sticky Buy Now button logic - for main account only
-            const stickyBuyBtn = document.getElementById('sticky-buy-now-btn');
-            
-            // Look for the main account buy button
-            // It can be either #buy-account-btn (logged in) or the guest button
-            const getMainBuyBtn = function() {
-                // First try logged-in version
-                let btn = document.querySelector('#buy-account-btn');
-                if (btn) return btn;
-                
-                // If not logged in, look for button in the fast-checkout-sticky section
-                // that contains "Buy Account" or similar text
-                const fastCheckoutSection = document.querySelector('.fast-checkout-sticky');
-                if (fastCheckoutSection) {
-                    // Find the red buy button in this section
-                    btn = fastCheckoutSection.querySelector('button.bg-red-600');
-                    if (btn) return btn;
-                }
-                
-                // Fallback: look for any button with Buy Account text
-                const allButtons = document.querySelectorAll('button');
-                for (let button of allButtons) {
-                    if (button.textContent.includes('Buy Account') || 
-                        button.textContent.includes('buy_account') ||
-                        button.textContent.includes('شراء الحساب')) {
-                        return button;
-                    }
-                }
-                
-                return null;
-            };
-            
-            const checkVisibility = function() {
-                const mainBuyBtn = getMainBuyBtn();
-                
-                console.log('Checking sticky visibility:', {
-                    mainBtnExists: !!mainBuyBtn,
-                    mainBtnText: mainBuyBtn?.textContent?.substring(0, 20),
-                    stickyBtnExists: !!stickyBuyBtn
-                });
-                
-                // If no main buy button exists on this page, hide sticky and stop checking
-                if (!mainBuyBtn) {
-                    if (stickyBuyBtn) {
-                        stickyBuyBtn.classList.add('hidden');
-                    }
-                    console.log('No main button found, hiding sticky');
-                    return;
-                }
-                
-                if (!stickyBuyBtn) {
-                    console.log('Sticky button not found in DOM');
-                    return;
-                }
-                
-                // Get the bounding rectangle
-                const rect = mainBuyBtn.getBoundingClientRect();
-                const windowHeight = window.innerHeight;
-                
-                // Check if button is visible in viewport
-                const isInViewport = rect.top >= 0 && rect.top < windowHeight;
-                
-                console.log('Button visibility check:', {
-                    rectTop: Math.round(rect.top),
-                    rectBottom: Math.round(rect.bottom),
-                    windowHeight: windowHeight,
-                    isInViewport: isInViewport,
-                    willShowSticky: !isInViewport
-                });
-                
-                if (isInViewport) {
-                    // Button is visible, hide sticky
-                    stickyBuyBtn.classList.add('hidden');
-                    console.log('Main button VISIBLE -> hiding sticky');
-                } else {
-                    // Button is not visible, show sticky
-                    stickyBuyBtn.classList.remove('hidden');
-                    console.log('Main button HIDDEN -> showing sticky');
-                }
-            };
-            
-            // Check visibility after a delay to ensure DOM is ready
-            setTimeout(checkVisibility, 500);
-            
-            // Also check on scroll with throttling
-            let scrollTimeout;
-            window.addEventListener('scroll', function() {
-                clearTimeout(scrollTimeout);
-                scrollTimeout = setTimeout(checkVisibility, 100);
-            });
-            
-            window.addEventListener('resize', checkVisibility);
-            
-            // Handle sticky button clicks - trigger the main account button
-            if (stickyBuyBtn) {
-                stickyBuyBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    
-                    const mainBuyBtn = getMainBuyBtn();
-                    if (mainBuyBtn) {
-                        console.log('Sticky button clicked, triggering main button');
-                        mainBuyBtn.click();
-                    } else {
-                        console.error('Main buy button not found when clicking sticky');
-                    }
-                });
-            }
-            
             // Handle buy button clicks for account cards from any location (slider, related accounts, etc.)
             document.addEventListener('click', async function(e) {
                 const buyBtn = e.target.closest('.account-buy-btn');

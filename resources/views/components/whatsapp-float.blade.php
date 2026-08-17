@@ -25,7 +25,7 @@
     .wa-float {
         position: fixed;
         right: 14px;
-        /* Clears the mobile bottom navigation and the sticky Buy Now bar. */
+        /* Clears the mobile bottom navigation. */
         bottom: calc(78px + env(safe-area-inset-bottom, 0px));
         z-index: 9990;
         display: block;
