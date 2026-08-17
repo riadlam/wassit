@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\Game;
 use App\Models\SellerApplication;
 use App\Services\Admin\SellerApplicationService;
 use Illuminate\Support\Facades\Auth;
@@ -21,6 +22,9 @@ class PartnerController extends Controller
     {
         // Allow non-logged in users to see the page (login modal will handle it)
         $user = Auth::user();
+        $games = Game::query()
+            ->orderBy('name')
+            ->get(['id', 'name', 'slug']);
 
         if ($user) {
             $user->loadMissing('seller');
@@ -43,6 +47,7 @@ class PartnerController extends Controller
                 return view('partner.apply', [
                     'hasApplication' => true,
                     'application' => $application,
+                    'games' => $games,
                 ]);
             }
         }
@@ -50,6 +55,7 @@ class PartnerController extends Controller
         return view('partner.apply', [
             'hasApplication' => false,
             'requiresAuth' => !$user,
+            'games' => $games,
         ]);
     }
 
@@ -73,10 +79,9 @@ class PartnerController extends Controller
             'phone' => 'required|string|max:20',
             'country' => 'required|string|max:100',
             'business_name' => 'nullable|string|max:255',
-            'website' => 'nullable|url|max:255',
             'experience' => 'required|string',
-            'games' => 'required|string',
-            'preferred_location' => 'nullable|string|max:255',
+            'games' => 'required|array|min:1|max:20',
+            'games.*' => 'required|integer|distinct|exists:games,id',
             'account_count' => 'required|string',
             'terms' => 'accepted',
         ]);
@@ -85,18 +90,29 @@ class PartnerController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
+        $validated = $validator->validated();
+        $selectedGameIds = collect($validated['games'])
+            ->map(fn ($id): int => (int) $id)
+            ->unique()
+            ->values();
+        $gameNamesById = Game::query()
+            ->whereKey($selectedGameIds)
+            ->pluck('name', 'id');
+        $selectedGames = $selectedGameIds
+            ->map(fn (int $id): string => (string) $gameNamesById->get($id))
+            ->filter()
+            ->implode(', ');
+
         $application = SellerApplication::create([
             'user_id' => $user->id,
-            'full_name' => $request->full_name,
-            'email' => $request->email,
-            'phone' => $request->phone,
-            'country' => $request->country,
-            'business_name' => $request->business_name,
-            'website' => $request->website,
-            'experience' => $request->experience,
-            'games' => $request->games,
-            'preferred_location' => $request->preferred_location,
-            'account_count' => $request->account_count,
+            'full_name' => $validated['full_name'],
+            'email' => $validated['email'],
+            'phone' => $validated['phone'],
+            'country' => $validated['country'],
+            'business_name' => $validated['business_name'] ?? null,
+            'experience' => $validated['experience'],
+            'games' => $selectedGames,
+            'account_count' => $validated['account_count'],
             'status' => 'pending',
         ]);
 
@@ -116,10 +132,8 @@ class PartnerController extends Controller
                 "Phone: {$request->phone}\n" .
                 "Country: {$request->country}\n" .
                 "Business: " . ($request->business_name ?: '-') . "\n" .
-                "Website: " . ($request->website ?: '-') . "\n" .
                 "Experience: {$request->experience}\n" .
-                "Games: {$request->games}\n" .
-                "Preferred Location: " . ($request->preferred_location ?: '-') . "\n" .
+                "Games: {$selectedGames}\n" .
                 "Accounts to List: {$request->account_count}\n" .
                 "Application ID: {$application->id}";
 
@@ -321,10 +335,8 @@ class PartnerController extends Controller
             "Phone: {$application->phone}\n" .
             "Country: {$application->country}\n" .
             "Business: " . ($application->business_name ?: '-') . "\n" .
-            "Website: " . ($application->website ?: '-') . "\n" .
             "Experience: {$application->experience}\n" .
             "Games: {$application->games}\n" .
-            "Preferred Location: " . ($application->preferred_location ?: '-') . "\n" .
             "Accounts to List: {$application->account_count}\n" .
             "Application ID: {$application->id}\n" .
             "Status: {$statusLabel} {$statusEmoji}"

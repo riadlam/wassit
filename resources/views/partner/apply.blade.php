@@ -93,7 +93,10 @@ use Illuminate\Support\Facades\Storage;
                                 if (response.ok) {
                                     window.location.reload();
                                 } else {
-                                    alert(data.error || 'An error occurred');
+                                    const firstValidationError = data.errors
+                                        ? Object.values(data.errors).flat()[0]
+                                        : null;
+                                    alert(firstValidationError || data.error || 'An error occurred');
                                     this.submitted = false;
                                 }
                             } catch (error) {
@@ -311,21 +314,6 @@ use Illuminate\Support\Facades\Storage;
                                     >
                                 </div>
                                 
-                                <!-- Website/Social Media -->
-                                <div>
-                                    <label for="website" class="block text-sm font-medium text-gray-300 mb-2">
-                                        {{ __('partner.website') }}
-                                    </label>
-                                    <input 
-                                        type="url" 
-                                        id="website" 
-                                        name="website" 
-                                        class="w-full block border-0 rounded-md shadow-sm sm:text-sm disabled:opacity-50 disabled:pointer-events-none py-2.5 px-4 text-white placeholder:text-gray-500 focus:ring-2 focus:ring-red-500 focus:outline-none transition-all" 
-                                        style="background-color: #1b1a1e; border: 1px solid #2d2c31;"
-                                        placeholder="https://example.com"
-                                    >
-                                </div>
-                                
                                 <!-- Years of Experience -->
                                 <div>
                                     <label for="experience" class="block text-sm font-medium text-gray-300 mb-2">
@@ -347,20 +335,63 @@ use Illuminate\Support\Facades\Storage;
                                 </div>
                                 
                                 <!-- Games You Sell -->
-                                <div>
-                                    <label for="games" class="block text-sm font-medium text-gray-300 mb-2">
+                                <div x-data="gameTagSelector(@js($games->map(fn ($game) => ['id' => $game->id, 'name' => $game->name])->values()))">
+                                    <label for="game-search" class="block text-sm font-medium text-gray-300 mb-2">
                                         {{ __('partner.games') }} <span class="text-red-500">*</span>
                                     </label>
-                                    <input 
-                                        type="text" 
-                                        id="games" 
-                                        name="games" 
-                                        required
-                                        class="w-full block border-0 rounded-md shadow-sm sm:text-sm disabled:opacity-50 disabled:pointer-events-none py-2.5 px-4 text-white placeholder:text-gray-500 focus:ring-2 focus:ring-red-500 focus:outline-none transition-all" 
-                                        style="background-color: #1b1a1e; border: 1px solid #2d2c31;"
-                                        placeholder="Mobile Legends, PUBG Mobile, etc."
-                                    >
-                                    <p class="mt-1 text-xs text-gray-500">List the games you plan to sell accounts for</p>
+                                    <template x-for="game in selected" :key="game.id">
+                                        <input type="hidden" name="games[]" :value="game.id">
+                                    </template>
+
+                                    <div class="relative" @click.outside="open = false">
+                                        <div class="flex flex-wrap items-center gap-2 min-h-11 rounded-md px-3 py-2"
+                                             style="background-color: #1b1a1e; border: 1px solid #2d2c31;">
+                                            <template x-for="game in selected" :key="game.id">
+                                                <span class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium text-white"
+                                                      style="background-color: rgba(220, 38, 38, 0.22); border: 1px solid rgba(239, 68, 68, 0.45);">
+                                                    <span x-text="game.name"></span>
+                                                    <button type="button"
+                                                            class="text-red-200 hover:text-white"
+                                                            :aria-label="'Remove ' + game.name"
+                                                            @click="remove(game.id)">
+                                                        <i class="fa-solid fa-xmark"></i>
+                                                    </button>
+                                                </span>
+                                            </template>
+
+                                            <input
+                                                type="search"
+                                                id="game-search"
+                                                x-model="query"
+                                                :required="selected.length === 0"
+                                                @focus="open = true"
+                                                @input="open = true"
+                                                @keydown.escape="open = false"
+                                                @keydown.enter.prevent="addFirstResult()"
+                                                class="min-w-40 flex-1 border-0 bg-transparent px-1 py-1 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:ring-0"
+                                                placeholder="{{ __('partner.games_search_placeholder') }}"
+                                                autocomplete="off"
+                                            >
+                                        </div>
+
+                                        <div x-cloak
+                                             x-show="open && query.trim() !== ''"
+                                             class="absolute z-30 mt-2 max-h-56 w-full overflow-y-auto rounded-md shadow-xl"
+                                             style="background-color: #1b1a1e; border: 1px solid #2d2c31;">
+                                            <template x-for="game in filteredGames" :key="game.id">
+                                                <button type="button"
+                                                        class="flex w-full items-center justify-between px-4 py-3 text-left text-sm text-gray-200 hover:bg-red-600/20 hover:text-white"
+                                                        @click="add(game)">
+                                                    <span x-text="game.name"></span>
+                                                    <i class="fa-solid fa-plus text-xs text-red-500"></i>
+                                                </button>
+                                            </template>
+                                            <p x-show="filteredGames.length === 0" class="px-4 py-3 text-sm text-gray-500">
+                                                {{ __('partner.games_no_results') }}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <p class="mt-1 text-xs text-gray-500">{{ __('partner.games_help') }}</p>
                                 </div>
                             </div>
                         </div>
@@ -369,26 +400,10 @@ use Illuminate\Support\Facades\Storage;
                         <div class="mb-8">
                             <h2 class="text-xl font-semibold text-white mb-6 flex items-center">
                                 <i class="fa-solid fa-info-circle mr-3 text-red-600"></i>
-                                {{ __('partner.preferred_location') }}
+                                {{ __('partner.additional_information') }}
                             </h2>
                             
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <!-- Where do you prefer -->
-                                <div>
-                                    <label for="preferred_location" class="block text-sm font-medium text-gray-300 mb-2">
-                                        {{ __('partner.preferred_location') }} <span class="text-red-500">*</span>
-                                    </label>
-                                    <input 
-                                        type="text" 
-                                        id="preferred_location" 
-                                        name="preferred_location" 
-                                        required
-                                        class="w-full block border-0 rounded-md shadow-sm sm:text-sm disabled:opacity-50 disabled:pointer-events-none py-2.5 px-4 text-white placeholder:text-gray-500 focus:ring-2 focus:ring-red-500 focus:outline-none transition-all" 
-                                        style="background-color: #1b1a1e; border: 1px solid #2d2c31;"
-                                        placeholder="e.g., Online marketplace, Direct sales, etc."
-                                    >
-                                </div>
-                                
+                            <div class="grid grid-cols-1 gap-6">
                                 <!-- How Many Accounts -->
                                 <div>
                                     <label for="account_count" class="block text-sm font-medium text-gray-300 mb-2">
@@ -483,9 +498,45 @@ use Illuminate\Support\Facades\Storage;
     </div>
     
     @push('scripts')
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://unpkg.com/libphonenumber-js@1.10.58/bundle/libphonenumber-js.min.js"></script>
     <script>
+        function gameTagSelector(games) {
+            return {
+                games,
+                selected: [],
+                query: '',
+                open: false,
+
+                get filteredGames() {
+                    const search = this.query.trim().toLocaleLowerCase();
+
+                    return this.games.filter(game =>
+                        !this.selected.some(selected => selected.id === game.id)
+                        && game.name.toLocaleLowerCase().includes(search)
+                    );
+                },
+
+                add(game) {
+                    if (!this.selected.some(selected => selected.id === game.id)) {
+                        this.selected.push(game);
+                    }
+
+                    this.query = '';
+                    this.open = false;
+                },
+
+                addFirstResult() {
+                    if (this.filteredGames.length > 0) {
+                        this.add(this.filteredGames[0]);
+                    }
+                },
+
+                remove(gameId) {
+                    this.selected = this.selected.filter(game => game.id !== gameId);
+                },
+            };
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             const countrySelect = document.getElementById('country');
             const phoneInput = document.getElementById('phone');
