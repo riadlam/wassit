@@ -90,7 +90,6 @@ Route::get('/checkout/{encryptedOrderId}', [App\Http\Controllers\CheckoutControl
 // Payment routes
 Route::post('/payment/initiate/{encryptedOrderId}', [App\Http\Controllers\PaymentController::class, 'initiatePayment'])->name('payment.initiate');
 Route::get('/payment/sofizpay/cib/return', [App\Http\Controllers\PaymentController::class, 'sofizpayCibReturn'])->name('payment.sofizpay.cib.return');
-Route::get('/payment/success/{encryptedOrderId}', [App\Http\Controllers\PaymentController::class, 'paymentSuccess'])->name('payment.success');
 Route::get('/payment/failure/{encryptedOrderId}', [App\Http\Controllers\PaymentController::class, 'paymentFailure'])->name('payment.failure');
 
 // Webhook routes (public, no auth required)

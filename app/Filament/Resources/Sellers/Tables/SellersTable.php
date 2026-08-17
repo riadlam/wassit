@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\Sellers\Tables;
 
+use App\Models\Seller;
+use App\Support\SellerRanks;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\IconColumn;
@@ -24,6 +26,12 @@ class SellersTable
                 IconColumn::make('verified')
                     ->boolean()
                     ->label('Verified'),
+                TextColumn::make('ranks')
+                    ->label('Ranks')
+                    ->state(fn (Seller $record): string => collect(SellerRanks::normalize($record->ranks))
+                        ->map(fn (string $rank): string => SellerRanks::options()[$rank] ?? $rank)
+                        ->join(', '))
+                    ->wrap(),
                 TextColumn::make('wallet')
                     ->label('Wallet')
                     ->suffix(' DA')

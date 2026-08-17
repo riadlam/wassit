@@ -252,22 +252,6 @@
                                                 </button>
                                             </div>
                                         </div>
-                                        
-                                        <!-- Connection Status (if connected) -->
-                                        <div x-show="false" class="mt-6 p-4 rounded-lg" style="background-color: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3);">
-                                            <div class="flex items-center gap-3">
-                                                <div class="flex items-center justify-center w-10 h-10 rounded-full bg-green-500/20">
-                                                    <i class="fa-solid fa-check text-green-500"></i>
-                                                </div>
-                                                <div class="flex-1">
-                                                    <p class="text-sm font-medium text-white">Connected to Telegram</p>
-                                                    <p class="text-xs text-gray-400 mt-0.5">Notifications are being sent to @your_telegram_username</p>
-                                                </div>
-                                                <button type="button" class="text-sm text-red-400 hover:text-red-300 transition-colors">
-                                                    Disconnect
-                                                </button>
-                                            </div>
-                                        </div>
                                     </div>
                                 </div>
                             </div>

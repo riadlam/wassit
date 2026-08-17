@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\Sellers\Schemas;
 
+use App\Models\Seller;
+use App\Support\SellerRanks;
 use Filament\Infolists\Components\IconEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Schema;
@@ -27,6 +29,11 @@ class SellerInfolist
                 IconEntry::make('verified')
                     ->boolean()
                     ->label('Verified'),
+                TextEntry::make('ranks')
+                    ->label('Assigned ranks')
+                    ->state(fn (Seller $record): string => collect(SellerRanks::normalize($record->ranks))
+                        ->map(fn (string $rank): string => SellerRanks::options()[$rank] ?? $rank)
+                        ->join(', ')),
                 TextEntry::make('accounts_count')
                     ->label('Listings'),
                 TextEntry::make('bio')

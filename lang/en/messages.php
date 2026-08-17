@@ -130,6 +130,9 @@ return [
     'reviews_on' => 'reviews on',
     'offline' => 'Offline',
     'elite_seller' => 'Elite Seller',
+    'seller_rank_verified' => 'Verified Seller',
+    'seller_rank_trusted' => 'Trusted Seller',
+    'seller_rank_power' => 'Power Seller',
     'an_hour_ago' => 'an hour ago',
     'seller_rating' => 'Seller Rating',
     'reviews' => 'Reviews',
@@ -328,5 +331,6 @@ return [
     'checkout_method_unavailable' => 'This payment method is not yet available',
     'checkout_initiate_failed' => 'Failed to initiate payment. Please try again.',
     'checkout_payment_error' => 'An error occurred while processing your payment. Please try again.',
+    'checkout_session_expired' => 'Your session expired. Please refresh the page and try again.',
 ];
 

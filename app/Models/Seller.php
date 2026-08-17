@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Support\SellerRanks;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -15,6 +17,7 @@ class Seller extends Model
         'total_sales',
         'bio',
         'verified',
+        'ranks',
         'wallet',
     ];
 
@@ -70,5 +73,32 @@ class Seller extends Model
     public function withdrawals(): HasMany
     {
         return $this->hasMany(Withdrawal::class, 'seller_id');
+    }
+
+    protected function ranks(): Attribute
+    {
+        return Attribute::make(
+            get: function (mixed $value): array {
+                if (! is_string($value) || $value === '') {
+                    return ['elite'];
+                }
+
+                $decoded = json_decode($value, true);
+
+                return is_array($decoded) && $decoded !== [] ? $decoded : ['elite'];
+            },
+            set: fn (array $value): string => json_encode(SellerRanks::normalize($value)),
+        );
+    }
+
+    /** @return array<int, array<string, string>> */
+    public function rankBadges(): array
+    {
+        return SellerRanks::badges($this->ranks);
+    }
+
+    public function primaryRankLabel(): string
+    {
+        return $this->rankBadges()[0]['label'] ?? __('messages.elite_seller');
     }
 }

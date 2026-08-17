@@ -85,67 +85,9 @@
         }
     }
     
-    // Determine seller badges
-    $sellerBadges = [];
-    if ($seller) {
-        // Verified Seller - ID + phone verified (verified == 1)
-        if ($seller->verified == 1) {
-            $sellerBadges[] = [
-                'type' => 'verified',
-                'label' => 'Verified Seller',
-                'icon' => 'fa-check',
-                'color' => '#3b82f6', // Blue
-                'gradient' => 'linear-gradient(135deg, #60a5fa 0%, #3b82f6 30%, #2563eb 70%, #1d4ed8 100%)',
-                'shadow' => '0 2px 4px rgba(59, 130, 246, 0.4)',
-                'border' => '1.5px solid rgba(96, 165, 250, 0.4)',
-            ];
-        }
-        
-        // Trusted Seller - 20+ successful sales
-        if ($soldCount >= 20) {
-            $sellerBadges[] = [
-                'type' => 'trusted',
-                'label' => 'Trusted Seller',
-                'icon' => 'fa-shield-halved',
-                'color' => '#3b82f6', // Blue
-                'gradient' => 'linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%)',
-                'shadow' => '0 2px 4px rgba(59, 130, 246, 0.4)',
-            ];
-        }
-        
-        // Fast Responder - replies in under 10 minutes (leave empty for now)
-        // Will be implemented later
-        
-        // Power Seller - 50+ sales
-        if ($soldCount >= 50) {
-            $sellerBadges[] = [
-                'type' => 'power',
-                'label' => 'Power Seller',
-                'icon' => 'fa-crown',
-                'color' => '#fbbf24', // Yellow/Gold
-                'gradient' => 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%)',
-                'shadow' => '0 2px 4px rgba(251, 191, 36, 0.4)',
-            ];
-        }
-    }
+    // Seller ranks are assigned by an administrator.
+    $sellerBadges = $seller?->rankBadges() ?? [];
     
-    // Determine badge type for the main badge icon (for backward compatibility)
-    // Use the highest priority badge or default
-    $badgeType = 'silver'; // Default
-    if (!empty($sellerBadges)) {
-        // Priority: Power Seller > Verified > Trusted
-        $hasPower = collect($sellerBadges)->contains('type', 'power');
-        $hasVerified = collect($sellerBadges)->contains('type', 'verified');
-        $hasTrusted = collect($sellerBadges)->contains('type', 'trusted');
-        
-        if ($hasPower) {
-            $badgeType = 'yellow';
-        } elseif ($hasVerified) {
-            $badgeType = 'green';
-        } elseif ($hasTrusted) {
-            $badgeType = 'blue';
-        }
-    }
 @endphp
 
 <a href="/mobile-legends/accounts/{{ $account->id }}" class="account-card-hover account-card flex relative flex-col justify-between overflow-hidden rounded-xl h-full hover:shadow-xl transition-all duration-300 group" style="background-color: #0e1015; border: 1px solid #2d2c31;">

@@ -130,6 +130,9 @@ return [
     'reviews_on' => 'تقييمات على',
     'offline' => 'غير متصل',
     'elite_seller' => 'بائع نخبة',
+    'seller_rank_verified' => 'بائع موثّق',
+    'seller_rank_trusted' => 'بائع موثوق',
+    'seller_rank_power' => 'بائع متميز',
     'an_hour_ago' => 'منذ ساعة',
     'seller_rating' => 'تقييم البائع',
     'reviews' => 'تقييمات',
@@ -322,5 +325,6 @@ return [
     'checkout_method_unavailable' => 'طريقة الدفع هذه غير متوفرة بعد',
     'checkout_initiate_failed' => 'فشل بدء عملية الدفع. الرجاء المحاولة مرة أخرى.',
     'checkout_payment_error' => 'حدث خطأ أثناء معالجة الدفع. الرجاء المحاولة مرة أخرى.',
+    'checkout_session_expired' => 'انتهت صلاحية الجلسة. يرجى تحديث الصفحة والمحاولة مرة أخرى.',
 ];
 

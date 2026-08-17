@@ -130,6 +130,9 @@ return [
     'reviews_on' => 'avis sur',
     'offline' => 'Hors ligne',
     'elite_seller' => 'Vendeur Élite',
+    'seller_rank_verified' => 'Vendeur vérifié',
+    'seller_rank_trusted' => 'Vendeur de confiance',
+    'seller_rank_power' => 'Vendeur premium',
     'an_hour_ago' => "il y a une heure",
     'seller_rating' => 'Note du Vendeur',
     'reviews' => 'Avis',
@@ -322,5 +325,6 @@ return [
     'checkout_method_unavailable' => 'Ce mode de paiement n\'est pas encore disponible',
     'checkout_initiate_failed' => 'Échec du lancement du paiement. Veuillez réessayer.',
     'checkout_payment_error' => 'Une erreur s\'est produite lors du traitement de votre paiement. Veuillez réessayer.',
+    'checkout_session_expired' => 'Votre session a expiré. Veuillez actualiser la page et réessayer.',
 ];
 

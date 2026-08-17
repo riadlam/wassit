@@ -33,49 +33,8 @@ if ($seller) {
     $soldCount = $seller->orders()->where('status', 'completed')->count();
 }
 
-// Determine seller badges
-$sellerBadges = [];
-if ($seller) {
-    // Verified Seller - ID + phone verified (verified == 1)
-    if ($seller->verified == 1) {
-        $sellerBadges[] = [
-            'type' => 'verified',
-            'label' => 'Verified Seller',
-            'icon' => 'fa-check',
-            'color' => '#3b82f6', // Blue
-            'gradient' => 'linear-gradient(135deg, #60a5fa 0%, #3b82f6 30%, #2563eb 70%, #1d4ed8 100%)',
-            'shadow' => '0 2px 4px rgba(59, 130, 246, 0.4)',
-            'border' => '1.5px solid rgba(96, 165, 250, 0.4)',
-        ];
-    }
-    
-    // Trusted Seller - 20+ successful sales
-    if ($soldCount >= 20) {
-        $sellerBadges[] = [
-            'type' => 'trusted',
-            'label' => 'Trusted Seller',
-            'icon' => 'fa-shield-halved',
-            'color' => '#3b82f6', // Blue
-            'gradient' => 'linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%)',
-            'shadow' => '0 2px 4px rgba(59, 130, 246, 0.4)',
-        ];
-    }
-    
-    // Fast Responder - replies in under 10 minutes (leave empty for now)
-    // Will be implemented later
-    
-    // Power Seller - 50+ sales
-    if ($soldCount >= 50) {
-        $sellerBadges[] = [
-            'type' => 'power',
-            'label' => 'Power Seller',
-            'icon' => 'fa-crown',
-            'color' => '#fbbf24', // Yellow/Gold
-            'gradient' => 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%)',
-            'shadow' => '0 2px 4px rgba(251, 191, 36, 0.4)',
-        ];
-    }
-}
+// Seller ranks and badges are assigned in the admin dashboard.
+$sellerBadges = $seller?->rankBadges() ?? [];
 
 // Calculate rating percentage
 $ratingPercentage = 0;
@@ -643,7 +602,7 @@ if ($seller && !empty($seller->pfp)) {
                                                 @endif
                                             </div>
                                         </div>
-                                        <div class="text-xs truncate text-gray-400">{{ __('messages.elite_seller') }}</div>
+                                        <div class="text-xs truncate text-gray-400">{{ $seller?->primaryRankLabel() ?? __('messages.elite_seller') }}</div>
                                     </div>
                                 </div>
                                 <span class="inline-flex font-medium ring-1 ring-inset px-2 py-1 text-xs rounded-full items-center shrink-0" style="background-color: rgba(27, 26, 30, 0.5); border-color: #2d2c31; color: rgba(255, 255, 255, 0.7);">
@@ -1308,14 +1267,79 @@ if ($seller && !empty($seller->pfp)) {
 @endpush
 
 @push('scripts')
-    <!-- Alpine.js -->
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <!-- Swiper JS -->
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
     <!-- GLightbox JS -->
     <script src="https://cdn.jsdelivr.net/npm/glightbox/dist/js/glightbox.min.js"></script>
     <script>
+        // Registered on its own listener so a CDN/library failure below can never
+        // leave the purchase button without a click handler.
         document.addEventListener('DOMContentLoaded', function() {
+            const buyBtn = document.getElementById('buy-account-btn');
+            if (!buyBtn) {
+                return;
+            }
+
+            buyBtn.addEventListener('click', async function() {
+                const btnText = document.getElementById('buy-btn-text');
+                const btnLoading = document.getElementById('buy-btn-loading');
+
+                const resetButton = function() {
+                    buyBtn.disabled = false;
+                    btnText?.classList.remove('hidden');
+                    btnLoading?.classList.add('hidden');
+                };
+
+                buyBtn.disabled = true;
+                btnText?.classList.add('hidden');
+                btnLoading?.classList.remove('hidden');
+
+                try {
+                    const response = await fetch(`{{ route('orders.create', $account->id) }}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                        credentials: 'same-origin'
+                    });
+
+                    if (response.status === 419) {
+                        alert('Your session expired. Please refresh the page and try again.');
+                        resetButton();
+                        return;
+                    }
+
+                    if (response.status === 401 || response.status === 403) {
+                        alert('Please sign in again to continue with this purchase.');
+                        resetButton();
+                        return;
+                    }
+
+                    const data = await response.json();
+
+                    if (data.success && data.redirect) {
+                        window.location.href = data.redirect;
+                    } else {
+                        alert(data.message || 'Failed to create order. Please try again.');
+                        resetButton();
+                    }
+                } catch (error) {
+                    console.error('Error creating order:', error);
+                    alert('An error occurred. Please try again.');
+                    resetButton();
+                }
+            });
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof Swiper === 'undefined') {
+                console.warn('Swiper failed to load; galleries will render without sliders.');
+                return;
+            }
+
             // Initialize Swiper
             const swiper = new Swiper('.account-gallery-swiper', {
                 slidesPerView: 1,
@@ -1390,56 +1414,12 @@ if ($seller && !empty($seller->pfp)) {
             });
 
             // Initialize GLightbox
-            const lightbox = GLightbox({
-                selector: '.glightbox',
-                touchNavigation: true,
-                loop: true,
-                autoplayVideos: true,
-            });
-            
-            // Handle Buy Account button click
-            const buyBtn = document.getElementById('buy-account-btn');
-            if (buyBtn) {
-                buyBtn.addEventListener('click', async function() {
-                    const btnText = document.getElementById('buy-btn-text');
-                    const btnLoading = document.getElementById('buy-btn-loading');
-                    
-                    // Show loading state
-                    buyBtn.disabled = true;
-                    btnText.classList.add('hidden');
-                    btnLoading.classList.remove('hidden');
-                    
-                    try {
-                        const response = await fetch(`{{ route('orders.create', $account->id) }}`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                                'Accept': 'application/json',
-                                'X-Requested-With': 'XMLHttpRequest',
-                            },
-                            credentials: 'same-origin'
-                        });
-                        
-                        const data = await response.json();
-                        
-                        if (data.success && data.redirect) {
-                            window.location.href = data.redirect;
-                        } else {
-                            alert(data.message || 'Failed to create order. Please try again.');
-                            // Reset button state
-                            buyBtn.disabled = false;
-                            btnText.classList.remove('hidden');
-                            btnLoading.classList.add('hidden');
-                        }
-                    } catch (error) {
-                        console.error('Error creating order:', error);
-                        alert('An error occurred. Please try again.');
-                        // Reset button state
-                        buyBtn.disabled = false;
-                        btnText.classList.remove('hidden');
-                        btnLoading.classList.add('hidden');
-                    }
+            if (typeof GLightbox !== 'undefined') {
+                GLightbox({
+                    selector: '.glightbox',
+                    touchNavigation: true,
+                    loop: true,
+                    autoplayVideos: true,
                 });
             }
         });

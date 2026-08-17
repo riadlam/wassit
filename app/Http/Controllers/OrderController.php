@@ -8,6 +8,7 @@ use App\Models\AccountForSale;
 use App\Models\SuperDiscountOffer;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\CheckoutController;
 
 class OrderController extends Controller
@@ -93,7 +94,13 @@ class OrderController extends Controller
                 'success' => true,
                 'redirect' => route('checkout.show', $encryptedOrderId)
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            Log::error('OrderController::create - Failed to create order', [
+                'user_id' => $user->id,
+                'account_id' => $account_id,
+                'error' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to create order. Please try again.'

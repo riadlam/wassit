@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Events\MessageSent;
 use App\Events\PaymentStatusUpdated;
+use App\Models\AccountForSale;
 use App\Models\Conversation;
 use App\Models\Message;
 use Illuminate\Http\Request;
@@ -44,6 +45,13 @@ class PaymentController extends Controller
                     'success' => false,
                     'message' => 'Order is no longer available for payment.',
                 ], 400);
+            }
+
+            if (! $order->account || $order->account->status !== 'available') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This account has already been sold or is no longer available.',
+                ], 409);
             }
 
             // If authenticated, verify ownership
@@ -180,11 +188,6 @@ class PaymentController extends Controller
             $orderId = Crypt::decryptString($eid);
             $order = Order::with(['buyer', 'seller'])->findOrFail($orderId);
 
-            if ($order->status === 'completed') {
-                $this->openChatForOrder($order);
-                return redirect()->route('account.chat')->with('success', 'Payment already confirmed.');
-            }
-
             $tx = $order->sofizpayCibTransaction;
             if (!$tx || !$tx->cib_order_number) {
                 return redirect()->route('checkout.show', ['encryptedOrderId' => $eid])
@@ -225,12 +228,48 @@ class PaymentController extends Controller
                     ->with('error', 'Payment account mismatch. Please contact support.');
             }
 
-            DB::transaction(function () use ($order, $tx, $checkResponse): void {
+            $completionState = DB::transaction(function () use ($order, $tx, $checkResponse): string {
+                // Every callback for the same listing locks this row first. This
+                // serializes competing payments before either order is completed.
+                $lockedAccount = AccountForSale::whereKey($order->account_id)
+                    ->lockForUpdate()
+                    ->firstOrFail();
                 $lockedOrder = Order::whereKey($order->id)->lockForUpdate()->firstOrFail();
                 $lockedTx = SofizPayCibTransaction::whereKey($tx->id)->lockForUpdate()->firstOrFail();
 
-                if ($lockedOrder->status === 'completed' || $lockedTx->status === 'paid') {
-                    return;
+                if ($lockedOrder->status === 'completed' && $lockedTx->status === 'paid') {
+                    // Reconcile listings paid before sold-state enforcement existed.
+                    if ($lockedAccount->status !== 'sold') {
+                        $lockedAccount->update(['status' => 'sold']);
+                    }
+
+                    return 'already_completed';
+                }
+
+                $winningOrder = Order::query()
+                    ->where('account_id', $lockedAccount->id)
+                    ->where('status', 'completed')
+                    ->whereKeyNot($lockedOrder->id)
+                    ->first();
+
+                if ($winningOrder) {
+                    // SofizPay says funds were received, but another order won the
+                    // listing lock first. Keep an auditable conflict state and do
+                    // not grant a second buyer access to the same account.
+                    $lockedTx->update([
+                        'status' => 'paid_conflict',
+                        'paid_at' => now(),
+                        'last_check_response' => $checkResponse,
+                    ]);
+
+                    Log::critical('Duplicate payment received for a sold account', [
+                        'account_id' => $lockedAccount->id,
+                        'order_id' => $lockedOrder->id,
+                        'winning_order_id' => $winningOrder->id,
+                        'transaction_id' => $lockedTx->id,
+                    ]);
+
+                    return 'conflict';
                 }
 
                 $lockedTx->update([
@@ -245,10 +284,30 @@ class PaymentController extends Controller
                     'sofizpay_cib_transaction_id' => $lockedTx->id,
                 ]);
 
-                $this->notifyPaymentConfirmed($lockedOrder);
+                $lockedAccount->update(['status' => 'sold']);
+
+                Order::query()
+                    ->where('account_id', $lockedAccount->id)
+                    ->where('status', 'pending')
+                    ->whereKeyNot($lockedOrder->id)
+                    ->update(['status' => 'cancelled']);
+
+                return 'completed';
             });
 
-            $this->openChatForOrder($order);
+            if ($completionState === 'conflict') {
+                return redirect()->route(Auth::check() ? 'account.orders' : 'home')
+                    ->with('error', 'This account was already sold. Your payment requires support review.');
+            }
+
+            $completedOrder = $order->fresh();
+
+            if ($completionState === 'completed') {
+                // Send chat messages/events only after the database commit succeeds.
+                $this->notifyPaymentConfirmed($completedOrder);
+            }
+
+            $this->openChatForOrder($completedOrder);
             return redirect()->route('account.chat')->with('success', 'Payment confirmed successfully.');
         } catch (\Exception $e) {
             Log::error('PaymentController::sofizpayCibReturn - Exception', [

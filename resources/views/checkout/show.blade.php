@@ -358,6 +358,7 @@ use Illuminate\Support\Facades\Storage;
                 methodUnavailable: @js(__('messages.checkout_method_unavailable')),
                 initiateFailed: @js(__('messages.checkout_initiate_failed')),
                 paymentError: @js(__('messages.checkout_payment_error')),
+                sessionExpired: @js(__('messages.checkout_session_expired')),
             },
             
             handlePayment() {
@@ -375,13 +376,22 @@ use Illuminate\Support\Facades\Storage;
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
                     },
+                    credentials: 'same-origin',
                     body: JSON.stringify({
                         payment_method: 'edahabia',
                     })
                 })
-                .then(response => response.json())
+                .then(response => {
+                    if (response.status === 419) {
+                        throw new Error('session-expired');
+                    }
+
+                    return response.json();
+                })
                 .then(data => {
                     if (data.success && data.checkout_url) {
                         // Redirect to SofizPay checkout
@@ -393,7 +403,9 @@ use Illuminate\Support\Facades\Storage;
                 })
                 .catch(error => {
                     console.error('Payment error:', error);
-                    alert(this.messages.paymentError);
+                    alert(error && error.message === 'session-expired'
+                        ? this.messages.sessionExpired
+                        : this.messages.paymentError);
                     this.isProcessing = false;
                 });
             }
