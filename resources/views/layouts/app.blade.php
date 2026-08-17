@@ -117,6 +117,9 @@
         <i class="ml-1 fa-solid fa-chevron-right buy-btn-icon"></i>
     </button>
     
+    <!-- Floating WhatsApp Support Button (Global) -->
+    @include('components.whatsapp-float')
+    
     <!-- Auth Modal (Global) -->
     @include('components.auth-modal')
     
