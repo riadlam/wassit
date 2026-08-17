@@ -82,7 +82,6 @@ class PartnerController extends Controller
             'experience' => 'required|string',
             'games' => 'required|array|min:1|max:20',
             'games.*' => 'required|integer|distinct|exists:games,id',
-            'account_count' => 'required|string',
             'terms' => 'accepted',
         ]);
 
@@ -112,7 +111,7 @@ class PartnerController extends Controller
             'business_name' => $validated['business_name'] ?? null,
             'experience' => $validated['experience'],
             'games' => $selectedGames,
-            'account_count' => $validated['account_count'],
+            'account_count' => '',
             'status' => 'pending',
         ]);
 
@@ -134,7 +133,6 @@ class PartnerController extends Controller
                 "Business: " . ($request->business_name ?: '-') . "\n" .
                 "Experience: {$request->experience}\n" .
                 "Games: {$selectedGames}\n" .
-                "Accounts to List: {$request->account_count}\n" .
                 "Application ID: {$application->id}";
 
             $apiUrl = "https://api.telegram.org/bot{$botToken}/sendMessage";
@@ -337,7 +335,6 @@ class PartnerController extends Controller
             "Business: " . ($application->business_name ?: '-') . "\n" .
             "Experience: {$application->experience}\n" .
             "Games: {$application->games}\n" .
-            "Accounts to List: {$application->account_count}\n" .
             "Application ID: {$application->id}\n" .
             "Status: {$statusLabel} {$statusEmoji}"
         );

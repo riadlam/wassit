@@ -35,7 +35,8 @@ class ListingResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
-            ->with(['seller.user', 'game', 'images']);
+            ->with(['seller.user', 'game', 'images'])
+            ->withCount('orders');
     }
 
     public static function form(Schema $schema): Schema

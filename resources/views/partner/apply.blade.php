@@ -396,36 +396,6 @@ use Illuminate\Support\Facades\Storage;
                             </div>
                         </div>
                         
-                        <!-- Additional Information Section -->
-                        <div class="mb-8">
-                            <h2 class="text-xl font-semibold text-white mb-6 flex items-center">
-                                <i class="fa-solid fa-info-circle mr-3 text-red-600"></i>
-                                {{ __('partner.additional_information') }}
-                            </h2>
-                            
-                            <div class="grid grid-cols-1 gap-6">
-                                <!-- How Many Accounts -->
-                                <div>
-                                    <label for="account_count" class="block text-sm font-medium text-gray-300 mb-2">
-                                        {{ __('partner.account_count') }} <span class="text-red-500">*</span>
-                                    </label>
-                                    <select 
-                                        id="account_count" 
-                                        name="account_count" 
-                                        required
-                                        class="w-full block border-0 rounded-md shadow-sm sm:text-sm disabled:opacity-50 disabled:pointer-events-none py-2.5 px-4 text-white focus:ring-2 focus:ring-red-500 focus:outline-none transition-all" 
-                                        style="background-color: #1b1a1e; border: 1px solid #2d2c31;"
-                                    >
-                                        <option value="">Select range</option>
-                                        <option value="1-10">1-10 accounts</option>
-                                        <option value="10-50">10-50 accounts</option>
-                                        <option value="50-100">50-100 accounts</option>
-                                        <option value="100+">100+ accounts</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                        
                         <!-- Terms and Conditions -->
                         <div class="mb-8">
                             <div class="flex items-start">

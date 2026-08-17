@@ -17,15 +17,9 @@ class SellerApplicationInfolist
                 TextEntry::make('country'),
                 TextEntry::make('business_name')
                     ->placeholder('—'),
-                TextEntry::make('website')
-                    ->placeholder('—'),
                 TextEntry::make('experience'),
                 TextEntry::make('games')
                     ->columnSpanFull(),
-                TextEntry::make('preferred_location')
-                    ->placeholder('—'),
-                TextEntry::make('account_count')
-                    ->label('Accounts to list'),
                 TextEntry::make('status')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
