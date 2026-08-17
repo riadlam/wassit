@@ -77,8 +77,8 @@ class CheckoutController extends Controller
             
             // Calculate fees
             $subtotal = $order->amount_dzd; // Stored as raw value
-            $processorFeePercent = 3.9; // 3.9% processor fee
-            $processorFee = $subtotal * ($processorFeePercent / 100);
+            $processorFeePercent = (float) config('payments.processor_fee_percent');
+            $processorFee = ceil($subtotal * ($processorFeePercent / 100));
             $total = $subtotal + $processorFee;
             
             // Get account image at index 0 for display

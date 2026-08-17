@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Storage;
 
 <section class="relative w-full" style="padding-top: 2rem; padding-bottom: 10rem;">
     <!-- Background Image and Overlay - Full Width -->
-    <div class="absolute inset-0 z-0 pointer-events-none" style="left: 0; right: 0; width: 100vw; margin-left: calc(50% - 50vw);">
+    <div class="absolute inset-0 z-0 pointer-events-none">
         <div class="absolute inset-0 bg-cover bg-center bg-no-repeat" style="background-image: url('{{ Storage::url('home_page/degaultbanner.webp') }}');"></div>
         <div class="absolute inset-0" style="background-color: rgba(15, 17, 27, 1);"></div>
     </div>
@@ -60,6 +60,24 @@ use Illuminate\Support\Facades\Storage;
 .game-card-group:hover .game-card-image {
     border-radius: 0.5rem;
     transform: scale(1.05);
+}
+
+.game-card-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    text-align: center;
+    background: linear-gradient(160deg, #1b1f2e 0%, #0f111b 100%);
+}
+
+.game-card-placeholder span {
+    font-weight: 700;
+    font-size: 0.95rem;
+    line-height: 1.3;
+    color: rgba(255, 255, 255, 0.75);
 }
 
 .bg-card {

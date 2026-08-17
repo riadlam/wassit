@@ -11,7 +11,17 @@ class Game extends Model
         'name',
         'slug',
         'icon_url',
+        'is_active',
     ];
+
+    protected $casts = [
+        'is_active' => 'boolean',
+    ];
+
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
+    }
 
     /**
      * Get the static attributes for this game.
@@ -27,5 +37,10 @@ class Game extends Model
     public function accounts(): HasMany
     {
         return $this->hasMany(AccountForSale::class, 'game_id');
+    }
+
+    public function publicSlug(): string
+    {
+        return $this->slug === 'mlbb' ? 'mobile-legends' : $this->slug;
     }
 }

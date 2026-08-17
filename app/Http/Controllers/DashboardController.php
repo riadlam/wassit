@@ -43,10 +43,34 @@ class DashboardController extends Controller
         return view('dashboard.orders', compact('orders', 'isSeller'));
     }
     
-    public function chat()
+    public function chat(Request $request)
     {
         // Optionally pre-select a conversation using a value stored in session
         $activeConversationId = session()->pull('active_chat_conversation_id', null);
+
+        // ...or via ?conversation=ID, but only if the caller belongs to that thread.
+        $requested = $request->query('conversation');
+
+        if (is_string($requested) && ctype_digit($requested)) {
+            $user = Auth::user();
+            $sellerId = $user->seller?->id;
+
+            $belongsToUser = \App\Models\Conversation::query()
+                ->whereKey((int) $requested)
+                ->where(function ($query) use ($user, $sellerId) {
+                    $query->where('buyer_id', $user->id);
+
+                    if ($sellerId) {
+                        $query->orWhere('seller_id', $sellerId);
+                    }
+                })
+                ->exists();
+
+            if ($belongsToUser) {
+                $activeConversationId = (int) $requested;
+            }
+        }
+
         return view('dashboard.chat', compact('activeConversationId'));
     }
     
@@ -56,11 +80,21 @@ class DashboardController extends Controller
         $seller = $user->seller;
         
         $walletBalance = 0;
+        $availableToWithdraw = 0;
+        $withdrawals = collect();
         $transactions = collect();
         
         if ($seller) {
             // Seller wallet: show balance and completed/delivered orders (earnings)
             $walletBalance = $seller->wallet ?? 0;
+            $withdrawals = $seller->withdrawals()
+                ->latest()
+                ->limit(10)
+                ->get();
+            $pendingWithdrawalAmount = (float) $seller->withdrawals()
+                ->where('status', 'pending')
+                ->sum('amount');
+            $availableToWithdraw = max(0, (float) $walletBalance - $pendingWithdrawalAmount);
             
             // Get completed orders where seller received payment (delivery confirmed)
             $transactions = \App\Models\Order::where('seller_id', $seller->id)
@@ -120,7 +154,13 @@ class DashboardController extends Controller
                 });
         }
         
-        return view('dashboard.wallet', compact('walletBalance', 'transactions'));
+        return view('dashboard.wallet', compact(
+            'walletBalance',
+            'availableToWithdraw',
+            'withdrawals',
+            'transactions',
+            'seller'
+        ));
     }
     
     public function library()
@@ -149,8 +189,8 @@ class DashboardController extends Controller
     
     public function createAccount()
     {
-        $games = \App\Models\Game::all();
-        $mlbbGame = \App\Models\Game::where('slug', 'mlbb')->first();
+        $games = \App\Models\Game::query()->active()->get();
+        $mlbbGame = \App\Models\Game::query()->active()->where('slug', 'mlbb')->first();
         $mlbbId = $mlbbGame ? $mlbbGame->id : null;
         return view('dashboard.create-account', compact('games', 'mlbbId'));
     }

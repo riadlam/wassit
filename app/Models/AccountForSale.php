@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class AccountForSale extends Model
 {
@@ -57,5 +58,32 @@ class AccountForSale extends Model
     public function orders(): HasMany
     {
         return $this->hasMany(Order::class, 'account_id');
+    }
+
+    public function superDiscountOffer(): HasOne
+    {
+        return $this->hasOne(SuperDiscountOffer::class, 'account_id');
+    }
+
+    public function currentDiscountOffer(): ?SuperDiscountOffer
+    {
+        $offer = $this->superDiscountOffer;
+
+        if (! $offer || ! $offer->isCurrentlyActive() || $this->status !== 'available') {
+            return null;
+        }
+
+        return $offer;
+    }
+
+    public function effectivePrice(): int
+    {
+        $offer = $this->currentDiscountOffer();
+
+        if ($offer) {
+            return $offer->discountedPrice((int) $this->price_dzd);
+        }
+
+        return (int) $this->price_dzd;
     }
 }

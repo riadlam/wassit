@@ -72,7 +72,7 @@
                         <!-- Table -->
                         <div class="-mx-4 sm:-mx-6 lg:rounded-md lg:-mx-0 border overflow-hidden" style="background-color: #0e1015; border-color: #2d2c31;">
                             <div class="w-full overflow-auto">
-                                <table class="w-full caption-bottom text-sm">
+                                <table class="w-full caption-bottom text-sm data-table data-table--wide">
                                     <thead class="overflow-clip">
                                         <tr class="border-b transition-colors" style="border-color: #2d2c31; color: #9ca3af;">
                                             <th class="h-10 px-2.5 text-left align-middle font-medium first:pl-4 first:rounded-tl-md last:rounded-tr-md" style="background-color: rgba(27, 26, 30, 0.5);">
@@ -108,21 +108,21 @@
                                     <tbody style="background-color: rgba(27, 26, 30, 0.3);">
                                         @forelse($orders as $order)
                                         <tr class="border-b transition-colors hover:bg-gray-800/50" style="border-color: #2d2c31;">
-                                            <td class="px-2.5 py-3 align-middle first:pl-4 last:pr-4">
+                                            <td class="px-2.5 py-3 align-middle first:pl-4 last:pr-4" data-label="{{ __('messages.order_id') }}">
                                                 <span class="text-sm text-gray-400 font-mono">#{{ $order->id }}</span>
                                             </td>
-                                            <td class="px-2.5 py-3 align-middle first:pl-4 last:pr-4">
-                                                <div class="flex items-center gap-2">
+                                            <td class="px-2.5 py-3 align-middle first:pl-4 last:pr-4" data-label="{{ __('messages.account') }}">
+                                                <div class="flex items-center gap-2 min-w-0">
                                                     @if($order->account && $order->account->game)
                                                     <div class="flex-shrink-0 w-8 h-8 rounded" style="background: url('{{ asset('storage/' . $order->account->game->image) }}') center/cover;"></div>
                                                     @endif
-                                                    <div class="text-sm text-white">
-                                                        <p class="font-medium">{{ $order->account->title ?? 'Account #' . $order->account_id }}</p>
-                                                        <p class="text-xs text-gray-500">{{ $order->account->game->name ?? 'Unknown Game' }}</p>
+                                                    <div class="text-sm text-white min-w-0">
+                                                        <p class="font-medium truncate">{{ $order->account->title ?? 'Account #' . $order->account_id }}</p>
+                                                        <p class="text-xs text-gray-500 truncate">{{ $order->account->game->name ?? 'Unknown Game' }}</p>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td class="px-2.5 py-3 align-middle first:pl-4 last:pr-4">
+                                            <td class="px-2.5 py-3 align-middle first:pl-4 last:pr-4" data-label="{{ $isSeller ? __('messages.buyer') : __('messages.seller') }}">
                                                 <span class="text-sm text-gray-300">
                                                     @if($isSeller)
                                                         {{ $order->buyer->name ?? 'Unknown' }}
@@ -131,7 +131,7 @@
                                                     @endif
                                                 </span>
                                             </td>
-                                            <td class="px-2.5 py-3 align-middle first:pl-4 last:pr-4">
+                                            <td class="px-2.5 py-3 align-middle first:pl-4 last:pr-4" data-label="{{ __('messages.status') }}">
                                                 <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold"
                                                     style="background-color: {{ $order->status === 'completed' ? 'rgba(34, 197, 94, 0.15)' : ($order->status === 'pending' ? 'rgba(234, 179, 8, 0.15)' : 'rgba(239, 68, 68, 0.15)') }};
                                                            color: {{ $order->status === 'completed' ? '#86efac' : ($order->status === 'pending' ? '#fde047' : '#fca5a5') }};
@@ -140,7 +140,7 @@
                                                     {{ ucfirst($order->status) }}
                                                 </span>
                                             </td>
-                                            <td class="px-2.5 py-3 align-middle first:pl-4 last:pr-4">
+                                            <td class="px-2.5 py-3 align-middle first:pl-4 last:pr-4" data-label="{{ __('messages.delivery') }}">
                                                 @if($order->delivery_status)
                                                 <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold"
                                                     style="background-color: {{ $order->delivery_status === 'delivered' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(234, 179, 8, 0.15)' }};
@@ -152,14 +152,14 @@
                                                 <span class="text-xs text-gray-500">N/A</span>
                                                 @endif
                                             </td>
-                                            <td class="px-2.5 py-3 align-middle text-right first:pl-4 last:pr-4">
-                                                <span class="text-sm text-white font-semibold">{{ number_format($order->amount_dzd, 2, ',', ' ') }} DZD</span>
+                                            <td class="px-2.5 py-3 align-middle text-right first:pl-4 last:pr-4" data-label="{{ __('messages.amount') }}">
+                                                <span class="text-sm text-white font-semibold">{{ number_format($order->amount_dzd, 2, ',', ' ') }} DA</span>
                                             </td>
-                                            <td class="px-2.5 py-3 align-middle text-right first:pl-4 last:pr-4">
+                                            <td class="px-2.5 py-3 align-middle text-right first:pl-4 last:pr-4" data-label="{{ __('messages.date') }}">
                                                 <span class="text-sm text-gray-400">{{ $order->created_at->format('d M Y') }}</span>
-                                                <span class="block text-xs text-gray-500">{{ $order->created_at->format('H:i') }}</span>
+                                                <span class="text-xs text-gray-500 md:block">{{ $order->created_at->format('H:i') }}</span>
                                             </td>
-                                            <td class="px-2.5 py-3 align-middle text-right first:pl-4 last:pr-4">
+                                            <td class="px-2.5 py-3 align-middle text-right first:pl-4 last:pr-4" data-label="{{ __('messages.actions') }}">
                                                 <a href="{{ route('account.chat') }}" class="inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium rounded-md transition-colors bg-blue-600 hover:bg-blue-700 text-white">
                                                     <i class="fa-solid fa-message mr-1.5"></i> Chat
                                                 </a>
@@ -167,7 +167,7 @@
                                         </tr>
                                         @empty
                                         <tr class="border-b transition-colors hover:bg-gray-800/50" style="border-color: #2d2c31;">
-                                            <td class="px-2.5 py-2.5 align-middle h-32 text-center first:pl-4 last:pr-4" colspan="8" style="color: #9ca3af;">
+                                            <td class="px-2.5 py-2.5 align-middle h-32 text-center first:pl-4 last:pr-4 data-table-empty" colspan="8" style="color: #9ca3af;">
                                                 {{ __('messages.no_orders_yet') }}
                                             </td>
                                         </tr>

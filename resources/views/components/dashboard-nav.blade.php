@@ -2,7 +2,47 @@
     $currentRoute = request()->route()->getName() ?? 'account.index';
     $user = auth()->user();
     $isSeller = $user && $user->role === 'seller';
+    $chatUnread = $chatUnread ?? \App\Support\ChatUnreadSummary::forUser($user);
+    $chatUrl = $chatUnread->conversationId
+        ? route('account.chat', ['conversation' => $chatUnread->conversationId])
+        : route('account.chat');
 @endphp
+
+<!-- Mobile Dashboard Bar -->
+<div class="md:hidden fixed z-40 w-full top-16 h-[58px] px-4 border-t border-b"
+     style="background-color: rgba(14, 16, 21, 0.92); border-color: rgba(45, 44, 49, 0.5); backdrop-filter: blur(12px);">
+    <div class="flex items-center justify-between h-full gap-3 mx-auto max-w-[1550px]">
+        <a class="flex items-center gap-2 min-w-0" href="{{ route('account.index') }}">
+            <img src="https://ui-avatars.com/api/?name={{ urlencode($user->name ?? 'User') }}&background=ef4444&color=fff&size=96"
+                 alt="{{ $user->name ?? 'User' }}"
+                 class="rounded ring-1 size-8 shrink-0"
+                 style="border-color: rgba(45, 44, 49, 0.5);">
+            <div class="min-w-0">
+                <p class="text-sm font-bold tracking-tight text-white truncate leading-tight">{{ $user->name ?? 'User' }}</p>
+                <p class="text-[11px] text-gray-400 truncate leading-tight">{{ __('messages.my_account') }}</p>
+            </div>
+        </a>
+
+        <div class="flex items-center gap-2 shrink-0">
+            <a href="{{ $chatUrl }}"
+               class="relative flex items-center justify-center rounded-lg size-9 transition-colors {{ $currentRoute === 'account.chat' ? 'text-white' : 'text-gray-300' }}"
+               style="background-color: rgba(27, 26, 30, 0.7); border: 1px solid rgba(45, 44, 49, 0.6);"
+               aria-label="{{ __('messages.chat') }}">
+                <i class="fa-solid fa-message text-sm"></i>
+                @if($chatUnread->hasUnread())
+                    <span class="absolute -top-1.5 -right-1.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-600 text-[10px] font-bold text-white border-2"
+                          style="border-color: #0e1015;">{{ $chatUnread->badgeLabel() }}</span>
+                @endif
+            </a>
+
+            <a class="inline-flex items-center justify-center rounded-lg size-9 text-gray-300 transition-colors"
+               style="background-color: rgba(27, 26, 30, 0.7); border: 1px solid rgba(45, 44, 49, 0.6);"
+               href="https://wa.me/213556988175" target="_blank" aria-label="{{ __('messages.support_24_7') }}">
+                <i class="fa-solid fa-headset text-sm"></i>
+            </a>
+        </div>
+    </div>
+</div>
 
 <!-- Desktop Navigation (Top Bar) -->
 <div class="hidden md:block fixed z-40 w-full px-4 border-t border-b h-[58px] top-16 border-border/50 sm:px-6 lg:px-8 before:absolute before:inset-0 transition-all duration-200 before:backdrop-blur-xl before:p-px before:transition-all before:duration-200" style="background-color: rgba(14, 16, 21, 0.75); border-color: rgba(45, 44, 49, 0.5);">
@@ -25,8 +65,13 @@
                     <div class="absolute h-6 opacity-30 blur -translate-x-1/2 -bottom-4 left-1/2 w-16" style="background-color: #3b82f6;"></div>
                 @endif
             </a>
-            <a class="flex relative gap-x-2 items-center h-full text-sm font-medium leading-6 group px-4 py-2 backdrop-blur-sm z-[1] transition-colors {{ $currentRoute === 'account.chat' ? 'text-white bg-gradient-to-t from-blue-500/10' : 'text-gray-400 hover:text-white hover:bg-gradient-to-t from-accent' }}" href="{{ route('account.chat') }}">
-                <i class="text-base fa-solid fa-message {{ $currentRoute === 'account.chat' ? 'text-white' : 'text-gray-400/50 group-hover:text-white' }}" aria-hidden="true"></i>
+            <a class="flex relative gap-x-2 items-center h-full text-sm font-medium leading-6 group px-4 py-2 backdrop-blur-sm z-[1] transition-colors {{ $currentRoute === 'account.chat' ? 'text-white bg-gradient-to-t from-blue-500/10' : 'text-gray-400 hover:text-white hover:bg-gradient-to-t from-accent' }}" href="{{ $chatUrl }}">
+                <span class="relative flex items-center">
+                    <i class="text-base fa-solid fa-message {{ $currentRoute === 'account.chat' ? 'text-white' : 'text-gray-400/50 group-hover:text-white' }}" aria-hidden="true"></i>
+                    @if($chatUnread->hasUnread())
+                        <span class="absolute -top-2 -right-2.5 flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full bg-red-600 text-[9px] font-bold text-white leading-none">{{ $chatUnread->badgeLabel() }}</span>
+                    @endif
+                </span>
                 <span class="truncate">{{ __('messages.chat') }}</span>
                 @if($currentRoute === 'account.chat')
                     <div class="absolute h-[2px] -translate-x-1/2 rounded-t-full bottom-0 left-1/2 w-8" style="background-color: #3b82f6;"></div>
@@ -84,8 +129,13 @@
                 <div class="absolute h-6 opacity-30 blur -translate-x-1/2 -top-4 left-1/2 w-16" style="background-color: #3b82f6;"></div>
             @endif
         </a>
-        <a class="relative flex flex-col items-center justify-center gap-1 px-2 py-2 rounded-lg transition-colors min-w-0 flex-1 group {{ $currentRoute === 'account.chat' ? 'text-white bg-gradient-to-t from-blue-500/10' : 'text-gray-400 hover:text-white hover:bg-gradient-to-t from-accent' }}" href="{{ route('account.chat') }}">
-            <i class="text-base fa-solid fa-message {{ $currentRoute === 'account.chat' ? 'text-white' : 'text-gray-400/50 group-hover:text-white' }}" aria-hidden="true"></i>
+        <a class="relative flex flex-col items-center justify-center gap-1 px-2 py-2 rounded-lg transition-colors min-w-0 flex-1 group {{ $currentRoute === 'account.chat' ? 'text-white bg-gradient-to-t from-blue-500/10' : 'text-gray-400 hover:text-white hover:bg-gradient-to-t from-accent' }}" href="{{ $chatUrl }}">
+            <span class="relative">
+                <i class="text-base fa-solid fa-message {{ $currentRoute === 'account.chat' ? 'text-white' : 'text-gray-400/50 group-hover:text-white' }}" aria-hidden="true"></i>
+                @if($chatUnread->hasUnread())
+                    <span class="absolute -top-1.5 -right-2 flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full bg-red-600 text-[9px] font-bold text-white leading-none border" style="border-color: #0e1015;">{{ $chatUnread->badgeLabel() }}</span>
+                @endif
+            </span>
             <span class="text-[10px] font-medium leading-tight truncate w-full text-center">{{ __('messages.chat') }}</span>
             @if($currentRoute === 'account.chat')
                 <div class="absolute h-[2px] -translate-x-1/2 rounded-t-full top-0 left-1/2 w-8" style="background-color: #3b82f6;"></div>

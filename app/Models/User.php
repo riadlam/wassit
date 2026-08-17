@@ -3,12 +3,16 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
-class User extends Authenticatable
+class User extends Authenticatable implements FilamentUser
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, HasApiTokens;
@@ -48,18 +52,38 @@ class User extends Authenticatable
         ];
     }
 
+    public function canAccessPanel(Panel $panel): bool
+    {
+        return $this->role === 'admin';
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
+
     /**
      * Get the seller profile associated with the user.
      */
-    public function seller()
+    public function seller(): HasOne
     {
         return $this->hasOne(Seller::class, 'id', 'id');
+    }
+
+    public function sellerApplication(): HasOne
+    {
+        return $this->hasOne(SellerApplication::class);
+    }
+
+    public function buyerOrders(): HasMany
+    {
+        return $this->hasMany(Order::class, 'buyer_id');
     }
 
     /**
      * Get conversations where this user is the buyer.
      */
-    public function buyerConversations()
+    public function buyerConversations(): HasMany
     {
         return $this->hasMany(Conversation::class, 'buyer_id');
     }
@@ -67,7 +91,7 @@ class User extends Authenticatable
     /**
      * Get all messages sent by this user.
      */
-    public function sentMessages()
+    public function sentMessages(): HasMany
     {
         return $this->hasMany(Message::class, 'sender_id');
     }

@@ -83,6 +83,15 @@
             this.error = null;
             this.success = null;
         },
+        googleLoginUrl() {
+            const requestedDestination = window.authRedirectUrl || window.location.href;
+            const destinationUrl = new URL(requestedDestination, window.location.origin);
+            const destination = destinationUrl.origin === window.location.origin
+                ? destinationUrl.pathname + destinationUrl.search + destinationUrl.hash
+                : '/';
+
+            return '{{ route('auth.google') }}?redirect=' + encodeURIComponent(destination);
+        },
         async handleLogin(event) {
             event.preventDefault();
             this.loading = true;
@@ -264,7 +273,7 @@
                                 <div class="space-y-8">
                                     <!-- Social Login Buttons -->
                                     <div class="flex justify-center">
-                                        <a href="{{ route('auth.google') }}" class="social-login-btn inline-flex items-center justify-center focus:outline focus:outline-offset-2 focus-visible:outline outline-none disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden font-medium active:translate-y-px whitespace-nowrap py-3 sm:py-2.5 px-8 text-sm rounded-md ring-1 google" style="background-color: #1b1a1e !important; border: 1px solid #2d2c31 !important; color: #ffffff !important;">
+                                        <a :href="googleLoginUrl()" href="{{ route('auth.google') }}" class="social-login-btn inline-flex items-center justify-center focus:outline focus:outline-offset-2 focus-visible:outline outline-none disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden font-medium active:translate-y-px whitespace-nowrap py-3 sm:py-2.5 px-8 text-sm rounded-md ring-1 google" style="background-color: #1b1a1e !important; border: 1px solid #2d2c31 !important; color: #ffffff !important;">
                                             <i class="text-base fa-brands fa-google mr-2" style="color: #ffffff !important;"></i>
                                             <span style="color: #ffffff !important;">{{ __('messages.login_with_google') }}</span>
                                         </a>
@@ -327,7 +336,7 @@
                                 <div class="space-y-8">
                                     <!-- Social Signup Buttons -->
                                     <div class="flex justify-center">
-                                        <a href="{{ route('auth.google') }}" class="social-login-btn inline-flex items-center justify-center focus:outline focus:outline-offset-2 focus-visible:outline outline-none disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden font-medium active:translate-y-px whitespace-nowrap py-3 sm:py-2.5 px-8 text-sm rounded-md ring-1 google" style="background-color: #1b1a1e !important; border: 1px solid #2d2c31 !important; color: #ffffff !important;">
+                                        <a :href="googleLoginUrl()" href="{{ route('auth.google') }}" class="social-login-btn inline-flex items-center justify-center focus:outline focus:outline-offset-2 focus-visible:outline outline-none disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden font-medium active:translate-y-px whitespace-nowrap py-3 sm:py-2.5 px-8 text-sm rounded-md ring-1 google" style="background-color: #1b1a1e !important; border: 1px solid #2d2c31 !important; color: #ffffff !important;">
                                             <i class="text-base fa-brands fa-google mr-2" style="color: #ffffff !important;"></i>
                                             <span style="color: #ffffff !important;">{{ __('messages.sign_up_with_google') }}</span>
                                         </a>
@@ -409,7 +418,7 @@
                                         </div>
                                         
                                         <p class="text-xs text-gray-400 mb-4 text-center">
-                                            {{ __('messages.by_creating_account') }} <a href="#" class="text-white hover:underline">{{ __('messages.terms_of_service') }}</a> & <a href="#" class="text-white hover:underline">{{ __('messages.privacy_policy') }}</a>
+                                            {{ __('messages.by_creating_account') }} <a href="{{ route('terms-of-service') }}" class="text-white hover:underline">{{ __('messages.terms_of_service') }}</a> & <a href="{{ route('privacy-policy') }}" class="text-white hover:underline">{{ __('messages.privacy_policy') }}</a>
                                         </p>
                                         <button 
                                             type="submit" 

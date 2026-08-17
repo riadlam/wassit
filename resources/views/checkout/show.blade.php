@@ -11,16 +11,16 @@ use Illuminate\Support\Facades\Storage;
     
     <div class="pt-16 pb-20 sm:pb-8" x-data="checkoutPageData()">
         <div class="grid relative grid-cols-1 gap-x-16 mx-auto max-w-7xl lg:grid-cols-2 lg:px-8 lg:pt-16">
-            <h4 class="sr-only">Checkout</h4>
+            <h4 class="sr-only">{{ __('messages.checkout_heading') }}</h4>
             
             <!-- Left Column: Payment Methods -->
             <section aria-labelledby="section-one-heading" class="pt-2.5 pb-6 lg:py-16 lg:mx-auto lg:w-full lg:max-w-lg lg:pb-24 lg:pt-0">
                 <div class="px-4 mx-auto max-w-2xl lg:max-w-none lg:px-0">
-                    <h2 class="sr-only">Select payment processor</h2>
+                    <h2 class="sr-only">{{ __('messages.checkout_select_processor') }}</h2>
                     
                     <!-- Logo and Protection Badge -->
                     <div class="mx-auto max-w-2xl lg:max-w-none mb-6" style="position: relative;">
-                        <div class="flex justify-between items-center mb-6">
+                        <div class="flex justify-between items-center mb-4">
                             <a class="relative" href="{{ route('home') }}">
                                 <span class="text-2xl font-bold">
                                     <span class="text-red-600">Wassit</span>
@@ -39,26 +39,45 @@ use Illuminate\Support\Facades\Storage;
                             @endauth
                         </div>
                         
-                        <!-- Protection Badge -->
-                        <div class="flex items-center gap-2 text-sm text-gray-300 mb-6">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="11" height="12" viewBox="0 0 11 12" fill="none" class="text-red-600">
-                                <path d="M5.49991 0.352869C5.60017 0.352869 5.69327 0.374928 5.77921 0.419045L9.83975 2.18375C10.0832 2.28669 10.2766 2.44846 10.4198 2.66905C10.5774 2.88963 10.6562 3.14699 10.6562 3.4411C10.6705 4.1911 10.5487 5.07346 10.2909 6.08816C10.0331 7.10287 9.56762 8.08816 8.89444 9.04405C8.23559 10.0146 7.29027 10.8161 6.0585 11.4485C5.68611 11.6249 5.31371 11.6249 4.94132 11.4485C3.70955 10.8161 2.76423 10.0146 2.10538 9.04405C1.4322 8.08816 0.966707 7.10287 0.708894 6.08816C0.451082 5.07346 0.329337 4.1911 0.34366 3.4411C0.34366 3.14699 0.422436 2.88963 0.579988 2.66905C0.723217 2.44846 0.916577 2.28669 1.16007 2.18375L5.22061 0.419045C5.30655 0.374928 5.39965 0.352869 5.49991 0.352869ZM5.49991 1.83081V10.169C6.47387 9.65434 7.24014 8.99993 7.79874 8.20581C8.34301 7.41169 8.72973 6.59552 8.95889 5.75728C9.17374 4.90434 9.28116 4.13963 9.28116 3.46316L5.49991 1.83081Z" fill="currentColor"></path>
-                            </svg>
-                            <span>Your account purchase is protected under Wassit's Comprehensive Warranty.</span>
+                        <!-- Buyer Protection -->
+                        <div class="mb-4 px-3 py-2.5 rounded-lg"
+                             style="background-color: #121318; border: 1px solid #2d2c31; border-left: 2px solid rgba(16, 185, 129, 0.55);">
+                            <div class="flex items-center gap-2.5">
+                                <i class="fa-solid fa-shield-halved text-xs shrink-0" style="color: #34d399;"></i>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-xs font-semibold text-white leading-tight">{{ __('messages.checkout_protection_title') }}</p>
+                                    <p class="text-[11px] text-gray-400 leading-snug mt-0.5">{{ __('messages.checkout_protection_subtitle') }}</p>
+                                </div>
+                                <span class="shrink-0 text-[10px] font-semibold uppercase tracking-wide" style="color: #34d399;">{{ __('messages.checkout_protection_active') }}</span>
+                            </div>
+                            <div class="flex flex-wrap gap-x-3 gap-y-1 mt-2 pt-2 border-t" style="border-color: rgba(45, 44, 49, 0.7);">
+                                <span class="inline-flex items-center gap-1 text-[11px] text-gray-400">
+                                    <i class="fa-solid fa-rotate-left text-[9px]" style="color: #34d399;"></i>
+                                    {{ __('messages.checkout_protection_refund') }}
+                                </span>
+                                <span class="inline-flex items-center gap-1 text-[11px] text-gray-400">
+                                    <i class="fa-solid fa-user-shield text-[9px]" style="color: #f87171;"></i>
+                                    {{ __('messages.checkout_protection_anti_hackback') }}
+                                </span>
+                                <span class="inline-flex items-center gap-1 text-[11px] text-gray-400">
+                                    <i class="fa-solid fa-lock text-[9px]" style="color: #94a3b8;"></i>
+                                    {{ __('messages.checkout_protection_secure') }}
+                                </span>
+                            </div>
                         </div>
                     </div>
                     
                     <!-- Billing Details -->
                     <div class="mt-6 mb-6">
-                        <h3 class="mb-2 text-lg font-medium text-white">Billing details</h3>
+                        <h3 class="mb-2 text-lg font-medium text-white">{{ __('messages.checkout_billing_details') }}</h3>
                         <div class="w-full">
                             <div class="flex justify-between mb-1">
-                                <label class="flex items-center gap-2 text-sm font-medium leading-6 text-gray-300">Full Name</label>
+                                <label class="flex items-center gap-2 text-sm font-medium leading-6 text-gray-300">{{ __('messages.checkout_full_name') }}</label>
                             </div>
                             <div class="relative">
                                 <input 
                                     type="text" 
-                                    placeholder="e.g: John Doe" 
+                                    placeholder="{{ __('messages.checkout_full_name_placeholder') }}" 
                                     class="flex-grow w-full block w-full border-0 rounded-md shadow-sm sm:text-sm disabled:opacity-50 disabled:pointer-events-none py-2.5 px-4 text-white placeholder:text-gray-500" 
                                     style="background-color: #1b1a1e; border: 1px solid #2d2c31;"
                                     value="{{ Auth::check() ? Auth::user()->name : '' }}"
@@ -69,7 +88,7 @@ use Illuminate\Support\Facades\Storage;
                     
                     <!-- Payment Methods -->
                     <div class="mt-6" x-data="{ selectedPayment: 'algerie-poste' }" x-init="selectedPayment = 'algerie-poste'">
-                        <h3 class="text-lg font-medium text-white mb-2">Pay with</h3>
+                        <h3 class="text-lg font-medium text-white mb-2">{{ __('messages.checkout_pay_with') }}</h3>
                         <div class="flex flex-wrap gap-2 mt-2">
                             <!-- Debit/Credit Card (Coming Soon) -->
                             <div class="w-full relative opacity-75 cursor-not-allowed pointer-events-none">
@@ -79,9 +98,9 @@ use Illuminate\Support\Facades\Storage;
                                             <i class="fa-solid fa-credit-card text-2xl text-gray-300"></i>
                                         </span>
                                         <span class="flex flex-col sm:max-w-lg max-w-[250px] text-sm truncate">
-                                            <span class="text-base font-medium text-white">Debit/Credit cards</span>
+                                            <span class="text-base font-medium text-white">{{ __('messages.checkout_cards_title') }}</span>
                                             <span class="text-gray-400 text-sm">
-                                                <span class="block truncate sm:inline">We accept all major debit and credit cards.</span>
+                                                <span class="block truncate sm:inline">{{ __('messages.checkout_cards_subtitle') }}</span>
                                             </span>
                                         </span>
                                     </span>
@@ -105,9 +124,9 @@ use Illuminate\Support\Facades\Storage;
                                             <i class="fa-brands fa-bitcoin text-2xl text-yellow-500"></i>
                                         </span>
                                         <span class="flex flex-col sm:max-w-lg max-w-[250px] text-sm truncate">
-                                            <span class="text-base font-medium text-white">Crypto</span>
+                                            <span class="text-base font-medium text-white">{{ __('messages.checkout_crypto_title') }}</span>
                                             <span class="text-gray-400 text-sm">
-                                                <span class="block truncate sm:inline">BTC · ETH · USDT · USDC and more!</span>
+                                                <span class="block truncate sm:inline">{{ __('messages.checkout_crypto_subtitle') }}</span>
                                             </span>
                                         </span>
                                     </span>
@@ -129,12 +148,12 @@ use Illuminate\Support\Facades\Storage;
                                      :class="selectedPayment === 'algerie-poste' ? 'bg-red-600/20 shadow-sm border-2 border-red-600' : 'bg-gray-800/50 hover:bg-gray-800 border-2 border-transparent'">
                                     <span class="flex items-center">
                                         <span class="flex-grow-0 mr-2 sm:mr-4 shrink-0">
-                                            <img src="{{ asset('storage/home_page/barid_jazair.png') }}" alt="Algerie Poste" class="w-10 h-10 object-contain flex-shrink-0">
+                                            <img src="{{ asset('storage/home_page/barid_jazair.png') }}" alt="{{ __('messages.checkout_algerie_poste_title') }}" class="w-10 h-10 object-contain flex-shrink-0">
                                         </span>
                                         <span class="flex flex-col sm:max-w-lg max-w-[250px] text-sm truncate">
-                                            <span class="text-base font-medium text-white">Algerie Poste</span>
+                                            <span class="text-base font-medium text-white">{{ __('messages.checkout_algerie_poste_title') }}</span>
                                             <span class="text-gray-400 text-sm">
-                                                <span class="block truncate sm:inline">Pay via Barid Jazair</span>
+                                                <span class="block truncate sm:inline" dir="auto">{{ __('messages.checkout_algerie_poste_subtitle') }}</span>
                                             </span>
                                         </span>
                                     </span>
@@ -152,7 +171,7 @@ use Illuminate\Support\Facades\Storage;
                     <!-- Security Badge -->
                     <div class="mt-4 mb-10 text-center">
                         <span class="text-xs text-gray-400">
-                            <i class="mr-1 fa-regular fa-lock"></i> 256-bit SSL Encrypted payment. You're safe.
+                            <i class="mr-1 fa-regular fa-lock"></i> {{ __('messages.checkout_ssl_note') }}
                         </span>
                     </div>
                 </div>
@@ -161,33 +180,33 @@ use Illuminate\Support\Facades\Storage;
             <!-- Right Column: Order Summary -->
             <section aria-labelledby="section-two-heading" class="py-6 sm:py-8 md:py-12 md:px-6 lg:mx-auto lg:w-full lg:max-w-lg lg:bg-transparent lg:px-0 lg:pb-24 lg:pt-0">
                 <div class="px-4 sm:px-6 mx-auto max-w-2xl lg:max-w-none lg:px-0">
-                    <h2 class="sr-only">Order summary</h2>
+                    <h2 class="sr-only">{{ __('messages.checkout_order_summary') }}</h2>
                     
                     <!-- Order Summary Card -->
                     <div class="rounded-xl p-4 sm:p-6" style="background-color: #0e1015; border: 1px solid #2d2c31;">
                         <!-- Header -->
                         <div class="mb-6">
-                            <h3 class="text-xl sm:text-2xl font-semibold text-white mb-4">Your Order</h3>
+                            <h3 class="text-xl sm:text-2xl font-semibold text-white mb-4">{{ __('messages.checkout_your_order') }}</h3>
                             
                             <!-- Seller Info -->
                             @if($order->seller && $order->seller->user)
                                 <div class="flex items-center gap-3 mb-4 pb-4 border-b" style="border-color: #2d2c31;">
                                     <div class="relative shrink-0">
                                         <span class="inline-flex items-center justify-center font-normal text-white select-none shrink-0 overflow-hidden h-10 w-10 sm:h-12 sm:w-12 text-xs rounded-full ring-1" style="background-color: rgba(27, 26, 30, 0.5); border-color: #2d2c31;">
-                                            <img role="img" src="{{ $sellerPfp }}" class="object-cover w-full h-full aspect-1 rounded-full" alt="{{ $order->seller->user->name ?? 'Seller' }}" onerror="this.onerror=null; this.src='{{ asset('storage/examplepfp.webp') }}';">
+                                            <img role="img" src="{{ $sellerPfp }}" class="object-cover w-full h-full aspect-1 rounded-full" alt="{{ $order->seller->user->name ?? __('messages.seller') }}" onerror="this.onerror=null; this.src='{{ asset('storage/examplepfp.webp') }}';">
                                         </span>
                                     </div>
                                     <div class="flex-1 min-w-0">
-                                        <p class="text-xs sm:text-sm font-medium text-gray-400 mb-0.5">Seller</p>
-                                        <p class="text-sm sm:text-base font-semibold text-white truncate">{{ $order->seller->user->name ?? 'Unknown Seller' }}</p>
+                                        <p class="text-xs sm:text-sm font-medium text-gray-400 mb-0.5">{{ __('messages.seller') }}</p>
+                                        <p class="text-sm sm:text-base font-semibold text-white truncate">{{ $order->seller->user->name ?? __('messages.checkout_unknown_seller') }}</p>
                                     </div>
                                 </div>
                             @endif
                             
                             <dl>
-                                <dt class="text-xs sm:text-sm font-medium text-gray-400">Amount due</dt>
+                                <dt class="text-xs sm:text-sm font-medium text-gray-400">{{ __('messages.checkout_amount_due') }}</dt>
                                 <dd class="mt-1 text-2xl sm:text-3xl font-bold tracking-tight text-white">
-                                    {{ number_format($total, 0, '.', '') }} <span class="text-sm sm:text-base font-semibold text-gray-400">DZD</span>
+                                    {{ number_format($total, 0, '.', '') }} <span class="text-sm sm:text-base font-semibold text-gray-400">DA</span>
                                 </dd>
                             </dl>
                         </div>
@@ -215,11 +234,11 @@ use Illuminate\Support\Facades\Storage;
                                         </div>
                                         <div class="flex items-center gap-1.5 text-xs text-gray-400">
                                             <i class="fa-solid fa-bolt text-red-600 flex-shrink-0"></i>
-                                            <span class="truncate">Instant delivery</span>
+                                            <span class="truncate">{{ __('messages.instant_delivery') }}</span>
                                         </div>
                                     </div>
                                     <div class="pt-2">
-                                        <p class="text-base sm:text-lg font-bold text-white">{{ number_format($subtotal, 0, '.', '') }} <span class="text-xs sm:text-sm font-semibold text-gray-400">DZD</span></p>
+                                        <p class="text-base sm:text-lg font-bold text-white">{{ number_format($subtotal, 0, '.', '') }} <span class="text-xs sm:text-sm font-semibold text-gray-400">DA</span></p>
                                     </div>
                                 </div>
                             </div>
@@ -228,20 +247,39 @@ use Illuminate\Support\Facades\Storage;
                         <!-- Order Summary Breakdown -->
                         <dl class="space-y-3 sm:space-y-4 text-sm">
                             <div class="flex justify-between items-center">
-                                <dt class="text-gray-400 text-xs sm:text-sm">Subtotal</dt>
-                                <dd class="text-white font-medium text-xs sm:text-sm">{{ number_format($subtotal, 0, '.', '') }} DZD</dd>
+                                <dt class="text-gray-400 text-xs sm:text-sm">{{ __('messages.checkout_subtotal') }}</dt>
+                                <dd class="text-white font-medium text-xs sm:text-sm">{{ number_format($subtotal, 0, '.', '') }} DA</dd>
                             </div>
-                            <div class="flex justify-between items-center">
-                                <dt class="text-gray-400 text-xs sm:text-sm flex items-center gap-1">
-                                    Processor Fee
-                                    <i class="fa-solid fa-circle-question text-gray-500 text-xs" title="Payment processing fee"></i>
-                                </dt>
-                                <dd class="text-white font-medium text-xs sm:text-sm">+{{ $processorFeePercent }}%</dd>
+                            <div x-data="{ feeTipOpen: false }">
+                                <div class="flex justify-between items-center">
+                                    <dt class="text-gray-400 text-xs sm:text-sm flex items-center gap-1">
+                                        {{ __('messages.checkout_processor_fee') }}
+                                        <button type="button"
+                                                class="inline-flex items-center text-gray-500 transition-colors hover:text-gray-300"
+                                                aria-label="{{ __('messages.checkout_processor_fee_aria') }}"
+                                                aria-expanded="false"
+                                                x-bind:aria-expanded="feeTipOpen.toString()"
+                                                x-on:mouseenter="feeTipOpen = true"
+                                                x-on:mouseleave="feeTipOpen = false"
+                                                x-on:click.stop="feeTipOpen = !feeTipOpen"
+                                                x-on:keydown.escape.window="feeTipOpen = false">
+                                            <i class="fa-solid fa-circle-question text-xs"></i>
+                                        </button>
+                                    </dt>
+                                    <dd class="text-white font-medium text-xs sm:text-sm">+{{ rtrim(rtrim(number_format($processorFeePercent, 2, '.', ''), '0'), '.') }}%</dd>
+                                </div>
+                                <p x-show="feeTipOpen"
+                                   x-transition.opacity.duration.150ms
+                                   x-on:click.outside="feeTipOpen = false"
+                                   class="mt-1.5 mb-1 px-2.5 py-1.5 text-[11px] leading-snug text-gray-400 rounded-md"
+                                   style="background-color: #1b1a1e; border: 1px solid #2d2c31; display: none;">
+                                    {{ __('messages.checkout_processor_fee_note', ['percent' => rtrim(rtrim(number_format($processorFeePercent, 2, '.', ''), '0'), '.')]) }}
+                                </p>
                             </div>
                             <div class="pt-4 border-t" style="border-color: #2d2c31;">
                                 <div class="flex justify-between items-center">
-                                    <dt class="text-base sm:text-lg font-semibold text-white">Total</dt>
-                                    <dd class="text-base sm:text-lg font-bold text-white">{{ number_format($total, 0, '.', '') }} <span class="text-xs sm:text-sm font-semibold text-gray-400">DZD</span></dd>
+                                    <dt class="text-base sm:text-lg font-semibold text-white">{{ __('messages.checkout_total') }}</dt>
+                                    <dd class="text-base sm:text-lg font-bold text-white">{{ number_format($total, 0, '.', '') }} <span class="text-xs sm:text-sm font-semibold text-gray-400">DA</span></dd>
                                 </div>
                             </div>
                         </dl>
@@ -253,12 +291,12 @@ use Illuminate\Support\Facades\Storage;
                                 :disabled="isProcessing"
                                 x-ref="payButton">
                             <span x-show="!isProcessing">
-                                Pay Now
+                                {{ __('messages.checkout_pay_now') }}
                                 <i class="ml-2 fas fa-arrow-right"></i>
                             </span>
                             <span x-show="isProcessing" class="flex items-center gap-2">
                                 <i class="fas fa-spinner fa-spin"></i>
-                                Processing...
+                                {{ __('messages.checkout_processing') }}
                             </span>
                         </button>
                     </div>
@@ -274,11 +312,11 @@ use Illuminate\Support\Facades\Storage;
                     :disabled="isProcessing"
                     x-ref="payButtonMobile">
                 <span x-show="!isProcessing">
-                    Pay Now <span class="mx-1.5"> · </span> {{ number_format($total, 0, '.', '') }} DZD
+                    {{ __('messages.checkout_pay_now') }} <span class="mx-1.5"> · </span> {{ number_format($total, 0, '.', '') }} DA
                 </span>
                 <span x-show="isProcessing" class="flex items-center gap-2">
                     <i class="fas fa-spinner fa-spin"></i>
-                    Processing...
+                    {{ __('messages.checkout_processing') }}
                 </span>
             </button>
         </div>
@@ -316,13 +354,18 @@ use Illuminate\Support\Facades\Storage;
             selectedPayment: 'algerie-poste',
             isProcessing: false,
             encryptedOrderId: '{{ $encryptedOrderId }}',
+            messages: {
+                methodUnavailable: @js(__('messages.checkout_method_unavailable')),
+                initiateFailed: @js(__('messages.checkout_initiate_failed')),
+                paymentError: @js(__('messages.checkout_payment_error')),
+            },
             
             handlePayment() {
                 this.isProcessing = true;
                 
                 // Only Barid Jazair (edahabia) is supported
                 if (this.selectedPayment !== 'algerie-poste') {
-                    alert('This payment method is not yet available');
+                    alert(this.messages.methodUnavailable);
                     this.isProcessing = false;
                     return;
                 }
@@ -344,13 +387,13 @@ use Illuminate\Support\Facades\Storage;
                         // Redirect to SofizPay checkout
                         window.location.href = data.checkout_url;
                     } else {
-                        alert(data.message || 'Failed to initiate payment. Please try again.');
+                        alert(data.message || this.messages.initiateFailed);
                         this.isProcessing = false;
                     }
                 })
                 .catch(error => {
                     console.error('Payment error:', error);
-                    alert('An error occurred while processing your payment. Please try again.');
+                    alert(this.messages.paymentError);
                     this.isProcessing = false;
                 });
             }

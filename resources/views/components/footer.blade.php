@@ -27,8 +27,8 @@
                 <ul class="space-y-2 text-xs sm:text-sm">
                     <li><a href="#" class="text-gray-400 hover:text-white transition-colors">{{ __('messages.help_center') }}</a></li>
                     <li><a href="#" class="text-gray-400 hover:text-white transition-colors">{{ __('messages.contact_us') }}</a></li>
-                    <li><a href="#" class="text-gray-400 hover:text-white transition-colors">{{ __('messages.terms_of_service') }}</a></li>
-                    <li><a href="#" class="text-gray-400 hover:text-white transition-colors">{{ __('messages.privacy_policy') }}</a></li>
+                    <li><a href="{{ route('terms-of-service') }}" class="text-gray-400 hover:text-white transition-colors">{{ __('messages.terms_of_service') }}</a></li>
+                    <li><a href="{{ route('privacy-policy') }}" class="text-gray-400 hover:text-white transition-colors">{{ __('messages.privacy_policy') }}</a></li>
                 </ul>
             </div>
             

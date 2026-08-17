@@ -294,7 +294,7 @@ use Illuminate\Support\Facades\Storage;
                     >
                         <div class="flex items-center pr-2 truncate gap-x-2">
                             <i class="text-base fa-solid fa-coins custom-dropdown-icon"></i>
-                            <span class="font-medium" x-text="priceFrom && priceTo ? priceFrom + ' - ' + priceTo + ' DZD' : (priceFrom ? priceFrom + '+ DZD' : '{{ __('messages.price_range') }}')"></span>
+                            <span class="font-medium" x-text="priceFrom && priceTo ? priceFrom + ' - ' + priceTo + ' DA' : (priceFrom ? priceFrom + '+ DA' : '{{ __('messages.price_range') }}')"></span>
                         </div>
                         <i class="text-xs fa-solid fa-caret-down" style="color: rgba(255, 255, 255, 0.7); transition: transform 0.2s;" :style="priceOpen ? 'transform: rotate(180deg);' : ''"></i>
                     </button>
@@ -1508,6 +1508,23 @@ use Illuminate\Support\Facades\Storage;
             updateAccountsGrid(accounts) {
                 const gridContainer = document.querySelector('[data-accounts-grid]');
                 if (!gridContainer) return;
+
+                const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#039;',
+                })[character]);
+                const storageUrl = (path, fallback) => {
+                    const normalized = String(path ?? '').replace(/\\/g, '/').replace(/^\/+/, '');
+                    if (!normalized || normalized.includes('..')) return fallback;
+
+                    return '/storage/' + normalized
+                        .split('/')
+                        .map((segment) => encodeURIComponent(segment))
+                        .join('/');
+                };
                 
                 if (accounts.length === 0) {
                     gridContainer.innerHTML = `
@@ -1521,8 +1538,11 @@ use Illuminate\Support\Facades\Storage;
                 // Build HTML for account cards
                 let html = '';
                 accounts.forEach(account => {
+                    const accountId = Number.parseInt(account.id, 10);
+                    if (!Number.isSafeInteger(accountId) || accountId < 1) return;
+
                     const mainImage = account.images && account.images.length > 0 
-                        ? '/storage/' + account.images[0].url 
+                        ? storageUrl(account.images[0].url, '{{ asset("storage/default-account.png") }}')
                         : '{{ asset("storage/default-account.png") }}';
                     
                     const seller = account.seller;
@@ -1530,11 +1550,11 @@ use Illuminate\Support\Facades\Storage;
                     const sellerName = user ? user.name : 'Unknown';
                     
                     // Calculate sold count from seller's orders_count field
-                    const soldCount = account.seller ? account.seller.orders_count || 0 : 0;
+                    const soldCount = Math.max(0, Number.parseInt(account.seller?.orders_count, 10) || 0);
                     
                     // Calculate rating percentage
-                    const ratingPercentage = seller && seller.rating > 0 
-                        ? Math.round((seller.rating / 5) * 100)
+                    const ratingPercentage = seller && Number(seller.rating) > 0
+                        ? Math.min(100, Math.max(0, Math.round((Number(seller.rating) / 5) * 100)))
                         : 0;
                     
                     // Price formatting: stored value displayed as-is with no decimals/separators
@@ -1567,7 +1587,11 @@ use Illuminate\Support\Facades\Storage;
                     // Build tier image URL
                     let tierImageHtml = '';
                     if (collectionTier) {
-                        tierImageHtml = `<img src="/storage/mlbb_skins_rank/${collectionTier}.webp" alt="${collectionTier}" class="object-contain" style="width: 33.6px; height: 33.6px;" onerror="this.style.display='none';">`;
+                        const tierImageUrl = storageUrl(
+                            `mlbb_skins_rank/${collectionTier}.webp`,
+                            '{{ asset("storage/default-account.png") }}'
+                        );
+                        tierImageHtml = `<img src="${escapeHtml(tierImageUrl)}" alt="${escapeHtml(collectionTier)}" class="object-contain" style="width: 33.6px; height: 33.6px;" onerror="this.style.display='none';">`;
                     }
                     
                     // Build attributes list - no formatting with commas
@@ -1592,14 +1616,21 @@ use Illuminate\Support\Facades\Storage;
                     }
                     
                     const attributesHtml = attributesList.map(attr => 
-                        `<span class="inline-block px-2 py-0.5 text-xs whitespace-nowrap" style="color: rgba(255, 255, 255, 0.7); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 6px;">${attr}</span>`
+                        `<span class="inline-block px-2 py-0.5 text-xs whitespace-nowrap" style="color: rgba(255, 255, 255, 0.7); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 6px;">${escapeHtml(attr)}</span>`
                     ).join('');
                     
-                    const sellerPfp = seller && seller.pfp ? '/storage/' + seller.pfp : '{{ asset("storage/examplepfp.webp") }}';
-                    const sellerDisplayName = user ? user.name.substring(0, 8).toUpperCase() + (user.name.length > 8 ? '..' : '') : 'Unknown';
+                    const sellerPfp = seller && seller.pfp
+                        ? storageUrl(seller.pfp, '{{ asset("storage/examplepfp.webp") }}')
+                        : '{{ asset("storage/examplepfp.webp") }}';
+                    const rawSellerName = user ? String(user.name ?? '') : 'Unknown';
+                    const sellerDisplayName = escapeHtml(
+                        rawSellerName.substring(0, 8).toUpperCase() + (rawSellerName.length > 8 ? '..' : '')
+                    );
+                    const safeTitle = escapeHtml(String(account.title ?? '').substring(0, 100));
+                    const safeTierDisplay = escapeHtml(tierDisplay);
                     
                     html += `
-                        <a href="/mobile-legends/accounts/${account.id}" class="account-card-hover account-card flex relative flex-col justify-between overflow-hidden rounded-xl h-full hover:shadow-xl transition-all duration-300 group" style="background-color: #0e1015; border: 1px solid #2d2c31;">
+                        <a href="/mobile-legends/accounts/${accountId}" class="account-card-hover account-card flex relative flex-col justify-between overflow-hidden rounded-xl h-full hover:shadow-xl transition-all duration-300 group" style="background-color: #0e1015; border: 1px solid #2d2c31;">
                             <!-- Flash Sale Badge (Top Right) -->
                             <div class="absolute z-10" style="top: 0.5rem; right: 0.5rem;">
                                 <div class="flex justify-center items-center py-1 w-7 h-7 text-xs font-semibold tracking-wide text-center uppercase rounded-lg" style="color: #fbbf24;">
@@ -1615,7 +1646,7 @@ use Illuminate\Support\Facades\Storage;
                                         ${tierImageHtml}
                                         <div class="truncate">
                                             <p class="font-semibold leading-6 truncate text-white" style="font-size: 0.85rem;">
-                                                ${tierDisplay}
+                                                ${safeTierDisplay}
                                             </p>
                                         </div>
                                     </div>
@@ -1623,13 +1654,13 @@ use Illuminate\Support\Facades\Storage;
 
                                 <!-- Description (Fixed Height) -->
                                 <div class="text-sm line-clamp-2 break-all" style="min-height: 40px; color: rgba(255, 255, 255, 0.8); margin-top: 5px; margin-bottom: 10px;">
-                                    ${account.title.substring(0, 100)}${account.title.length > 100 ? '...' : ''}
+                                    ${safeTitle}${String(account.title ?? '').length > 100 ? '...' : ''}
                                 </div>
 
                                 <!-- Account Image -->
                                 <div style="margin-bottom: 15px;">
                                     <div class="relative overflow-hidden rounded-lg account-image-hover" style="height: 140px; border: 1px solid #2d2c31;">
-                                        <img src="${mainImage}" alt="Account Image" class="object-cover w-full h-full">
+                                        <img src="${escapeHtml(mainImage)}" alt="Account Image" class="object-cover w-full h-full">
                                         ${account.images && account.images.length > 1 ? `
                                             <div type="button" class="inline-flex items-center justify-center transition-colors overflow-hidden font-medium whitespace-nowrap py-1.5 px-2 text-xs rounded-md absolute right-2 bottom-2 backdrop-blur-md" style="background-color: rgba(27, 26, 30, 0.8); color: #ffffff; border: 1px solid #2d2c31;">
                                                 <i class="mr-2 fas fa-images"></i> ${account.images.length}+
@@ -1652,9 +1683,9 @@ use Illuminate\Support\Facades\Storage;
                                         <span class="text-3xl font-bold tracking-tight text-transparent bg-clip-text" style="background: linear-gradient(to left, #ffffff, rgba(255, 255, 255, 0.6)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
                                             ${formattedPrice}
                                         </span>
-                                        <span class="text-sm font-semibold leading-6" style="color: rgba(255, 255, 255, 0.6);">DZD</span>
+                                        <span class="text-sm font-semibold leading-6" style="color: rgba(255, 255, 255, 0.6);">DA</span>
                                     </div>
-                                    <button type="button" class="account-buy-btn inline-flex items-center justify-center transition-colors focus:outline focus:outline-offset-2 focus-visible:outline outline-none disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden font-medium active:translate-y-px whitespace-nowrap bg-red-600 hover:bg-red-700 text-white shadow-sm focus:outline-red-600 py-2 px-4 text-sm rounded-full shrink-0" data-account-id="${account.id}">
+                                    <button type="button" class="account-buy-btn inline-flex items-center justify-center transition-colors focus:outline focus:outline-offset-2 focus-visible:outline outline-none disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden font-medium active:translate-y-px whitespace-nowrap bg-red-600 hover:bg-red-700 text-white shadow-sm focus:outline-red-600 py-2 px-4 text-sm rounded-full shrink-0" data-account-id="${accountId}">
                                         <span class="buy-btn-text truncate">Buy Now</span>
                                         <i class="buy-btn-loading ml-1 hidden" style="display: none;">
                                             <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -1674,7 +1705,7 @@ use Illuminate\Support\Facades\Storage;
                             <button class="flex gap-x-2 justify-between items-center px-5 py-3 rounded-b-xl border-t group-hover:bg-opacity-50" style="background-color: rgba(27, 26, 30, 0.5); border-color: #2d2c31; margin-bottom: 15px;">
                                 <div class="flex items-center truncate cursor-pointer">
                                     <div class="relative block shrink-0 rounded-full border flex items-center justify-center" style="height: 36px; width: 36px; border-color: #252429; margin-bottom: 5px; margin-right: 5px;">
-                                        <img class="object-cover w-full h-full rounded-full" src="${sellerPfp}" alt="${sellerDisplayName}" onerror="this.src='{{ asset("storage/examplepfp.webp") }}';">
+                                        <img class="object-cover w-full h-full rounded-full" src="${escapeHtml(sellerPfp)}" alt="${sellerDisplayName}" onerror="this.src='{{ asset("storage/examplepfp.webp") }}';">
                                     </div>
                                     <div class="cursor-default flex items-center truncate gap-x-1.5" data-state="closed">
                                         <div class="truncate text-sm font-medium text-white">${sellerDisplayName}</div>

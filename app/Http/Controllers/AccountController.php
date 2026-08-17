@@ -18,15 +18,21 @@ class AccountController extends Controller
         $gameSlug = $slug === 'mobile-legends' ? 'mlbb' : $slug;
         
         $game = \App\Models\Game::where('slug', $gameSlug)->firstOrFail();
-        $account = AccountForSale::with(['game', 'seller.user', 'attributes', 'images'])
+        $account = AccountForSale::with(['game', 'seller.user', 'attributes', 'images', 'superDiscountOffer'])
             ->where('id', $id)
             ->where('game_id', $game->id)
             ->where('status', 'available')
             ->firstOrFail();
+
+        $discountOffer = $account->currentDiscountOffer();
         
         return view('accounts.show', [
             'game' => $game,
-            'account' => $account
+            'account' => $account,
+            'discountOffer' => $discountOffer,
+            'displayPrice' => $discountOffer
+                ? $discountOffer->discountedPrice((int) $account->price_dzd)
+                : (int) $account->price_dzd,
         ]);
     }
 }

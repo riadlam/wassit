@@ -105,13 +105,13 @@
                                             placeholder="Describe the account features"
                                         >{{ $account->description }}</textarea>
                                     </div>
-                                    <!-- Price (DZD) -->
+                                    <!-- Price (DA) -->
                                     <div>
                                         <label for="price_dzd" class="block text-sm font-medium text-gray-300 mb-2">
-                                            Price (DZD)
+                                            Price (DA)
                                         </label>
                                         <div class="relative">
-                                            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">DZD</span>
+                                            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">DA</span>
                                             <input 
                                                 type="number" 
                                                 id="price_dzd" 
@@ -534,6 +534,13 @@
             const imagesGrid = document.getElementById('imagesGrid');
             const currentImageCount = {{ $account->images ? $account->images->count() : 0 }};
             const maxImages = 10;
+            const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;',
+            })[character]);
             
             // Track which existing images to keep/delete (make it global)
             window.deletedImageIds = [];
@@ -588,12 +595,13 @@
                             const reader = new FileReader();
                             reader.onload = function(e) {
                                 const div = document.createElement('div');
+                                const safeFileName = escapeHtml(file.name);
                                 div.className = 'relative group';
                                 div.setAttribute('data-image-type', 'new');
                                 div.setAttribute('data-file-name', file.name);
                                 div.innerHTML = `
                                     <div class="aspect-video rounded-lg overflow-hidden" style="background-color: #1b1a1e; border: 1px solid #2d2c31;">
-                                        <img src="${e.target.result}" alt="${file.name}" class="w-full h-full object-cover">
+                                        <img src="${e.target.result}" alt="${safeFileName}" class="w-full h-full object-cover">
                                     </div>
                                     <button type="button" onclick="removeImage(null, this, 'new')" class="absolute top-2 right-2 inline-flex items-center justify-center w-6 h-6 rounded-full bg-red-600 hover:bg-red-700 text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity">
                                         <i class="fa-solid fa-xmark"></i>
@@ -636,12 +644,13 @@
                     const reader = new FileReader();
                     reader.onload = function(e) {
                         const div = document.createElement('div');
+                        const safeFileName = escapeHtml(file.name);
                         div.className = 'relative group';
                         div.setAttribute('data-image-type', 'new');
                         div.setAttribute('data-file-name', file.name);
                         div.innerHTML = `
                             <div class="aspect-video rounded-lg overflow-hidden" style="background-color: #1b1a1e; border: 1px solid #2d2c31;">
-                                <img src="${e.target.result}" alt="${file.name}" class="w-full h-full object-cover">
+                                <img src="${e.target.result}" alt="${safeFileName}" class="w-full h-full object-cover">
                             </div>
                             <button type="button" onclick="removeImage(null, this, 'new')" class="absolute top-2 right-2 inline-flex items-center justify-center w-6 h-6 rounded-full bg-red-600 hover:bg-red-700 text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity">
                                 <i class="fa-solid fa-xmark"></i>

@@ -16,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(
             append: [
                 \App\Http\Middleware\SetLocale::class,
+                \App\Http\Middleware\SecurityHeaders::class,
             ],
             replace: [
                 \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class => \App\Http\Middleware\VerifyCsrfToken::class,

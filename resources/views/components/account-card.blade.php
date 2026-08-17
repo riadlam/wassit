@@ -269,7 +269,7 @@
                 <span class="text-3xl font-bold tracking-tight text-transparent bg-clip-text" style="background: linear-gradient(to left, #ffffff, rgba(255, 255, 255, 0.6)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
                     {{ number_format($account->price_dzd, 0, '.', '') }}
                 </span>
-                <span class="text-sm font-semibold leading-6" style="color: rgba(255, 255, 255, 0.6);">DZD</span>
+                <span class="text-sm font-semibold leading-6" style="color: rgba(255, 255, 255, 0.6);">DA</span>
             </div>
             <button type="button" class="account-buy-btn inline-flex items-center justify-center transition-colors focus:outline focus:outline-offset-2 focus-visible:outline outline-none disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden font-medium active:translate-y-px whitespace-nowrap bg-red-600 hover:bg-red-700 text-white shadow-sm focus:outline-red-600 py-2 px-4 text-sm rounded-full shrink-0" data-account-id="{{ $account->id }}">
                 <span class="buy-btn-text truncate">Buy Now</span>

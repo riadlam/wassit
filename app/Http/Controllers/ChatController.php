@@ -6,9 +6,11 @@ use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\MessageAttachment;
 use App\Models\Order;
+use App\Models\Seller;
 use App\Events\MessageSent;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
@@ -726,43 +728,59 @@ class ChatController extends Controller
             return response()->json(['error' => 'No account linked to this conversation'], 404);
         }
 
-        $order = Order::where('account_id', $conversation->accountForSale->id)
-            ->where('buyer_id', $conversation->buyer_id)
-            ->where('status', 'completed')
-            ->latest('id')
-            ->first();
+        $result = DB::transaction(function () use ($conversation) {
+            $order = Order::query()
+                ->where('account_id', $conversation->accountForSale->id)
+                ->where('buyer_id', $conversation->buyer_id)
+                ->where('status', 'completed')
+                ->latest('id')
+                ->lockForUpdate()
+                ->first();
 
-        if (!$order) {
-            return response()->json(['error' => 'No completed order found'], 404);
-        }
+            if (!$order) {
+                return ['error' => 'No completed order found', 'status' => 404];
+            }
 
-        if ($order->delivery_status === 'delivered') {
-            return response()->json(['error' => 'Delivery already confirmed'], 400);
-        }
+            if ($order->delivery_status === 'delivered') {
+                return ['error' => 'Delivery already confirmed', 'status' => 400];
+            }
 
-        // Update delivery status
-        $order->update([
-            'delivery_status' => 'delivered',
-        ]);
-
-        // Calculate seller payout (order amount - 3.9% processing fee)
-        $orderAmount = (float) $order->amount_dzd;
-        $processingFee = round($orderAmount * 0.039, 2);
-        $sellerPayout = $orderAmount - $processingFee;
-
-        // Update seller wallet
-        $seller = \App\Models\Seller::find($order->seller_id);
-        if ($seller) {
-            $seller->increment('wallet', $sellerPayout);
-            \Log::info('Seller wallet updated after delivery confirmation', [
-                'seller_id' => $seller->id,
-                'order_id' => $order->id,
-                'order_amount' => $orderAmount,
-                'processing_fee' => $processingFee,
-                'payout' => $sellerPayout,
-                'new_wallet_balance' => $seller->fresh()->wallet,
+            $order->update([
+                'delivery_status' => 'delivered',
             ]);
+
+            $orderAmount = (float) $order->amount_dzd;
+            $processingFee = round($orderAmount * 0.039, 2);
+            $sellerPayout = $orderAmount - $processingFee;
+
+            $seller = Seller::query()
+                ->whereKey($order->seller_id)
+                ->lockForUpdate()
+                ->first();
+
+            if ($seller) {
+                $seller->increment('wallet', $sellerPayout);
+                Log::info('Seller wallet updated after delivery confirmation', [
+                    'seller_id' => $seller->id,
+                    'order_id' => $order->id,
+                    'order_amount' => $orderAmount,
+                    'processing_fee' => $processingFee,
+                    'payout' => $sellerPayout,
+                    'new_wallet_balance' => $seller->fresh()->wallet,
+                ]);
+            }
+
+            return [
+                'order' => $order,
+                'seller_payout' => $sellerPayout,
+            ];
+        }, 3);
+
+        if (isset($result['error'])) {
+            return response()->json(['error' => $result['error']], $result['status']);
         }
+
+        $order = $result['order'];
 
         // Create system message
         $sysMsg = \App\Models\Message::create([

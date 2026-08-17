@@ -13,9 +13,9 @@
         @include('components.dashboard-nav')
         
         <!-- Main Content -->
-        <div class="relative z-10 px-4 sm:px-6 lg:px-8" style="padding-top: 122px;">
+        <div class="relative z-10 px-4 sm:px-6 lg:px-8 chat-page">
             <div x-data="chatData()" x-init="init()" class="mx-auto max-w-[1550px]">
-                <div class="flex rounded-xl overflow-hidden" style="background-color: #0e1015; border: 1px solid #2d2c31; height: calc((100vh - 200px) * 1.38);">
+                <div class="flex rounded-xl overflow-hidden chat-shell" style="background-color: #0e1015; border: 1px solid #2d2c31;">
                     <!-- Left Column - Conversation List -->
                     <div class="w-full md:w-1/3 border-r flex flex-col" style="border-color: #2d2c31; background-color: #0e1015;" 
                          :class="selectedConversation !== null ? 'hidden md:flex' : 'flex'">
@@ -108,10 +108,10 @@
                          class="flex flex-1 flex-col w-full md:w-auto" 
                          style="background-color: #0e1015;">
                         <!-- Chat Header -->
-                        <header class="flex items-center justify-between px-4 py-3 border-b" style="border-color: #2d2c31;">
-                            <div class="flex items-center gap-3">
+                        <header class="flex items-start justify-between gap-2 px-3 sm:px-4 py-3 border-b" style="border-color: #2d2c31;">
+                            <div class="flex flex-wrap items-center gap-x-3 gap-y-2 min-w-0 flex-1">
                                 <!-- Mobile Back Button -->
-                                <button @click="selectedConversation = null" class="md:hidden text-gray-400 hover:text-white transition-colors mr-2 p-2 -ml-2">
+                                <button @click="selectedConversation = null" class="md:hidden text-gray-400 hover:text-white transition-colors p-2 -ml-2 shrink-0">
                                     <i class="fa-solid fa-arrow-left text-lg"></i>
                                 </button>
                                 <template x-if="getSelectedConversation()">
@@ -128,14 +128,14 @@
                                     </div>
                                 </template>
                                 <template x-if="getSelectedConversation()">
-                                    <div>
-                                        <div class="text-sm font-medium text-white" x-text="getSelectedConversation().name"></div>
+                                    <div class="min-w-0 flex-1 md:flex-none">
+                                        <div class="text-sm font-medium text-white truncate" x-text="getSelectedConversation().name"></div>
                                         <div class="text-xs text-gray-400" x-text="getSelectedConversation().status === 'online' ? '{{ __('messages.online') }}' : '{{ __('messages.offline') }}'"></div>
                                     </div>
                                 </template>
                                 <!-- Paid badge -->
                                 <template x-if="getSelectedConversation() && getSelectedConversation().paid">
-                                    <div class="ml-2 md:ml-4 flex flex-wrap items-center gap-2 md:gap-3">
+                                    <div class="w-full md:w-auto md:ml-4 flex flex-wrap items-center gap-2 md:gap-3">
                                         <span class="inline-flex items-center gap-1.5 md:gap-2 px-2.5 md:px-3 py-1 md:py-1.5 rounded-full text-[10px] md:text-xs font-semibold" style="background-color: rgba(34,197,94,0.15); color: #86efac; border: 1px solid rgba(34,197,94,0.3);">
                                             <i class="fa-solid fa-badge-check text-green-400 text-[10px] md:text-xs"></i>
                                             <span class="whitespace-nowrap">
@@ -164,13 +164,13 @@
                                     </div>
                                 </template>
                             </div>
-                            <button type="button" class="text-gray-400 hover:text-white transition-colors" aria-label="{{ __('messages.search_in_conversation') }}">
+                            <button type="button" class="hidden sm:block shrink-0 text-gray-400 hover:text-white transition-colors" aria-label="{{ __('messages.search_in_conversation') }}">
                                 <i class="fa-solid fa-magnifying-glass"></i>
                             </button>
                         </header>
                         
                         <!-- Messages Area -->
-                        <div id="messages-container" class="flex-1 overflow-y-auto chat-scrollbar px-4 py-4">
+                        <div id="messages-container" class="flex-1 overflow-y-auto chat-scrollbar px-3 sm:px-4 py-4">
                             <template x-if="getSelectedConversation() && getSelectedMessages().length > 0">
                                 <div class="space-y-4">
                                     <template x-for="(message, index) in getSelectedMessages()" :key="index">
@@ -189,10 +189,10 @@
                                             
                                             <!-- User Message -->
                                             <template x-if="message.type === 'user'">
-                                                <div class="flex items-start gap-3 justify-end">
-                                                    <div class="flex flex-col items-end max-w-[70%]">
+                                                <div class="flex items-start gap-2 sm:gap-3 justify-end">
+                                                    <div class="flex flex-col items-end min-w-0 max-w-[85%] md:max-w-[70%]">
                                                         <div class="px-4 py-2 rounded-lg" style="background-color: rgba(59, 130, 246, 0.2);">
-                                                            <p x-show="message.content && message.content.trim()" class="text-sm text-white mb-2" x-text="message.content"></p>
+                                                            <p x-show="message.content && message.content.trim()" class="text-sm text-white mb-2 break-words whitespace-pre-wrap" x-text="message.content"></p>
                                                             <!-- Attachments -->
                                                             <template x-if="message.attachments && message.attachments.length > 0">
                                                                 <div class="mt-2 space-y-2">
@@ -245,16 +245,16 @@
                                             
                                             <!-- Seller Message -->
                                             <template x-if="message.type === 'seller'">
-                                                <div class="flex items-start gap-3">
+                                                <div class="flex items-start gap-2 sm:gap-3">
                                                     <img 
                                                         :src="message.avatar || getSelectedConversation().avatar" 
                                                         alt="{{ __('messages.seller') }}" 
                                                         class="w-8 h-8 rounded-full object-cover flex-shrink-0"
                                                         :onerror="`this.onerror=null; this.src='{{ asset('storage/examplepfp.webp') }}';`"
                                                     >
-                                                    <div class="flex flex-col max-w-[70%]">
+                                                    <div class="flex flex-col min-w-0 max-w-[85%] md:max-w-[70%]">
                                                         <div class="px-4 py-2 rounded-lg" style="background-color: rgba(27, 26, 30, 0.5);">
-                                                            <p x-show="message.content && message.content.trim()" class="text-sm text-white mb-2" x-text="message.content"></p>
+                                                            <p x-show="message.content && message.content.trim()" class="text-sm text-white mb-2 break-words whitespace-pre-wrap" x-text="message.content"></p>
                                                             <!-- Attachments -->
                                                             <template x-if="message.attachments && message.attachments.length > 0">
                                                                 <div class="mt-2 space-y-2">

@@ -10,6 +10,121 @@
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
 
+/* Make every enabled interactive control visibly clickable. */
+:where(
+    a[href],
+    button:not(:disabled),
+    [role='button']:not([aria-disabled='true']),
+    input[type='button']:not(:disabled),
+    input[type='submit']:not(:disabled),
+    input[type='reset']:not(:disabled),
+    select:not(:disabled),
+    summary,
+    label[for]
+) {
+    cursor: pointer;
+}
+
+:where(button:disabled, input:disabled, select:disabled, [aria-disabled='true']) {
+    cursor: not-allowed;
+}
+
+/* Data tables: horizontal scroll on tablets, stacked cards on phones.
+   Each <td> supplies its column name through data-label. */
+@media (min-width: 768px) {
+    .data-table {
+        min-width: 640px;
+    }
+
+    .data-table--wide {
+        min-width: 860px;
+    }
+}
+
+@media (max-width: 767px) {
+    .data-table thead {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+    }
+
+    .data-table,
+    .data-table tbody,
+    .data-table tr,
+    .data-table td {
+        display: block;
+        width: 100%;
+    }
+
+    .data-table tr {
+        padding: 0.75rem 1rem;
+    }
+
+    .data-table td {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        min-height: 2rem;
+        padding: 0.25rem 0 !important;
+    }
+
+    .data-table td::before {
+        content: attr(data-label);
+        flex: 0 0 auto;
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: #9ca3af;
+    }
+
+    .data-table td:not([data-label])::before {
+        content: none;
+    }
+
+    .data-table td.data-table-empty {
+        display: block;
+        height: auto !important;
+        padding: 2rem 0 !important;
+        text-align: center;
+    }
+}
+
+/* Chat page: fit the panel to the viewport instead of overflowing the page.
+   Offsets account for the site header, the dashboard bar, and (on phones)
+   the fixed bottom navigation. */
+.chat-page {
+    padding-top: 122px;
+}
+
+.chat-shell {
+    height: calc(100vh - 205px);
+    min-height: 300px;
+}
+
+@media (min-width: 768px) {
+    .chat-shell {
+        height: calc(100vh - 230px);
+        min-height: 520px;
+    }
+}
+
+@supports (height: 100dvh) {
+    .chat-shell {
+        height: calc(100dvh - 205px);
+    }
+
+    @media (min-width: 768px) {
+        .chat-shell {
+            height: calc(100dvh - 230px);
+        }
+    }
+}
+
 /* Custom Animations */
 @keyframes fadeIn {
     from {

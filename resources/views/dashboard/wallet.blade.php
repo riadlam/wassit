@@ -16,6 +16,12 @@
         <div class="relative z-10 px-4 sm:px-6 lg:px-8" style="padding-top: 122px;">
             <div class="mx-auto max-w-[1550px]">
                 <div class="mt-8">
+                    @if(session('success'))
+                        <div class="mb-5 rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-300">
+                            {{ session('success') }}
+                        </div>
+                    @endif
+
                     <div class="grid items-start grid-cols-1 grid-rows-1 mx-auto gap-x-5 gap-y-5 lg:mx-0 lg:grid-cols-3 xl:grid-cols-7">
                         <!-- Left Column - Store Credit and Coins Cards -->
                         <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:row-end-1 lg:grid-cols-1 xl:col-span-2">
@@ -25,7 +31,7 @@
                                     <dt class="text-sm font-medium leading-6" style="color: #9ca3af;">Wallet Balance</dt>
                                     <dd class="flex-none w-full mt-2">
                                         <span class="text-3xl font-semibold leading-10 tracking-tight text-white">{{ number_format($walletBalance, 2, ',', ' ') }}</span>
-                                        <span class="pl-1 text-sm font-medium" style="color: #9ca3af;">DZD</span>
+                                        <span class="pl-1 text-sm font-medium" style="color: #9ca3af;">DA</span>
                                     </dd>
                                 </div>
                                 <div class="flex items-center px-4 sm:px-6 py-3 border-t sm:rounded-b-xl" style="border-color: #2d2c31; background-color: rgba(27, 26, 30, 0.2);">
@@ -35,32 +41,127 @@
                                 </div>
                             </div>
                             
-                            <!-- Coins Card -->
-                            <div class="sm:rounded-xl sm:mx-0 -mx-4 border relative" style="background-color: #0e1015; border-color: #2d2c31;">
-                                <!-- Coming Soon Overlay -->
-                                <div class="absolute inset-0 bg-black/40 backdrop-blur-[2px] rounded-xl z-10 flex items-center justify-center">
-                                    <div class="text-center px-4">
-                                        <i class="fa-solid fa-clock text-4xl text-blue-400 mb-2"></i>
-                                        <p class="text-white font-bold text-lg">Coming Soon</p>
-                                        <p class="text-gray-400 text-sm mt-1">This feature will be available soon</p>
-                                    </div>
-                                </div>
-                                <div class="sm:px-6 px-4 py-6">
-                                    <dt class="text-sm font-medium leading-6" style="color: #9ca3af;">Coins</dt>
-                                    <dd class="flex items-center w-full mt-2">
-                                        <img src="https://cdn.gameboost.com/static/coins/coin-md.webp" alt="Coins" class="mr-1 h-7">
-                                        <div class="flex items-baseline gap-x-1">
-                                            <span class="text-3xl font-semibold leading-10 tracking-tight text-white">0</span>
-                                            <span class="text-sm font-medium" style="color: #9ca3af;"> ≈$0.00</span>
+                            @if($seller)
+                                <!-- Seller Withdrawal Card -->
+                                <div class="sm:rounded-xl sm:mx-0 -mx-4 border overflow-hidden" style="background-color: #0e1015; border-color: #2d2c31;">
+                                    <div class="sm:px-6 px-4 py-6">
+                                        <div class="flex items-center justify-between gap-3 mb-5">
+                                            <div>
+                                                <h2 class="font-semibold text-white">Request withdrawal</h2>
+                                                <p class="mt-1 text-xs text-gray-400">
+                                                    Available: {{ number_format($availableToWithdraw, 2, ',', ' ') }} DA
+                                                </p>
+                                            </div>
+                                            <i class="text-xl text-red-400 fa-solid fa-money-bill-transfer"></i>
                                         </div>
-                                    </dd>
+
+                                        <form method="POST" action="{{ route('account.wallet.withdrawals.store') }}" class="space-y-4">
+                                            @csrf
+
+                                            <div>
+                                                <label for="withdrawal-amount" class="block mb-1.5 text-xs font-medium text-gray-300">Amount (DA)</label>
+                                                <input
+                                                    id="withdrawal-amount"
+                                                    name="amount"
+                                                    type="number"
+                                                    min="1000"
+                                                    max="{{ max(1000, (float) $availableToWithdraw) }}"
+                                                    step="0.01"
+                                                    value="{{ old('amount') }}"
+                                                    required
+                                                    class="w-full rounded-md border px-3 py-2 text-sm text-white focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+                                                    style="background-color: #1b1a1e; border-color: #2d2c31;"
+                                                >
+                                                @error('amount')
+                                                    <p class="mt-1 text-xs text-red-400">{{ $message }}</p>
+                                                @enderror
+                                            </div>
+
+                                            <div>
+                                                <label for="payment-method" class="block mb-1.5 text-xs font-medium text-gray-300">Payment method</label>
+                                                <select
+                                                    id="payment-method"
+                                                    name="payment_method"
+                                                    required
+                                                    class="w-full rounded-md border px-3 py-2 text-sm text-white focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+                                                    style="background-color: #1b1a1e; border-color: #2d2c31;"
+                                                >
+                                                    <option value="">Choose a method</option>
+                                                    <option value="ccp" @selected(old('payment_method') === 'ccp')>CCP</option>
+                                                    <option value="baridimob" @selected(old('payment_method') === 'baridimob')>BaridiMob</option>
+                                                    <option value="bank_transfer" @selected(old('payment_method') === 'bank_transfer')>Bank transfer</option>
+                                                </select>
+                                                @error('payment_method')
+                                                    <p class="mt-1 text-xs text-red-400">{{ $message }}</p>
+                                                @enderror
+                                            </div>
+
+                                            <div>
+                                                <label for="account-holder" class="block mb-1.5 text-xs font-medium text-gray-300">Account holder</label>
+                                                <input
+                                                    id="account-holder"
+                                                    name="account_holder"
+                                                    type="text"
+                                                    maxlength="100"
+                                                    autocomplete="name"
+                                                    value="{{ old('account_holder', auth()->user()->name) }}"
+                                                    required
+                                                    class="w-full rounded-md border px-3 py-2 text-sm text-white focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+                                                    style="background-color: #1b1a1e; border-color: #2d2c31;"
+                                                >
+                                                @error('account_holder')
+                                                    <p class="mt-1 text-xs text-red-400">{{ $message }}</p>
+                                                @enderror
+                                            </div>
+
+                                            <div>
+                                                <label for="account-number" class="block mb-1.5 text-xs font-medium text-gray-300">Account / RIP number</label>
+                                                <input
+                                                    id="account-number"
+                                                    name="account_number"
+                                                    type="text"
+                                                    maxlength="50"
+                                                    autocomplete="off"
+                                                    value="{{ old('account_number') }}"
+                                                    required
+                                                    class="w-full rounded-md border px-3 py-2 text-sm text-white focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+                                                    style="background-color: #1b1a1e; border-color: #2d2c31;"
+                                                >
+                                                @error('account_number')
+                                                    <p class="mt-1 text-xs text-red-400">{{ $message }}</p>
+                                                @enderror
+                                            </div>
+
+                                            <button
+                                                type="submit"
+                                                @disabled($availableToWithdraw < 1000)
+                                                class="inline-flex w-full items-center justify-center rounded-md bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                            >
+                                                Submit withdrawal request
+                                            </button>
+                                        </form>
+                                    </div>
+
+                                    @if($withdrawals->isNotEmpty())
+                                        <div class="border-t px-4 py-4 sm:px-6" style="border-color: #2d2c31; background-color: rgba(27, 26, 30, 0.2);">
+                                            <h3 class="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-400">Recent requests</h3>
+                                            <div class="space-y-2">
+                                                @foreach($withdrawals->take(5) as $withdrawal)
+                                                    <div class="flex items-center justify-between gap-3 text-xs">
+                                                        <span class="text-gray-300">{{ number_format($withdrawal->amount, 2, ',', ' ') }} DA</span>
+                                                        <span class="rounded-full px-2 py-1 font-medium
+                                                            {{ $withdrawal->status === 'approved' ? 'bg-green-500/10 text-green-300' : '' }}
+                                                            {{ $withdrawal->status === 'rejected' ? 'bg-red-500/10 text-red-300' : '' }}
+                                                            {{ $withdrawal->status === 'pending' ? 'bg-yellow-500/10 text-yellow-300' : '' }}">
+                                                            {{ ucfirst($withdrawal->status) }}
+                                                        </span>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        </div>
+                                    @endif
                                 </div>
-                                <div class="flex items-center px-4 sm:px-6 py-3 border-t sm:rounded-b-xl" style="border-color: #2d2c31; background-color: rgba(27, 26, 30, 0.2);">
-                                    <a href="#" class="inline-flex items-center justify-center transition-colors focus:outline focus:outline-offset-2 focus-visible:outline outline-none disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden font-medium active:translate-y-px whitespace-nowrap bg-transparent hover:bg-gray-800/50 text-white focus:outline-secondary py-1.5 px-2 text-xs rounded-md">
-                                        <i class="mr-2 fa-duotone fa-receipt"></i> View History
-                                    </a>
-                                </div>
-                            </div>
+                            @endif
                         </div>
                         
                         <!-- Right Column - Transactions Section -->
@@ -114,7 +215,7 @@
                                 <!-- Table -->
                                 <div class="-mx-4 sm:-mx-6 lg:rounded-md lg:-mx-0 border overflow-hidden" style="background-color: #0e1015; border-color: #2d2c31;">
                                     <div class="w-full overflow-auto">
-                                        <table class="w-full caption-bottom text-sm">
+                                        <table class="w-full caption-bottom text-sm data-table data-table--wide">
                                             <thead class="overflow-clip">
                                                 <tr class="border-b transition-colors" style="border-color: #2d2c31; color: #9ca3af;">
                                                     <th class="h-10 px-2.5 text-left align-middle font-medium first:pl-4 first:rounded-tl-md last:rounded-tr-md" style="background-color: rgba(27, 26, 30, 0.5);">
@@ -168,16 +269,16 @@
                                             <tbody style="background-color: rgba(27, 26, 30, 0.3);">
                                                 @forelse($transactions as $transaction)
                                                 <tr class="border-b transition-colors hover:bg-gray-800/50" style="border-color: #2d2c31;">
-                                                    <td class="px-2.5 py-3 align-middle first:pl-4 last:pr-4">
-                                                        <div class="flex items-center gap-2">
+                                                    <td class="px-2.5 py-3 align-middle first:pl-4 last:pr-4" data-label="Payment Method">
+                                                        <div class="flex items-center gap-2 min-w-0">
                                                             <div class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center" style="background-color: {{ $transaction['type'] === 'earning' ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)' }};">
                                                                 <i class="fa-solid fa-credit-card {{ $transaction['type'] === 'earning' ? 'text-green-400' : 'text-red-400' }} text-xs"></i>
                                                             </div>
                                                             <span class="text-sm text-white font-medium">{{ $transaction['payment_method'] }}</span>
                                                         </div>
                                                     </td>
-                                                    <td class="px-2.5 py-3 align-middle first:pl-4 last:pr-4">
-                                                        <div class="text-sm text-gray-300">
+                                                    <td class="px-2.5 py-3 align-middle first:pl-4 last:pr-4" data-label="Order">
+                                                        <div class="text-sm text-gray-300 min-w-0">
                                                             <p class="font-medium">{{ $transaction['account_title'] }}</p>
                                                             @if(isset($transaction['buyer_name']))
                                                                 <p class="text-xs text-gray-500">Buyer: {{ $transaction['buyer_name'] }}</p>
@@ -186,29 +287,29 @@
                                                             @endif
                                                         </div>
                                                     </td>
-                                                    <td class="px-2.5 py-3 align-middle first:pl-4 last:pr-4">
+                                                    <td class="px-2.5 py-3 align-middle first:pl-4 last:pr-4" data-label="Status">
                                                         <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold" style="background-color: {{ $transaction['status'] === 'Completed' || $transaction['status'] === 'Delivered' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(234, 179, 8, 0.15)' }}; color: {{ $transaction['status'] === 'Completed' || $transaction['status'] === 'Delivered' ? '#86efac' : '#fde047' }}; border: 1px solid {{ $transaction['status'] === 'Completed' || $transaction['status'] === 'Delivered' ? 'rgba(34, 197, 94, 0.3)' : 'rgba(234, 179, 8, 0.3)' }};">
                                                             <i class="fa-solid {{ $transaction['status'] === 'Completed' || $transaction['status'] === 'Delivered' ? 'fa-circle-check' : 'fa-clock' }} mr-1"></i> {{ $transaction['status'] }}
                                                         </span>
                                                     </td>
-                                                    <td class="px-2.5 py-3 align-middle text-right first:pl-4 last:pr-4">
-                                                        <span class="text-sm text-gray-400 font-mono">{{ $transaction['transaction_id'] }}</span>
+                                                    <td class="px-2.5 py-3 align-middle text-right first:pl-4 last:pr-4" data-label="Transaction Id">
+                                                        <span class="text-sm text-gray-400 font-mono truncate">{{ $transaction['transaction_id'] }}</span>
                                                     </td>
-                                                    <td class="px-2.5 py-3 align-middle text-right first:pl-4 last:pr-4">
+                                                    <td class="px-2.5 py-3 align-middle text-right first:pl-4 last:pr-4" data-label="Order Id">
                                                         <span class="text-sm text-gray-400 font-mono">#{{ $transaction['order_id'] }}</span>
                                                     </td>
-                                                    <td class="px-2.5 py-3 align-middle text-right first:pl-4 last:pr-4">
+                                                    <td class="px-2.5 py-3 align-middle text-right first:pl-4 last:pr-4" data-label="Amount">
                                                         <span class="text-sm font-semibold {{ $transaction['type'] === 'earning' ? 'text-green-400' : 'text-red-400' }}">
-                                                            {{ $transaction['type'] === 'earning' ? '+' : '-' }} {{ number_format($transaction['amount'], 2, ',', ' ') }} DZD
+                                                            {{ $transaction['type'] === 'earning' ? '+' : '-' }} {{ number_format($transaction['amount'], 2, ',', ' ') }} DA
                                                         </span>
                                                     </td>
-                                                    <td class="px-2.5 py-3 align-middle text-right first:pl-4 last:pr-4">
+                                                    <td class="px-2.5 py-3 align-middle text-right first:pl-4 last:pr-4" data-label="Last Updated">
                                                         <span class="text-sm text-gray-400">{{ $transaction['updated_at']->diffForHumans() }}</span>
                                                     </td>
                                                 </tr>
                                                 @empty
                                                 <tr class="border-b transition-colors hover:bg-gray-800/50" style="border-color: #2d2c31;">
-                                                    <td class="px-2.5 py-2.5 align-middle h-32 text-center first:pl-4 last:pr-4" colspan="7" style="color: #9ca3af;">
+                                                    <td class="px-2.5 py-2.5 align-middle h-32 text-center first:pl-4 last:pr-4 data-table-empty" colspan="7" style="color: #9ca3af;">
                                                         No transactions yet.
                                                     </td>
                                                 </tr>

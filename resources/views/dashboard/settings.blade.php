@@ -66,7 +66,7 @@
                                     <dt class="text-sm font-medium leading-6" style="color: #9ca3af;">Store Credit</dt>
                                     <dd class="flex-none w-full mt-2">
                                         <span class="text-3xl font-semibold leading-10 tracking-tight text-white">{{ number_format($walletBalance, 2, ',', ' ') }}</span>
-                                        <span class="pl-1 text-sm font-medium" style="color: #9ca3af;">DZD</span>
+                                        <span class="pl-1 text-sm font-medium" style="color: #9ca3af;">DA</span>
                                     </dd>
                                 </div>
                                 <div class="flex items-center px-4 sm:px-6 py-3 border-t sm:rounded-b-xl" style="border-color: #2d2c31; background-color: rgba(27, 26, 30, 0.2);">
@@ -93,7 +93,7 @@
                                         <img src="https://cdn.gameboost.com/static/coins/coin-md.webp" alt="Coins" class="mr-1 h-7">
                                         <div class="flex items-baseline gap-x-1">
                                             <span class="text-3xl font-semibold leading-10 tracking-tight text-white">0</span>
-                                            <span class="text-sm font-medium" style="color: #9ca3af;"> ≈$0.00</span>
+                                            <span class="text-sm font-medium" style="color: #9ca3af;"> â‰ˆ$0.00</span>
                                         </div>
                                     </dd>
                                 </div>
@@ -181,7 +181,7 @@
                                                 <div class="flex flex-col flex-1 min-w-0 ml-4">
                                                     <span class="items-center font-medium truncate font-display sm:flex text-white">
                                                         {{ $session['platform'] }}
-                                                        <span class="sm:px-1.5 px-0.5 text-gray-400">·</span> {{ $session['browser'] }}
+                                                        <span class="sm:px-1.5 px-0.5 text-gray-400">Â·</span> {{ $session['browser'] }}
                                                         @if($session['is_current'])
                                                         <span class="inline-flex items-center font-medium ring-1 ring-inset px-2 py-1 text-xs rounded-md ml-1 font-sans sm:ml-2 bg-red-600/20 text-red-400 border-red-500/30">
                                                             <svg class="-ml-0.5 mr-1 h-2 w-2 shrink-0" fill="currentColor" viewBox="0 0 8 8">
@@ -193,7 +193,7 @@
                                                     </span>
                                                     <span class="sm:flex items-center truncate flex-shrink-0 text-sm text-gray-400 gap-x-1.5">
                                                         <span class="session-ip" style="display: none;">{{ $session['ip_address'] }}</span>
-                                                        <span class="text-gray-400">·</span> {{ $session['last_active'] }}
+                                                        <span class="text-gray-400">Â·</span> {{ $session['last_active'] }}
                                                     </span>
                                                 </div>
                                             </div>

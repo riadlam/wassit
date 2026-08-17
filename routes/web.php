@@ -7,6 +7,7 @@ use App\Http\Controllers\GameController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PartnerController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\WithdrawalController;
 
 // Broadcasting authentication routes (must be first, before any catch-all routes)
 Broadcast::routes(['middleware' => ['web', 'auth']]);
@@ -20,17 +21,16 @@ Route::get('/locale/{locale}', function ($locale) {
 })->name('locale.switch');
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::view('/privacy-policy', 'privacy-policy')->name('privacy-policy');
+Route::view('/terms-of-service', 'terms-of-service')->name('terms-of-service');
 Route::get('/games/{slug}', [GameController::class, 'show'])->name('games.show');
 Route::get('/apply', [PartnerController::class, 'apply'])->name('partner.apply');
 Route::post('/apply', [PartnerController::class, 'submitApplication'])->name('partner.apply.submit');
 
-// Admin actions via Telegram buttons (token-protected)
-Route::get('/partner/applications/{applicationId}/approve', [PartnerController::class, 'approveApplication'])->name('partner.application.approve');
-Route::get('/partner/applications/{applicationId}/reject', [PartnerController::class, 'rejectApplication'])->name('partner.application.reject');
-
 // Telegram webhook for inline keyboard callbacks (no CSRF)
 Route::post('/telegram/webhook', [PartnerController::class, 'telegramWebhook'])
     ->name('telegram.webhook')
+    ->middleware('throttle:30,1')
     ->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
 
 // Authentication Routes
@@ -63,6 +63,9 @@ Route::prefix('account')->name('account.')->middleware('auth')->group(function (
     
     // Seller-only routes
     Route::middleware(\App\Http\Middleware\EnsureUserIsSeller::class)->group(function () {
+        Route::post('/wallet/withdrawals', [WithdrawalController::class, 'store'])
+            ->middleware('throttle:5,1')
+            ->name('wallet.withdrawals.store');
         Route::get('/listed-accounts', [DashboardController::class, 'listedAccounts'])->name('listed-accounts');
         Route::get('/listed-accounts/create', [DashboardController::class, 'createAccount'])->name('listed-accounts.create');
         Route::post('/listed-accounts', [DashboardController::class, 'storeAccount'])->name('listed-accounts.store');

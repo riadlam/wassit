@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Game;
+use App\Models\SuperDiscountOffer;
 use Illuminate\Http\Request;
 
 class HomeController extends Controller
@@ -10,20 +11,31 @@ class HomeController extends Controller
     public function index()
     {
         // Get MLBB first if it exists
-        $mlbbGame = Game::where('slug', 'mlbb')
+        $mlbbGame = Game::query()
+            ->where('slug', 'mlbb')
             ->withCount(['accounts' => function($query) {
                 $query->where('status', 'available');
             }])
             ->first();
         
-        // Get 7 more random games (excluding MLBB)
-        $otherGames = Game::where('slug', '!=', 'mlbb')
+        // Get 7 more random games (excluding MLBB). Inactive games stay in the
+        // grid as "Coming Soon" cards, so active ones and games that have their
+        // own card artwork are surfaced first.
+        $artworkSlugs = array_keys(config('game_artwork', []));
+
+        $otherGames = Game::query()
+            ->where('slug', '!=', 'mlbb')
             ->withCount(['accounts' => function($query) {
                 $query->where('status', 'available');
             }])
             ->inRandomOrder()
-            ->limit(7)
-            ->get();
+            ->get()
+            ->sortByDesc(fn($game) => [
+                (int) $game->is_active,
+                (int) in_array($game->slug, $artworkSlugs, true),
+            ])
+            ->values()
+            ->take(7);
         
         // Combine: MLBB first, then 7 random games, total 8
         $games = collect();
@@ -31,6 +43,11 @@ class HomeController extends Controller
             $games->push($mlbbGame);
         }
         $games = $games->merge($otherGames)->take(8);
+
+        $superDiscountOffers = SuperDiscountOffer::query()
+            ->forHomepage()
+            ->with(['account.game'])
+            ->get();
         
         // Dummy slider data
         $slides = [
@@ -59,7 +76,8 @@ class HomeController extends Controller
         
         return view('home', [
             'games' => $games,
-            'slides' => $slides
+            'slides' => $slides,
+            'superDiscountOffers' => $superDiscountOffers,
         ]);
     }
 }

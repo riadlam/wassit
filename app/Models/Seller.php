@@ -18,6 +18,12 @@ class Seller extends Model
         'wallet',
     ];
 
+    protected $casts = [
+        'verified' => 'boolean',
+        'wallet' => 'decimal:2',
+        'rating' => 'float',
+    ];
+
     public $incrementing = false;
     protected $keyType = 'int';
 
@@ -59,5 +65,10 @@ class Seller extends Model
     public function conversations(): HasMany
     {
         return $this->hasMany(Conversation::class, 'seller_id');
+    }
+
+    public function withdrawals(): HasMany
+    {
+        return $this->hasMany(Withdrawal::class, 'seller_id');
     }
 }

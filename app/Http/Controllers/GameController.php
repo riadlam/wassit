@@ -181,7 +181,7 @@ class GameController extends Controller
 
     public function show(Request $request, $slug)
     {
-        $game = Game::where('slug', $slug)->firstOrFail();
+        $game = Game::where('slug', $slug)->where('is_active', true)->firstOrFail();
         
         // Build query with Spatie Query Builder
         // Check if there are filter parameters in the request

@@ -112,15 +112,22 @@ class AuthController extends Controller
     /**
      * Redirect the user to the Google authentication page.
      */
-    public function redirectToGoogle()
+    public function redirectToGoogle(Request $request)
     {
+        $destination = $this->resolveRedirectDestination(
+            $request,
+            $request->query('redirect') ?: url()->previous()
+        );
+
+        $request->session()->put('url.intended', $destination);
+
         return Socialite::driver('google')->redirect();
     }
 
     /**
      * Obtain the user information from Google.
      */
-    public function handleGoogleCallback()
+    public function handleGoogleCallback(Request $request)
     {
         try {
             $googleUser = Socialite::driver('google')->user();
@@ -143,11 +150,51 @@ class AuthController extends Controller
                 
                 Auth::login($user);
             }
-            
-            return redirect()->route('home');
+
+            $request->session()->regenerate();
+
+            return redirect()->intended(route('home'));
         } catch (\Exception $e) {
             \Log::error('Google OAuth Error: ' . $e->getMessage());
-            return redirect()->route('home')->with('error', 'Unable to login with Google. Please try again.');
+
+            $destination = $request->session()->pull('url.intended', route('home'));
+
+            return redirect()->to($destination)->with('error', 'Unable to login with Google. Please try again.');
         }
+    }
+
+    /**
+     * Only allow redirects within this website.
+     */
+    private function resolveRedirectDestination(Request $request, ?string $destination): string
+    {
+        if (!$destination) {
+            return route('home');
+        }
+
+        if (
+            str_starts_with($destination, '/')
+            && !str_starts_with($destination, '//')
+            && !str_contains($destination, '\\')
+        ) {
+            return $destination;
+        }
+
+        $target = parse_url($destination);
+
+        if ($target === false || empty($target['host']) || strcasecmp($target['host'], $request->getHost()) !== 0) {
+            return route('home');
+        }
+
+        $path = $target['path'] ?? '/';
+
+        if (str_contains($path, '\\')) {
+            return route('home');
+        }
+
+        $query = isset($target['query']) ? '?' . $target['query'] : '';
+        $fragment = isset($target['fragment']) ? '#' . $target['fragment'] : '';
+
+        return $path . $query . $fragment;
     }
 }

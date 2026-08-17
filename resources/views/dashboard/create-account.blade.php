@@ -193,10 +193,10 @@
                                         <!-- Price -->
                                         <div>
                                             <label for="price_dzd" class="block text-sm font-medium text-gray-300 mb-2">
-                                                Price (DZD) <span class="text-red-500">*</span>
+                                                Price (DA) <span class="text-red-500">*</span>
                                             </label>
                                             <div class="relative">
-                                                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">DZD</span>
+                                                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">DA</span>
                                                 <input 
                                                     type="number" 
                                                     id="price_dzd" 

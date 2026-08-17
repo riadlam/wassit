@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\SellerApplication;
+use App\Services\Admin\SellerApplicationService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Http;
@@ -11,6 +12,11 @@ use Illuminate\Support\Facades\Log;
 
 class PartnerController extends Controller
 {
+    public function __construct(
+        protected SellerApplicationService $sellerApplicationService
+    ) {
+    }
+
     public function apply()
     {
         // Allow non-logged in users to see the page (login modal will handle it)
@@ -96,8 +102,12 @@ class PartnerController extends Controller
 
         // Send Telegram notification
         try {
-            $botToken = env('TELEGRAM_BOT_TOKEN', '8489541435:AAF7jQMKYZVuJH9KQ4sf5AWPBFQ3Lj8fu9g');
-            $chatId = env('TELEGRAM_CHAT_ID', '8147422935');
+            $botToken = (string) env('TELEGRAM_BOT_TOKEN', '');
+            $chatId = (string) env('TELEGRAM_CHAT_ID', '');
+
+            if ($botToken === '' || $chatId === '') {
+                throw new \RuntimeException('Telegram notification credentials are not configured.');
+            }
 
             $message = "New Seller Application\n" .
                 "User ID: {$user->id}\n" .
@@ -118,7 +128,6 @@ class PartnerController extends Controller
             $resp = Http::post($apiUrl, [
                 'chat_id' => $chatId,
                 'text' => $message,
-                'parse_mode' => 'HTML',
                 'disable_web_page_preview' => true,
                 'reply_markup' => [
                     'inline_keyboard' => [
@@ -157,17 +166,24 @@ class PartnerController extends Controller
                 $expectedWebhookUrl = route('telegram.webhook');
                 $webhookData = $wh->json('result', []);
                 $currentWebhookUrl = is_array($webhookData) ? (string)($webhookData['url'] ?? '') : '';
-                if ($currentWebhookUrl !== $expectedWebhookUrl) {
+                $configuredWebhookSecret = (string) env('TELEGRAM_WEBHOOK_SECRET', '');
+                if ($configuredWebhookSecret === '') {
+                    Log::error('Telegram setWebhook skipped: missing webhook secret');
+                } else {
                     $setWebhookUrl = "https://api.telegram.org/bot{$botToken}/setWebhook";
-                    $setResp = Http::post($setWebhookUrl, [
+                    $webhookPayload = [
                         'url' => $expectedWebhookUrl,
                         'allowed_updates' => json_encode(['callback_query']),
-                    ]);
+                        'secret_token' => $configuredWebhookSecret,
+                    ];
+                    $setResp = Http::post($setWebhookUrl, $webhookPayload);
                     if (!$setResp->successful()) {
                         Log::error('Telegram setWebhook failed', [
                             'http_status' => $setResp->status(),
                             'body' => $setResp->body(),
                         ]);
+                    } elseif ($currentWebhookUrl !== $expectedWebhookUrl) {
+                        Log::info('Telegram webhook URL updated');
                     }
                 }
             } catch (\Throwable $webhookErr) {
@@ -194,9 +210,25 @@ class PartnerController extends Controller
     public function telegramWebhook(Request $request)
     {
         $botToken = env('TELEGRAM_BOT_TOKEN', '');
-        if (!$botToken) {
-            Log::error('Telegram webhook: missing bot token');
+        $adminTelegramId = (string) env('TELEGRAM_CHAT_ID', '');
+        $webhookSecret = (string) env('TELEGRAM_WEBHOOK_SECRET', '');
+
+        if (!$botToken || !$adminTelegramId) {
+            Log::error('Telegram webhook: missing security configuration');
             return response()->json(['ok' => false], 400);
+        }
+
+        if ($webhookSecret === '') {
+            Log::error('Telegram webhook: missing webhook secret');
+            return response()->json(['ok' => false], 503);
+        }
+
+        if (!hash_equals(
+            $webhookSecret,
+            (string) $request->header('X-Telegram-Bot-Api-Secret-Token', '')
+        )) {
+            Log::warning('Telegram webhook: invalid secret token');
+            return response()->json(['ok' => false], 403);
         }
 
         $update = $request->all();
@@ -208,8 +240,13 @@ class PartnerController extends Controller
         $fromId = $callback['from']['id'] ?? null;
         $message = $callback['message'] ?? null;
         $data = $callback['data'] ?? '';
-        // Admin check disabled to ensure actions work during setup
-        // If you want to restrict, re-enable by comparing $fromId to TELEGRAM_CHAT_ID.
+
+        if (!hash_equals($adminTelegramId, (string) $fromId)) {
+            Log::warning('Telegram webhook: unauthorized callback sender', [
+                'from_id' => $fromId,
+            ]);
+            return response()->json(['ok' => false], 403);
+        }
 
         // Decode callback data (supports legacy JSON and compact formats)
         $action = null;
@@ -257,29 +294,11 @@ class PartnerController extends Controller
 
         try {
             if ($action === 'approve') {
-                // Update user role and create seller
-                $user = \App\Models\User::find($userId);
-                if ($user) {
-                    $user->role = 'seller';
-                    $user->save();
-                    // Seller model uses primary key `id` equal to `users.id`
-                    \App\Models\Seller::firstOrCreate([
-                        'id' => $userId,
-                    ], [
-                        'pfp' => null,
-                        'rating' => 5.0,
-                        'total_sales' => 0,
-                        'bio' => null,
-                        'verified' => false,
-                        'wallet' => 0,
-                    ]);
-                }
-                $application->status = 'approved';
-                $application->save();
+                $this->sellerApplicationService->approve($application);
             } elseif ($action === 'reject') {
-                $application->status = 'rejected';
-                $application->save();
+                $this->sellerApplicationService->reject($application);
             }
+            $application->refresh();
         } catch (\Throwable $t) {
             Log::error('Telegram webhook: approval/rejection exception', [
                 'message' => $t->getMessage(),
@@ -317,7 +336,6 @@ class PartnerController extends Controller
                     'chat_id' => $chatId,
                     'message_id' => (int)$messageId,
                     'text' => $newText,
-                    'parse_mode' => 'HTML',
                     'disable_web_page_preview' => true,
                 ]);
                 if (!$editResp->successful()) {
@@ -352,62 +370,7 @@ class PartnerController extends Controller
                 'message' => $t->getMessage(),
             ]);
         }
-
         return response()->json(['ok' => true]);
-    }
-    public function approveApplication(Request $request, $applicationId)
-    {
-        $token = $request->query('token');
-        $userId = (int)$request->query('userId');
-        if ($token !== env('ADMIN_ACTION_TOKEN', 'local-dev-token')) {
-            return response('Forbidden', 403);
-        }
-
-        $application = SellerApplication::findOrFail($applicationId);
-        if ($application->user_id !== $userId) {
-            return response('Invalid application', 400);
-        }
-
-        // Update user role to seller and create seller row
-        $user = \App\Models\User::findOrFail($userId);
-        $user->role = 'seller';
-        $user->save();
-
-        // Create seller if not exists. Seller PK is users.id.
-        $seller = \App\Models\Seller::firstOrCreate([
-            'id' => $userId,
-        ], [
-            'pfp' => null,
-            'rating' => 0,
-            'total_sales' => 0,
-            'bio' => null,
-            'verified' => false,
-            'wallet' => 0,
-        ]);
-
-        $application->status = 'approved';
-        $application->save();
-
-        return response('Approved', 200);
-    }
-
-    public function rejectApplication(Request $request, $applicationId)
-    {
-        $token = $request->query('token');
-        $userId = (int)$request->query('userId');
-        if ($token !== env('ADMIN_ACTION_TOKEN', 'local-dev-token')) {
-            return response('Forbidden', 403);
-        }
-
-        $application = SellerApplication::findOrFail($applicationId);
-        if ($application->user_id !== $userId) {
-            return response('Invalid application', 400);
-        }
-
-        $application->status = 'rejected';
-        $application->save();
-
-        return response('Rejected', 200);
     }
 }
 

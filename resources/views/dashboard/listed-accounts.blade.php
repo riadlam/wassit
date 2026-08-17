@@ -112,7 +112,7 @@
                         <!-- Table -->
                         <div class="-mx-4 sm:-mx-6 lg:rounded-md lg:-mx-0 border overflow-hidden" style="background-color: #0e1015; border-color: #2d2c31;">
                             <div class="w-full overflow-auto">
-                                <table class="w-full caption-bottom text-sm">
+                                <table class="w-full caption-bottom text-sm data-table data-table--wide">
                                     <thead class="overflow-clip">
                                         <tr class="border-b transition-colors" style="border-color: #2d2c31; color: #9ca3af;">
                                             <th class="h-10 px-2.5 text-left align-middle font-medium first:pl-4 first:rounded-tl-md last:rounded-tr-md" style="background-color: rgba(27, 26, 30, 0.5);">
@@ -146,18 +146,18 @@
                                     <tbody>
                                         @forelse($accounts as $account)
                                             <tr class="border-b transition-colors hover:bg-gray-800/30" style="border-color: #2d2c31;">
-                                                <td class="p-2.5 align-middle first:pl-4">
+                                                <td class="p-2.5 align-middle first:pl-4" data-label="ID">
                                                     <div class="text-white text-sm">#{{ $account->id }}</div>
                                                 </td>
-                                                <td class="p-2.5 align-middle">
+                                                <td class="p-2.5 align-middle" data-label="Title">
                                                     <div class="text-white text-sm max-w-xs truncate" title="{{ $account->title }}">
                                                         {{ $account->title }}
                                                     </div>
                                                 </td>
-                                                <td class="p-2.5 align-middle">
+                                                <td class="p-2.5 align-middle" data-label="Game">
                                                     <div class="text-gray-400 text-sm">{{ $account->game->name ?? 'N/A' }}</div>
                                                 </td>
-                                                <td class="p-2.5 align-middle">
+                                                <td class="p-2.5 align-middle" data-label="Status">
                                                     @if($account->status === 'available')
                                                         <span class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full" style="background-color: rgba(34, 197, 94, 0.1); color: #22c55e;">
                                                             Available
@@ -180,13 +180,13 @@
                                                         </span>
                                                     @endif
                                                 </td>
-                                                <td class="p-2.5 align-middle">
-                                                    <div class="text-white text-sm text-right">{{ number_format($account->price_dzd, 0, '.', '') }} DZD</div>
+                                                <td class="p-2.5 align-middle" data-label="Price">
+                                                    <div class="text-white text-sm text-right">{{ number_format($account->price_dzd, 0, '.', '') }} DA</div>
                                                 </td>
-                                                <td class="p-2.5 align-middle">
+                                                <td class="p-2.5 align-middle" data-label="Created">
                                                     <div class="text-gray-400 text-sm">{{ $account->created_at->diffForHumans() }}</div>
                                                 </td>
-                                                <td class="p-2.5 align-middle">
+                                                <td class="p-2.5 align-middle" data-label="Actions">
                                                     <div class="flex items-center justify-end gap-2">
                                                         <!-- Edit Button -->
                                                         <a href="{{ route('account.listed-accounts.edit', $account->id) }}" class="inline-flex items-center justify-center transition-colors focus:outline focus:outline-offset-2 focus-visible:outline outline-none disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden font-medium active:translate-y-px whitespace-nowrap py-1.5 px-2 text-xs rounded-md hover:bg-blue-600/20 text-blue-400 hover:text-blue-300" style="border: 1px solid rgba(59, 130, 246, 0.3);" title="Edit">
@@ -228,7 +228,7 @@
                                             </tr>
                                         @empty
                                             <tr>
-                                                <td colspan="7" class="p-12 text-center">
+                                                <td colspan="7" class="p-12 text-center data-table-empty">
                                                     <div class="flex flex-col items-center justify-center">
                                                         <i class="fa-solid fa-inbox text-4xl text-gray-500 mb-4"></i>
                                                         <p class="text-gray-400 text-lg">No accounts listed yet</p>
@@ -375,6 +375,14 @@
         function showToast(message, type = 'success') {
             const container = document.getElementById('toast-container');
             if (!container) return;
+
+            const safeMessage = String(message ?? '').replace(/[&<>"']/g, (character) => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;',
+            })[character]);
             
             const toastId = 'toast-' + Date.now();
             
@@ -412,7 +420,7 @@
                             </div>
                         </div>
                         <div class="ml-3 w-0 flex-1">
-                            <p class="text-sm font-medium text-white">${message}</p>
+                            <p class="text-sm font-medium text-white">${safeMessage}</p>
                         </div>
                         <div class="ml-4 flex-shrink-0 flex">
                             <button @click="show = false; setTimeout(() => { const el = document.getElementById('${toastId}'); if (el) el.remove(); }, 300)" class="inline-flex rounded-md text-gray-400 hover:text-gray-300 focus:outline-none transition-colors">

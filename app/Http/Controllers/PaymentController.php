@@ -79,12 +79,12 @@ class PaymentController extends Controller
             }
 
             $baseAmount = (float) $order->amount_dzd;
-            $processingFee = ceil($baseAmount * 0.039);
+            $processingFee = ceil($baseAmount * ((float) config('payments.processor_fee_percent') / 100));
             $totalAmount = $baseAmount + $processingFee;
             if ($totalAmount < 75) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Minimum payable amount is 75 DZD.',
+                    'message' => 'Minimum payable amount is 75 DA.',
                 ], 400);
             }
 

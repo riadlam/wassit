@@ -410,7 +410,7 @@ if ($seller && !empty($seller->pfp)) {
                         
                         <!-- Content -->
                         <div class="px-0 sm:px-6 pt-0">
-                            <div class="grid grid-cols-2 lg:grid-cols-3">
+                            <div class="account-data-grid grid grid-cols-2 lg:grid-cols-3">
                                 <!-- Description -->
                                 <div class="px-4 py-6 sm:px-0 sm:col-span-full col-span-full">
                                     <dt class="text-sm font-medium capitalize text-white mb-1">{{ __('messages.description') }}</dt>
@@ -521,15 +521,19 @@ if ($seller && !empty($seller->pfp)) {
                         
                         <!-- Price Section -->
                         <div class="mb-6 pb-6 border-b" style="border-color: #2d2c31;">
+                            @if(!empty($discountOffer))
+                                <div class="flex items-center gap-2 mb-2">
+                                    <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold text-white" style="background: linear-gradient(135deg, #ef4444, #b91c1c);">
+                                        {{ __('messages.super_discount_off', ['percent' => $discountOffer->discount_percentage]) }}
+                                    </span>
+                                    <span class="text-sm text-gray-500 line-through">{{ number_format($account->price_dzd, 0, '.', '') }} DA</span>
+                                </div>
+                            @endif
                             <div class="flex items-baseline gap-2 mb-2">
                                 <span class="text-3xl font-bold text-white">
-                                    {{ number_format($account->price_dzd, 0, '.', '') }}
+                                    {{ number_format($displayPrice ?? $account->price_dzd, 0, '.', '') }}
                                 </span>
-                                <span class="text-sm font-semibold text-gray-400">DZD</span>
-                            </div>
-                            <div class="flex items-center gap-2 text-sm text-gray-400">
-                                <i class="fa-solid fa-coins text-yellow-500"></i>
-                                <span>{{ __('messages.cashback_coins') }}</span>
+                                <span class="text-sm font-semibold text-gray-400">DA</span>
                             </div>
                         </div>
                         
@@ -573,6 +577,7 @@ if ($seller && !empty($seller->pfp)) {
                         @endguest
                     </div>
                     
+                    @if(false)
                     <!-- Trustpilot Review Card -->
                     <div class="relative rounded-lg flex flex-col items-center justify-center mt-4 overflow-hidden" style="background-color: rgba(1, 183, 123, 0.05); border: 1px solid rgba(1, 183, 123, 0.1); padding: 20px 1rem; margin-top: 1rem; backdrop-filter: blur(16px);">
                         <!-- Gradient Overlay -->
@@ -607,6 +612,7 @@ if ($seller && !empty($seller->pfp)) {
                             </div>
                         </div>
                     </div>
+                    @endif
                     
                     <!-- Seller Info Card -->
                     <div class="rounded-xl mt-4 overflow-hidden" style="background-color: #0e1015; border: 1px solid #2d2c31;">
@@ -1087,6 +1093,15 @@ if ($seller && !empty($seller->pfp)) {
     <!-- GLightbox CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/glightbox/dist/css/glightbox.min.css" />
     <style>
+        .account-data-grid dt {
+            color: #9ca3af !important;
+        }
+
+        .account-data-grid dd {
+            color: #f3f4f6 !important;
+            font-weight: 600;
+        }
+
         .verified-badge {
             position: relative;
             transition: all 0.3s ease;

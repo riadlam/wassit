@@ -50,13 +50,15 @@ use Illuminate\Support\Facades\Storage;
             </div>
         </div>
         
+        @include('components.super-discount-banner', ['superDiscountOffers' => $superDiscountOffers])
+
         <!-- Game Grid -->
         @include('components.game-grid', ['games' => $games])
         
         <!-- FAQ Section -->
         <div class="relative w-full" style="padding-top: 4rem; padding-bottom: 4rem;">
             <!-- Background Image and Overlay - Full Width -->
-            <div class="absolute inset-0 z-0 pointer-events-none" style="left: 0; right: 0; width: 100vw; margin-left: calc(50% - 50vw);">
+            <div class="absolute inset-0 z-0 pointer-events-none">
                 <div class="absolute inset-0 bg-cover bg-center bg-no-repeat" style="background-image: url('{{ asset('storage/game_cards_images/ml.webp') }}');"></div>
                 <div class="absolute inset-0" style="background-color: rgba(15, 17, 27, 0.4);"></div>
             </div>
