@@ -32,7 +32,8 @@ class SuperDiscountOfferForm
                                     $inner->where('status', 'available');
 
                                     if ($currentId) {
-                                        $inner->orWhereKey($currentId);
+                                        // Keep the currently linked account selectable even if it is no longer available.
+                                        $inner->orWhere('accounts_for_sale.id', $currentId);
                                     }
                                 })
                                 ->orderByDesc('id');
