@@ -2541,11 +2541,11 @@
                 },
                 normalizeSkinTags(tags) {
                     return (tags || [])
-                        .filter((tag) => tag?.image_url)
                         .map((tag) => ({
                             name: tag.name || '',
-                            image_url: this.proxiedUrl(tag.image_url),
-                        }));
+                            image_url: tag.image_url ? this.proxiedUrl(tag.image_url) : '',
+                        }))
+                        .filter((tag) => tag.image_url);
                 },
                 normalizeSkin(skin) {
                     return {

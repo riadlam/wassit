@@ -53,7 +53,7 @@ class MlbbPlaygroundController extends Controller
                 return ['hero' => $local];
             }
 
-            return ['hero' => $this->fandom->getHeroSkins($heroName)];
+            return ['hero' => $this->skinCatalog->enrichHeroPayload($this->fandom->getHeroSkins($heroName))];
         });
     }
 
@@ -84,7 +84,14 @@ class MlbbPlaygroundController extends Controller
             $local = $this->skinCatalog->sampleSkins($count);
             if ($local !== []) {
                 return [
-                    'skins' => $local,
+                    'skins' => array_map(fn (array $skin) => [
+                        ...$skin,
+                        'tags' => $this->skinCatalog->resolveSkinTags(
+                            $skin['tags'] ?? [],
+                            $skin['rarity'] ?? null,
+                            ! empty($skin['painted'])
+                        ),
+                    ], $local),
                     'source' => 'local',
                 ];
             }

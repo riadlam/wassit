@@ -224,7 +224,11 @@ class MlbbSkinSyncService
                 if ($tagName === '') {
                     continue;
                 }
-                $tags[] = ['name' => $tagName];
+                $tagImage = app(MlbbSkinCatalogService::class)->resolveTagImageUrl($tagName);
+                $tags[] = [
+                    'name' => $tagName,
+                    'image_url' => $tagImage,
+                ];
                 $this->ensureBadge($tagName, (string) ($tag['image_url'] ?? ''), $force);
             }
 
