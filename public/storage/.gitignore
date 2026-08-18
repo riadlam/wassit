@@ -1,2 +1,8 @@
 *
 !.gitignore
+!mlbb_skins/
+!mlbb_skins/**
+!mlbb_skin_tags/
+!mlbb_skin_tags/**
+!mlbb_skins_rank/
+!mlbb_skins_rank/**
