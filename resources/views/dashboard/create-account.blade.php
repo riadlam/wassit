@@ -1646,11 +1646,19 @@
                     const skinsData = this.safePicker('accountSkinsPicker');
                     const recallsData = this.safePicker('accountRecallsPicker');
                     const emotesData = this.safePicker('accountEmotesPicker');
+                    const existingDraft = readCreateDraft();
+                    let selectedSkins = existingDraft?.selectedSkins || [];
+                    if (skinsData?.initialized) {
+                        selectedSkins = skinsData.selectedSkins || [];
+                    } else if (skinsData?.selectedSkins?.length) {
+                        selectedSkins = skinsData.selectedSkins;
+                    }
                     writeCreateDraft({
                         step: this.currentStep,
                         selectedGameId: this.selectedGameId,
                         fields,
-                        selectedSkins: skinsData?.selectedSkins || [],
+                        selectedSkins,
+                        selectedSkinKeys: selectedSkins.map((item) => item.key).filter(Boolean),
                         selectedRecalls: recallsData?.selectedItems || [],
                         selectedEmotes: emotesData?.selectedItems || [],
                         selectedRecallKeys: recallsData?.selected || [],
@@ -1846,6 +1854,8 @@
                 skinIdMap: {},
                 skinById: {},
                 selectedSkins: [],
+                pendingSkinIds: [],
+                initialized: false,
                 loadingList: false,
                 loadingDetail: false,
                 listError: '',
@@ -1853,15 +1863,46 @@
                 detailRequestId: 0,
                 oldSelectedIds: @json($oldHighlightedSkinIds),
                 placeholderAvatar: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96"><rect width="96" height="96" fill="%231b1a1e"/><text x="48" y="54" text-anchor="middle" fill="%2371717a" font-size="14">MLBB</text></svg>',
-                async init() {
-                    await Promise.all([this.loadHeroes(), this.loadSkinIdMap()]);
-                    const draft = readCreateDraft();
-                    if (draft?.selectedSkins?.length) {
-                        this.selectedSkins = draft.selectedSkins;
-                    } else {
-                        this.hydrateOldSelections();
-                    }
+                init() {
+                    this.restoreSelections();
                     this.updateHiddenInputs();
+                    this.$watch('currentStep', (step) => {
+                        if (step === 4) {
+                            if (!this.selectedSkins.length) {
+                                this.restoreSelections();
+                            }
+                            this.enrichSelectedSkins();
+                            this.updateHiddenInputs();
+                        }
+                    });
+                    Promise.all([this.loadHeroes(), this.loadSkinIdMap()])
+                        .then(() => {
+                            this.enrichSelectedSkins();
+                            this.updateHiddenInputs();
+                        })
+                        .finally(() => {
+                            this.initialized = true;
+                        });
+                },
+                restoreSelections() {
+                    const draft = readCreateDraft();
+                    const draftSkins = draft?.selectedSkins?.length
+                        ? draft.selectedSkins
+                        : null;
+                    if (draftSkins) {
+                        this.selectedSkins = draftSkins.map((item) => ({ ...item }));
+                        return;
+                    }
+
+                    const raw = String(document.getElementById('highlighted_skins_input')?.value || '').trim();
+                    if (/^\d+(\s*,\s*\d+)*$/.test(raw)) {
+                        this.pendingSkinIds = raw.split(',').map((value) => Number(value.trim())).filter((value) => value > 0);
+                        return;
+                    }
+
+                    if ((this.oldSelectedIds || []).length) {
+                        this.pendingSkinIds = [...this.oldSelectedIds];
+                    }
                 },
                 get filteredHeroes() {
                     const needle = this.searchQuery.trim().toLowerCase();
@@ -1908,7 +1949,7 @@
                     }
                 },
                 hydrateOldSelections() {
-                    this.selectedSkins = (this.oldSelectedIds || [])
+                    this.selectedSkins = (this.pendingSkinIds?.length ? this.pendingSkinIds : (this.oldSelectedIds || []))
                         .map((id) => {
                             const info = this.skinById[Number(id)];
                             if (!info) return null;
@@ -1920,6 +1961,33 @@
                             };
                         })
                         .filter(Boolean);
+                    this.pendingSkinIds = [];
+                },
+                enrichSelectedSkins() {
+                    if (this.pendingSkinIds.length && Object.keys(this.skinById).length) {
+                        this.hydrateOldSelections();
+                    }
+
+                    this.selectedSkins = (this.selectedSkins || []).map((item) => ({
+                        ...item,
+                        id: item.id ?? this.lookupSkinId(item.hero, item.name),
+                    }));
+
+                    for (const item of this.selectedSkins) {
+                        if (item.image_url || !item.hero || !item.name) {
+                            continue;
+                        }
+                        const cached = this.skinsCache[item.hero];
+                        if (!cached) {
+                            continue;
+                        }
+                        const match = cached.find((skin) => this.skinKey(item.hero, skin.name) === item.key);
+                        if (match) {
+                            item.image_url = match.image_url || match.thumbnail_url || item.image_url;
+                            item.rarity = item.rarity || match.rarity || 'Skin';
+                            item.tags = item.tags?.length ? item.tags : (match.tags || []);
+                        }
+                    }
                 },
                 skinKey(heroName, skinName) {
                     return `${String(heroName).toLowerCase().trim()}||${String(skinName).toLowerCase().trim()}`;
@@ -1957,6 +2025,8 @@
                     const cached = this.skinsCache[heroItem.name];
                     if (cached) {
                         this.heroSkins = cached;
+                        this.enrichSelectedSkins();
+                        this.updateHiddenInputs();
                         return;
                     }
                     const requestId = ++this.detailRequestId;
@@ -1970,6 +2040,8 @@
                         const skins = this.visibleSkins(payload.hero?.skins || []);
                         this.skinsCache[heroItem.name] = skins;
                         this.heroSkins = skins;
+                        this.enrichSelectedSkins();
+                        this.updateHiddenInputs();
                     } catch (error) {
                         if (requestId === this.detailRequestId) {
                             this.detailError = error.message;
