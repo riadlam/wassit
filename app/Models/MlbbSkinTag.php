@@ -15,10 +15,10 @@ class MlbbSkinTag extends Model
 
     public function publicUrl(): ?string
     {
-        if (! $this->image_path) {
+        if (! $this->image_path || ! is_file(storage_path('app/public/'.$this->image_path))) {
             return null;
         }
 
-        return asset('storage/'.$this->image_path);
+        return '/storage/'.ltrim($this->image_path, '/');
     }
 }

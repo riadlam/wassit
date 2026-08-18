@@ -18,15 +18,20 @@ class MlbbSkinCatalogService
             return null;
         }
 
+        $slug = Str::slug($heroName);
+        $lower = mb_strtolower($heroName);
+
         $rows = MlbbSkin::query()
-            ->where(function ($query) use ($heroName) {
-                $query->where('hero', $heroName)
-                    ->orWhere('hero_slug', Str::slug($heroName));
+            ->where(function ($query) use ($heroName, $slug, $lower) {
+                $query->where('hero_slug', $slug)
+                    ->orWhereRaw('LOWER(hero) = ?', [$lower])
+                    ->orWhere('hero', $heroName);
             })
             ->whereNotNull('image_path')
             ->orderBy('sort_order')
             ->orderBy('id')
-            ->get();
+            ->get()
+            ->filter(fn (MlbbSkin $row) => $row->imageUrl() !== null);
 
         if ($rows->isEmpty()) {
             return null;
@@ -51,8 +56,10 @@ class MlbbSkinCatalogService
         $rows = MlbbSkin::query()
             ->whereNotNull('image_path')
             ->inRandomOrder()
-            ->limit($count)
-            ->get();
+            ->limit($count * 3)
+            ->get()
+            ->filter(fn (MlbbSkin $row) => $row->imageUrl() !== null)
+            ->take($count);
 
         return $rows->map(fn (MlbbSkin $row) => $this->skinPayload($row))->values()->all();
     }

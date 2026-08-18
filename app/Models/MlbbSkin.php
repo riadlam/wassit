@@ -35,17 +35,35 @@ class MlbbSkin extends Model
         ];
     }
 
-    public function imageUrl(): ?string
+    public function hasPublicImage(): bool
     {
         $path = $this->image_path ?: $this->thumbnail_path;
+        if (! $path) {
+            return false;
+        }
 
-        return $path ? asset('storage/'.$path) : null;
+        return is_file(storage_path('app/public/'.$path));
+    }
+
+    public function imageUrl(): ?string
+    {
+        if ($this->hasPublicImage()) {
+            return '/storage/'.ltrim((string) ($this->image_path ?: $this->thumbnail_path), '/');
+        }
+
+        $remote = trim((string) ($this->source_image_url ?? ''));
+
+        return $remote !== '' ? $remote : null;
     }
 
     public function thumbnailUrl(): ?string
     {
-        $path = $this->thumbnail_path ?: $this->image_path;
+        if ($this->hasPublicImage()) {
+            return '/storage/'.ltrim((string) ($this->thumbnail_path ?: $this->image_path), '/');
+        }
 
-        return $path ? asset('storage/'.$path) : null;
+        $remote = trim((string) ($this->source_image_url ?? ''));
+
+        return $remote !== '' ? $remote : null;
     }
 }

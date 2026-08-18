@@ -118,8 +118,33 @@ Route::get('/mlbb/image-proxy', function (\Illuminate\Http\Request $request) {
     }
 
     $url = (string) $request->query('url', '');
+    if ($url === '') {
+        abort(400);
+    }
+
+    if (str_starts_with($url, '/storage/')) {
+        $localPath = storage_path('app/public/'.ltrim(substr($url, strlen('/storage/')), '/'));
+        if (is_file($localPath)) {
+            return response()->file($localPath, [
+                'Cache-Control' => 'public, max-age=86400',
+            ]);
+        }
+        abort(404);
+    }
+
     if (! filter_var($url, FILTER_VALIDATE_URL)) {
         abort(400);
+    }
+
+    $storagePath = (string) (parse_url($url, PHP_URL_PATH) ?: '');
+    if (str_contains($storagePath, '/storage/mlbb_skins/') || str_contains($storagePath, '/storage/mlbb_skin_tags/')) {
+        $relative = ltrim(str_after($storagePath, '/storage/'), '/');
+        $localPath = storage_path('app/public/'.$relative);
+        if (is_file($localPath)) {
+            return response()->file($localPath, [
+                'Cache-Control' => 'public, max-age=86400',
+            ]);
+        }
     }
 
     if (str_contains($url, 'Special:FilePath/')) {

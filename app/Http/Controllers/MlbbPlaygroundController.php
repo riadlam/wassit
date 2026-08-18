@@ -49,7 +49,7 @@ class MlbbPlaygroundController extends Controller
 
         return $this->respond(function () use ($heroName) {
             $local = $this->skinCatalog->heroPayload($heroName);
-            if ($local) {
+            if ($local && ($local['skins_count'] ?? 0) > 0) {
                 return ['hero' => $local];
             }
 

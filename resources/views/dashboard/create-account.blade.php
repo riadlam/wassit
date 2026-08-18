@@ -1937,8 +1937,19 @@
                 skinImage(item) {
                     const url = item?.image_url || item?.thumbnail_url || '';
                     if (!url) return this.placeholderAvatar;
-                    if (url.startsWith('blob:') || url.startsWith('data:') || url.startsWith('/') || url.startsWith(window.location.origin)) {
-                        return url;
+                    if (url.startsWith('blob:') || url.startsWith('data:')) return url;
+                    if (url.startsWith('/')) return url;
+                    try {
+                        const parsed = new URL(url, window.location.origin);
+                        if (parsed.pathname.startsWith('/storage/')) {
+                            return parsed.pathname + parsed.search;
+                        }
+                        if (parsed.origin === window.location.origin) {
+                            return parsed.pathname + parsed.search;
+                        }
+                    } catch (_) {}
+                    if (url.startsWith(window.location.origin)) {
+                        return url.slice(window.location.origin.length) || url;
                     }
                     return @json(route('mlbb.image-proxy')) + '?url=' + encodeURIComponent(url);
                 },
@@ -2506,7 +2517,18 @@
                     if (!url) return '';
                     if (url.startsWith('blob:') || url.startsWith('data:')) return url;
                     if (url.startsWith('/') && !url.startsWith('//')) return url;
-                    if (url.startsWith(window.location.origin)) return url;
+                    try {
+                        const parsed = new URL(url, window.location.origin);
+                        if (parsed.pathname.startsWith('/storage/')) {
+                            return parsed.pathname + parsed.search;
+                        }
+                        if (parsed.origin === window.location.origin) {
+                            return parsed.pathname + parsed.search;
+                        }
+                    } catch (_) {}
+                    if (url.startsWith(window.location.origin)) {
+                        return url.slice(window.location.origin.length) || url;
+                    }
                     return this.imageProxy + '?url=' + encodeURIComponent(url);
                 },
                 rarityClass(rarity) {
