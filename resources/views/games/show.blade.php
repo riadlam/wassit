@@ -1664,8 +1664,8 @@ use Illuminate\Support\Facades\Storage;
 
                                 <!-- Account Image -->
                                 <div style="margin-bottom: 15px;">
-                                    <div class="relative overflow-hidden rounded-lg account-image-hover" style="height: 140px; border: 1px solid #2d2c31;">
-                                        <img src="${escapeHtml(mainImage)}" alt="Account Image" class="object-cover w-full h-full">
+                                    <div class="relative overflow-hidden rounded-lg account-image-hover flex items-center justify-center" style="aspect-ratio: 681 / 1024; width: 100%; border: 1px solid #2d2c31; background-color: #0e1015;">
+                                        <img src="${escapeHtml(mainImage)}" alt="Account Image" class="object-contain w-full h-full">
                                         ${overlayCount > 0 && (hasCover ? galleryCount > 0 : accountImages.length > 1) ? `
                                             <div type="button" class="inline-flex items-center justify-center transition-colors overflow-hidden font-medium whitespace-nowrap py-1.5 px-2 text-xs rounded-md absolute right-2 bottom-2 backdrop-blur-md" style="background-color: rgba(27, 26, 30, 0.8); color: #ffffff; border: 1px solid #2d2c31;">
                                                 <i class="mr-2 fas fa-images"></i> ${overlayCount}+

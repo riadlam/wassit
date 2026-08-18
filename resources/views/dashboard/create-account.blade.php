@@ -635,7 +635,7 @@
                                             <i class="fa-solid fa-eye text-red-600"></i>
                                             View Listing
                                         </h2>
-                                        <p class="text-sm text-gray-400">This poster is saved as the store cover. Gallery photos stay on the account page.</p>
+                                        <p class="text-sm text-gray-400">This poster is saved as the store cover. Gallery photos stay on the account page. Download exports at 1080px width for social posts.</p>
                                     </div>
                                     <div class="flex flex-wrap items-center gap-2">
                                         <button
@@ -1322,15 +1322,19 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            padding-bottom: 0;
+            padding: 0;
             line-height: 1;
             pointer-events: none;
         }
         .lp-price-value {
+            display: inline-block;
             font-family: "Bebas Neue", "Montserrat", Impact, sans-serif;
             font-size: 50px;
             font-weight: 400;
             letter-spacing: 0.04em;
+            line-height: 0.92;
+            transform: rotate(-10deg) translateY(-9px);
+            transform-origin: center center;
             background: linear-gradient(180deg, #ff8080 0%, #ef4444 28%, #dc2626 62%, #991b1b 100%);
             -webkit-background-clip: text;
             background-clip: text;
@@ -1490,6 +1494,8 @@
         .listing-poster.is-basic .lp-price-value {
             font-size: 36px;
             letter-spacing: 0.03em;
+            line-height: 0.92;
+            transform: rotate(-10deg) translateY(-8px);
         }
 
     </style>
@@ -1507,6 +1513,10 @@
     <script>
         const CREATE_DRAFT_KEY = 'wasit.createAccount.draft.v1';
         const CREATE_IMAGES_DB = 'wasitCreateAccountImages';
+        const POSTER_WIDTH = 681;
+        const POSTER_HEIGHT = 1024;
+        const POSTER_EXPORT_WIDTH = 1080;
+        const POSTER_EXPORT_SCALE = POSTER_EXPORT_WIDTH / POSTER_WIDTH;
 
         function readCreateDraft() {
             try {
@@ -2746,55 +2756,281 @@
                         reader.readAsDataURL(blob);
                     });
                 },
-                async buildPosterImageDataUrls(posterEl) {
+                async buildPosterImageDataMap(posterEl) {
+                    const map = new Map();
                     const images = [...posterEl.querySelectorAll('img')];
-                    return Promise.all(images.map(async (img) => {
+                    await Promise.all(images.map(async (img) => {
                         const src = img.currentSrc || img.src || '';
-                        if (!src) return '';
-                        if (src.startsWith('data:')) return src;
+                        if (!src || map.has(src)) return;
+                        if (src.startsWith('data:')) {
+                            map.set(src, src);
+                            return;
+                        }
                         try {
                             const response = await fetch(src, { credentials: 'same-origin' });
-                            if (!response.ok) return src;
-                            return await this.blobToDataUrl(await response.blob());
+                            if (!response.ok) {
+                                map.set(src, src);
+                                return;
+                            }
+                            map.set(src, await this.blobToDataUrl(await response.blob()));
                         } catch {
-                            return src;
+                            map.set(src, src);
                         }
                     }));
+                    return map;
                 },
-                bakePosterFrames(posterEl, imageFrames) {
-                    if (!posterEl) return;
-                    posterEl.querySelectorAll('[data-frame-key]').forEach((viewport) => {
-                        const key = viewport.getAttribute('data-frame-key');
-                        const img = viewport.querySelector('img');
-                        const frame = imageFrames?.[key];
-                        if (!img || !frame) return;
-
-                        const vw = viewport.offsetWidth || viewport.clientWidth;
-                        const vh = viewport.offsetHeight || viewport.clientHeight;
-                        const scale = Number(frame.scale) || 1;
-                        const x = Number(frame.x) || 0;
-                        const y = Number(frame.y) || 0;
-                        if (!vw || !vh) return;
-
-                        img.style.transform = 'none';
-                        img.style.position = 'absolute';
-                        img.style.objectFit = 'contain';
-                        img.style.objectPosition = 'center center';
-                        img.style.width = `${vw * scale}px`;
-                        img.style.height = `${vh * scale}px`;
-                        img.style.left = `${((vw - (vw * scale)) / 2) + x}px`;
-                        img.style.top = `${((vh - (vh * scale)) / 2) + y}px`;
-                        img.style.maxWidth = 'none';
-                        img.style.maxHeight = 'none';
-                        img.style.margin = '0';
-                        img.style.willChange = 'auto';
+                stampPosterImageSources(posterEl) {
+                    posterEl.querySelectorAll('img').forEach((img) => {
+                        img.dataset.posterSrc = img.currentSrc || img.src || img.getAttribute('src') || '';
                     });
                 },
-                applyPosterImageDataUrls(posterEl, dataUrls) {
-                    [...posterEl.querySelectorAll('img')].forEach((img, index) => {
-                        if (dataUrls[index]) {
-                            img.src = dataUrls[index];
+                frameViewportBackground(viewport) {
+                    const host = viewport?.closest('.lp-framable') || viewport?.parentElement;
+                    if (!host) return '#111111';
+                    const bg = window.getComputedStyle(host).backgroundColor;
+                    if (!bg || bg === 'transparent' || bg === 'rgba(0, 0, 0, 0)') {
+                        return '#111111';
+                    }
+                    return bg;
+                },
+                loadDecodedImage(src) {
+                    return new Promise((resolve, reject) => {
+                        if (!src) {
+                            reject(new Error('empty image src'));
+                            return;
                         }
+                        const image = new Image();
+                        image.onload = () => resolve(image);
+                        image.onerror = () => reject(new Error('image load failed'));
+                        image.src = src;
+                    });
+                },
+                readFrameState(key, img) {
+                    const stored = this.imageFrames?.[key] || {};
+                    const transform = String(img?.style?.transform || '').trim();
+                    const match = transform.match(/translate\(\s*([-\d.]+)px\s*,\s*([-\d.]+)px\s*\)\s*scale\(\s*([-\d.]+)\s*\)/);
+                    if (match) {
+                        return {
+                            x: parseFloat(match[1]) || 0,
+                            y: parseFloat(match[2]) || 0,
+                            scale: parseFloat(match[3]) || 1,
+                        };
+                    }
+                    return {
+                        x: Number(stored.x) || 0,
+                        y: Number(stored.y) || 0,
+                        scale: Number(stored.scale) || 1,
+                    };
+                },
+                rasterizeFrameImage(sourceImg, vw, vh, frame, background = '#111111') {
+                    const iw = sourceImg.naturalWidth || sourceImg.width;
+                    const ih = sourceImg.naturalHeight || sourceImg.height;
+                    if (!iw || !ih || !vw || !vh) return null;
+
+                    const scale = Number(frame?.scale) || 1;
+                    const tx = Number(frame?.x) || 0;
+                    const ty = Number(frame?.y) || 0;
+                    const cx = vw / 2;
+                    const cy = vh / 2;
+                    const contain = Math.min(vw / iw, vh / ih);
+                    const dw = iw * contain;
+                    const dh = ih * contain;
+                    const dx = (vw - dw) / 2;
+                    const dy = (vh - dh) / 2;
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width = vw;
+                    canvas.height = vh;
+                    const ctx = canvas.getContext('2d');
+                    if (!ctx) return null;
+
+                    ctx.fillStyle = background;
+                    ctx.fillRect(0, 0, vw, vh);
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.rect(0, 0, vw, vh);
+                    ctx.clip();
+                    // CSS: transform: translate(tx, ty) scale(s); transform-origin: center
+                    ctx.translate(cx, cy);
+                    ctx.translate(tx, ty);
+                    ctx.scale(scale, scale);
+                    ctx.translate(-cx, -cy);
+                    ctx.drawImage(sourceImg, dx, dy, dw, dh);
+                    ctx.restore();
+
+                    return canvas.toDataURL('image/png');
+                },
+                flattenCloneFrameImage(img) {
+                    img.style.transform = 'none';
+                    img.style.position = 'absolute';
+                    img.style.inset = '0';
+                    img.style.left = '0';
+                    img.style.top = '0';
+                    img.style.width = '100%';
+                    img.style.height = '100%';
+                    img.style.maxWidth = 'none';
+                    img.style.maxHeight = 'none';
+                    img.style.margin = '0';
+                    img.style.objectFit = 'fill';
+                    img.style.objectPosition = 'center center';
+                    img.style.willChange = 'auto';
+                },
+                async bakePosterFrames(posterEl, imageMap) {
+                    const rasterized = new Map();
+                    for (const viewport of posterEl.querySelectorAll('[data-frame-key]')) {
+                        const key = viewport.getAttribute('data-frame-key');
+                        const img = viewport.querySelector('img');
+                        if (!key || !img) continue;
+
+                        const original = img.dataset.posterSrc || img.currentSrc || img.src || '';
+                        const src = imageMap.get(original) || original;
+                        if (!src) continue;
+
+                        try {
+                            let decoded = null;
+                            try {
+                                decoded = await this.loadDecodedImage(src);
+                            } catch {
+                                if (img.naturalWidth > 0) {
+                                    decoded = img;
+                                }
+                            }
+                            if (!decoded) continue;
+                            const vw = Math.max(1, Math.round(viewport.clientWidth || viewport.offsetWidth));
+                            const vh = Math.max(1, Math.round(viewport.clientHeight || viewport.offsetHeight));
+                            const background = this.frameViewportBackground(viewport);
+                            const frame = this.readFrameState(key, img);
+                            const dataUrl = this.rasterizeFrameImage(decoded, vw, vh, frame, background);
+                            if (dataUrl) {
+                                rasterized.set(key, dataUrl);
+                            }
+                        } catch (error) {
+                            console.warn('Frame bake failed', key, error);
+                        }
+                    }
+                    return rasterized;
+                },
+                applyPosterImageDataMap(posterEl, imageMap) {
+                    posterEl.querySelectorAll('img').forEach((img) => {
+                        if (img.closest('[data-frame-key]')) return;
+                        const original = img.dataset.posterSrc || img.getAttribute('src') || '';
+                        if (original && imageMap.has(original)) {
+                            img.src = imageMap.get(original);
+                        }
+                    });
+                },
+                syncPosterCloneFromLive(live, clone) {
+                    if (!live || !clone) return;
+
+                    const selectors = [
+                        '.lp-skin-name',
+                        '.lp-hero-name',
+                        '.lp-stat-val',
+                        '.lp-stat-lbl',
+                        '.lp-effects-title',
+                        '.lp-recalls-title',
+                        '.lp-price-value',
+                        '.lp-rarity',
+                    ];
+
+                    selectors.forEach((selector) => {
+                        const liveNodes = live.querySelectorAll(selector);
+                        const cloneNodes = clone.querySelectorAll(selector);
+                        liveNodes.forEach((node, index) => {
+                            if (!cloneNodes[index]) return;
+                            cloneNodes[index].textContent = node.textContent;
+                        });
+                    });
+
+                    const liveSkinCards = live.querySelectorAll('.lp-skin');
+                    const cloneSkinCards = clone.querySelectorAll('.lp-skin');
+                    liveSkinCards.forEach((node, index) => {
+                        if (!cloneSkinCards[index]) return;
+                        cloneSkinCards[index].style.cssText = node.style.cssText;
+                        cloneSkinCards[index].className = node.className;
+                    });
+
+                    clone.querySelectorAll('[x-cloak]').forEach((node) => {
+                        node.removeAttribute('x-cloak');
+                        node.style.display = '';
+                    });
+                },
+                hardenPosterTextForExport(clone) {
+                    const view = clone.ownerDocument?.defaultView;
+
+                    clone.querySelectorAll('.lp-skin-meta').forEach((node) => {
+                        node.style.overflow = 'visible';
+                        node.style.zIndex = '5';
+                        node.style.pointerEvents = 'none';
+                    });
+
+                    const tuneLabel = (node, color, minHeight) => {
+                        node.style.overflow = 'visible';
+                        node.style.textOverflow = 'clip';
+                        node.style.whiteSpace = 'nowrap';
+                        node.style.display = 'block';
+                        node.style.width = '100%';
+                        node.style.maxWidth = '100%';
+                        node.style.opacity = '1';
+                        node.style.visibility = 'visible';
+                        node.style.color = color;
+                        node.style.webkitTextFillColor = color;
+                        node.style.lineHeight = '1.2';
+                        node.style.minHeight = minHeight;
+
+                        if (view) {
+                            const fontSize = parseFloat(view.getComputedStyle(node).fontSize) || 0;
+                            if (fontSize > 0 && fontSize < 8) {
+                                node.style.fontSize = '8px';
+                            }
+                        }
+                    };
+
+                    clone.querySelectorAll('.lp-skin-name').forEach((node) => tuneLabel(node, '#5eead4', '11px'));
+                    clone.querySelectorAll('.lp-hero-name').forEach((node) => tuneLabel(node, '#93c5fd', '10px'));
+
+                    clone.querySelectorAll('.lp-skin-tags').forEach((node) => {
+                        node.style.zIndex = '6';
+                    });
+                },
+                preparePosterCloneForExport(clone, { imageMap, rasterized, live }) {
+                    if (!clone) return;
+                    clone.style.transform = 'none';
+                    clone.style.width = `${POSTER_WIDTH}px`;
+                    clone.style.height = `${POSTER_HEIGHT}px`;
+                    clone.classList.remove('is-showing-hint');
+                    clone.querySelectorAll('.lp-move-hint,[data-html2canvas-ignore]').forEach((node) => node.remove());
+
+                    this.applyPosterImageDataMap(clone, imageMap);
+                    rasterized.forEach((dataUrl, key) => {
+                        const viewport = clone.querySelector(`[data-frame-key="${key}"]`);
+                        const img = viewport?.querySelector('img');
+                        if (!img) return;
+                        img.src = dataUrl;
+                        this.flattenCloneFrameImage(img);
+                    });
+
+                    if (live) {
+                        this.syncPosterCloneFromLive(live, clone);
+                    }
+                    this.hardenPosterTextForExport(clone);
+
+                    clone.querySelectorAll('.lp-price-slot').forEach((node) => {
+                        node.style.overflow = 'visible';
+                    });
+                    clone.querySelectorAll('.lp-price-value').forEach((node) => {
+                        node.style.background = 'none';
+                        node.style.backgroundClip = 'border-box';
+                        node.style.webkitBackgroundClip = 'border-box';
+                        node.style.color = '#dc2626';
+                        node.style.webkitTextFillColor = '#dc2626';
+                        node.style.filter = 'none';
+                        node.style.display = 'inline-block';
+                        node.style.lineHeight = '0.92';
+                        node.style.transformOrigin = 'center center';
+                        node.style.transform = node.closest('.listing-poster.is-basic')
+                            ? 'rotate(-10deg) translateY(-8px)'
+                            : 'rotate(-10deg) translateY(-9px)';
                     });
                 },
                 async fetchSampleSkins(count) {
@@ -2984,46 +3220,41 @@
                     while (this.loading && Date.now() - started < 20000) {
                         await new Promise((resolve) => setTimeout(resolve, 200));
                     }
+
+                    this.endFrameDrag();
                     this.dismissFrameHint();
+
                     await this.$nextTick();
                     if (document.fonts?.ready) {
                         await document.fonts.ready;
                     }
                     await this.waitForImages(el);
-                    this.refitPosterFrames();
-                    await this.$nextTick();
-                    await this.waitForImages(el);
 
-                    const imageDataUrls = await this.buildPosterImageDataUrls(el);
-                    const exportFrames = JSON.parse(JSON.stringify(this.imageFrames));
+                    this.stampPosterImageSources(el);
+                    const imageMap = await this.buildPosterImageDataMap(el);
+                    const rasterized = await this.bakePosterFrames(el, imageMap);
 
                     const canvas = await html2canvas(el, {
                         backgroundColor: '#c80000',
-                        width: 681,
-                        height: 1024,
-                        scale: 2,
+                        width: POSTER_WIDTH,
+                        height: POSTER_HEIGHT,
+                        scale: POSTER_EXPORT_SCALE,
                         useCORS: true,
                         allowTaint: false,
                         logging: false,
                         scrollX: 0,
                         scrollY: 0,
+                        imageTimeout: 20000,
                         onclone: (clonedDoc) => {
-                            const clone = clonedDoc.getElementById('listingPoster');
-                            if (!clone) return;
-                            clone.style.transform = 'none';
-                            clone.style.width = '681px';
-                            clone.style.height = '1024px';
-                            clone.classList.remove('is-showing-hint');
-                            clone.querySelectorAll('.lp-move-hint,[data-html2canvas-ignore]').forEach((node) => {
-                                node.remove();
-                            });
-                            this.applyPosterImageDataUrls(clone, imageDataUrls);
-                            this.bakePosterFrames(clone, exportFrames);
+                            this.preparePosterCloneForExport(
+                                clonedDoc.getElementById('listingPoster'),
+                                { imageMap, rasterized, live: el }
+                            );
                         },
                     });
 
-                    return new Promise((resolve, reject) => {
-                        canvas.toBlob((file) => file ? resolve(file) : reject(new Error('Could not export PNG.')), 'image/png');
+                    return await new Promise((resolve, reject) => {
+                        canvas.toBlob((file) => file ? resolve(file) : reject(new Error('Could not export PNG.')), 'image/png', 1);
                     });
                 },
                 async exportPosterFile() {
@@ -3051,7 +3282,7 @@
                         const url = URL.createObjectURL(blob);
                         const link = document.createElement('a');
                         link.href = url;
-                        link.download = 'wassitmarket-listing.png';
+                        link.download = 'wassitmarket-listing-1080.png';
                         link.click();
                         URL.revokeObjectURL(url);
                     } catch (error) {
