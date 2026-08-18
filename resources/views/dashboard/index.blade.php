@@ -1,6 +1,26 @@
 @extends('layouts.app')
 
 @section('content')
+    @if(session('success') || session('error'))
+    <div
+        x-data="{ show: true }"
+        x-show="show"
+        x-cloak
+        x-init="setTimeout(() => show = false, 6000)"
+        class="fixed top-20 right-4 z-[9999] max-w-sm w-full"
+    >
+        <div class="rounded-lg p-4 shadow-lg" style="background-color: rgba(14, 16, 21, 0.95); border: 1px solid {{ session('error') ? '#ef4444' : '#22c55e' }}; backdrop-filter: blur(12px);">
+            <div class="flex items-start gap-3">
+                <i class="fa-solid {{ session('error') ? 'fa-circle-exclamation text-red-400' : 'fa-circle-check text-green-400' }} mt-0.5"></i>
+                <p class="text-sm text-white flex-1">{{ session('error') ?? session('success') }}</p>
+                <button type="button" @click="show = false" class="text-gray-400 hover:text-gray-200">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    @endif
+
     <!-- Full Screen Background Image -->
     <div id="background-image" class="fixed inset-0 z-0 pointer-events-none">
         <div class="absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-500 ease-in-out" style="background-image: url('{{ asset('storage/home_page/degaultbanner.webp') }}'); opacity: 1;"></div>
@@ -19,6 +39,21 @@
                 
                 <!-- Menu Grid -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    @if(auth()->user()?->isSeller())
+                    <!-- Listed Accounts -->
+                    <a href="{{ route('account.listed-accounts') }}" class="rounded-xl p-6 transition-all hover:scale-105" style="background-color: #0e1015; border: 1px solid #2d2c31;">
+                        <div class="flex items-center gap-4">
+                            <div class="flex items-center justify-center w-12 h-12 rounded-lg" style="background-color: rgba(239, 68, 68, 0.1);">
+                                <i class="fa-solid fa-list text-red-500 text-xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-semibold text-white">{{ __('messages.listed_accounts') }}</h3>
+                                <p class="text-sm text-gray-400">{{ __('messages.sell_account') }}</p>
+                            </div>
+                        </div>
+                    </a>
+                    @endif
+
                     <!-- Orders -->
                     <a href="{{ route('account.orders') }}" class="rounded-xl p-6 transition-all hover:scale-105" style="background-color: #0e1015; border: 1px solid #2d2c31;">
                         <div class="flex items-center gap-4">

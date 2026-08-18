@@ -1,0 +1,68 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+use Wasit\MlbbQuery\MlbbQueryException;
+use Wasit\MlbbQuery\MlbbQueryService;
+
+require __DIR__.'/../vendor/autoload.php';
+
+$service = new MlbbQueryService();
+$command = $argv[1] ?? 'help';
+$argument = $argv[2] ?? null;
+
+try {
+    match ($command) {
+        'heroes' => printJson($service->listHeroes()),
+        'hero' => printJson($service->getHero((int) requireArgument($argument, 'hero id'))),
+        'search' => printJson($service->searchHeroes((string) requireArgument($argument, 'search query'))),
+        'image' => printJson(['key' => $argument, 'url' => $service->getImageUrl((string) requireArgument($argument, 'image key'))]),
+        'avatar' => printJson(['hero_id' => (int) $argument, 'url' => $service->getHeroAvatarUrl((int) requireArgument($argument, 'hero id'))]),
+        default => printHelp(),
+    };
+} catch (MlbbQueryException $exception) {
+    fwrite(STDERR, $exception->getMessage().PHP_EOL);
+    exit(1);
+} catch (Throwable $exception) {
+    fwrite(STDERR, 'Unexpected error: '.$exception->getMessage().PHP_EOL);
+    exit(1);
+}
+
+function requireArgument(?string $value, string $label): string
+{
+    if ($value === null || trim($value) === '') {
+        fwrite(STDERR, "Missing {$label}.".PHP_EOL);
+        printHelp();
+        exit(1);
+    }
+
+    return $value;
+}
+
+function printJson(mixed $payload): void
+{
+    echo json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE).PHP_EOL;
+}
+
+function printHelp(): void
+{
+    echo <<<HELP
+MLBB Query CLI
+
+Usage:
+  php bin/mlbb heroes
+  php bin/mlbb hero <id>
+  php bin/mlbb search <query>
+  php bin/mlbb image <icon-key>
+  php bin/mlbb avatar <hero-id>
+
+Examples:
+  php bin/mlbb heroes
+  php bin/mlbb hero 1
+  php bin/mlbb search miya
+  php bin/mlbb image HeroHead001.png
+  php bin/mlbb avatar 1
+
+HELP;
+}

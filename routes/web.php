@@ -97,5 +97,86 @@ Route::get('/payment/failure/{encryptedOrderId}', [App\Http\Controllers\PaymentC
 // Webhook routes (public, no auth required)
 Route::post('/webhook/baridimob', [App\Http\Controllers\WebhookController::class, 'chargilyWebhook'])->name('webhook.chargily');
 
+// MLBB API playground (dev tool for exploring live game data)
+Route::prefix('mlbb/playground')->name('mlbb.playground.')->group(function () {
+    Route::get('/', [App\Http\Controllers\MlbbPlaygroundController::class, 'index'])->name('index');
+    Route::get('/heroes', [App\Http\Controllers\MlbbPlaygroundController::class, 'heroes'])->name('heroes');
+    Route::get('/search', [App\Http\Controllers\MlbbPlaygroundController::class, 'search'])->name('search');
+    Route::get('/emotes', [App\Http\Controllers\MlbbPlaygroundController::class, 'emotes'])->name('emotes');
+    Route::get('/recalls', [App\Http\Controllers\MlbbPlaygroundController::class, 'recalls'])->name('recalls');
+    Route::get('/heroes/{hero}/emotes', [App\Http\Controllers\MlbbPlaygroundController::class, 'heroEmotes'])
+        ->where('hero', '.+')
+        ->name('hero.emotes');
+    Route::get('/heroes/{hero}', [App\Http\Controllers\MlbbPlaygroundController::class, 'show'])
+        ->where('hero', '.+')
+        ->name('hero');
+});
+
+Route::get('/mlbb/image-proxy', function (\Illuminate\Http\Request $request) {
+    if ($request->hasSession()) {
+        $request->session()->save();
+    }
+
+    $url = (string) $request->query('url', '');
+    if (! filter_var($url, FILTER_VALIDATE_URL)) {
+        abort(400);
+    }
+
+    if (str_contains($url, 'Special:FilePath/')) {
+        $path = (string) (parse_url($url, PHP_URL_PATH) ?: '');
+        $file = urldecode(basename($path));
+        if (preg_match('/^(.+?) Skin Tag\.png$/i', $file, $matches) === 1) {
+            $localPath = app(\App\Services\MlbbSkinCatalogService::class)->localTagAbsolutePath($matches[1]);
+            if ($localPath) {
+                return response()->file($localPath, [
+                    'Content-Type' => 'image/png',
+                    'Cache-Control' => 'public, max-age=86400',
+                ]);
+            }
+            $url = app(\App\Services\MlbbFandomService::class)->resolveTagImageUrl($matches[1]);
+        }
+    }
+
+    $host = strtolower((string) (parse_url($url, PHP_URL_HOST) ?: ''));
+    $allowed = str_ends_with($host, 'fandom.com')
+        || str_ends_with($host, 'wikia.nocookie.net')
+        || str_ends_with($host, 'wikia.com')
+        || str_ends_with($host, 'yuanzhanapp.com')
+        || str_ends_with($host, 'mobilelegends.com');
+
+    if (! $allowed) {
+        abort(403);
+    }
+
+    $candidates = array_values(array_unique(array_filter([
+        $url,
+        preg_replace('/\?.*$/', '', $url),
+    ])));
+
+    $response = null;
+    foreach ($candidates as $candidate) {
+        $response = \Illuminate\Support\Facades\Http::timeout(20)
+            ->withHeaders([
+                'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+                'Accept' => 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
+                'Referer' => 'https://mobile-legends.fandom.com/',
+            ])
+            ->get($candidate);
+
+        if ($response->successful()) {
+            break;
+        }
+    }
+
+    if (! $response || $response->failed()) {
+        abort(502);
+    }
+
+    return response($response->body(), 200, [
+        'Content-Type' => $response->header('Content-Type') ?: 'image/png',
+        'Cache-Control' => 'public, max-age=86400',
+    ]);
+})->middleware('auth')->name('mlbb.image-proxy');
+
 // Account details route (catch-all must be last)
 Route::get('/{slug}/accounts/{id}', [App\Http\Controllers\AccountController::class, 'show'])->name('accounts.show');

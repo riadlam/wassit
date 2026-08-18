@@ -20,8 +20,11 @@ Homestead.json
 Homestead.yaml
 Thumbs.db
  /public/hot
- /public/storage
- !/public/storage/mlbbskins.json
+/public/storage
+!/public/storage/mlbbskins.json
+/storage/app/mlbb-skin-sync/progress.json
+/scripts/__pycache__/
+*.pyc
  /storage/*.key
  /storage/pail
  /vendor

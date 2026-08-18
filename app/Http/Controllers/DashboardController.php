@@ -171,12 +171,7 @@ class DashboardController extends Controller
     public function listedAccounts()
     {
         $user = Auth::user();
-        $seller = $user->seller;
-        
-        if (!$seller) {
-            return redirect()->route('account.index')
-                ->with('error', 'Seller profile not found. Please contact support.');
-        }
+        $seller = $user->ensureSellerProfile();
         
         // Get all accounts for this seller with relationships
         $accounts = AccountForSale::where('seller_id', $seller->id)
@@ -205,10 +200,13 @@ class DashboardController extends Controller
             'price_dzd' => 'required|string',
             'status' => 'required|in:available,disabled,pending',
             'attributes' => 'nullable|array',
+            'attributes.highlighted_recalls' => 'nullable|string|max:5000',
+            'attributes.highlighted_emotes' => 'nullable|string|max:5000',
             'attributes.*' => 'nullable|string|max:255',
-            // For multiple file uploads, validate each file under images.*; rely on hasFile() for required check
+            // Gallery photos (max 10). listing_cover is the generated poster, stored separately as primary.
             'images' => 'nullable',
             'images.*' => 'image|mimes:jpeg,png,jpg,webp|max:10240', // 10MB max per file
+            'listing_cover' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:10240',
         ], [
             'images.required' => 'At least one image is required.',
             'images.min' => 'At least one image is required.',
@@ -216,6 +214,9 @@ class DashboardController extends Controller
             'images.*.image' => 'Each file must be an image.',
             'images.*.mimes' => 'Only JPEG, PNG, JPG, and WEBP images are allowed.',
             'images.*.max' => 'Each image must not exceed 10MB.',
+            'listing_cover.image' => 'The listing poster must be an image.',
+            'listing_cover.mimes' => 'The listing poster must be JPEG, PNG, JPG, or WEBP.',
+            'listing_cover.max' => 'The listing poster must not exceed 10MB.',
         ]);
 
         if ($validator->fails()) {
@@ -248,21 +249,7 @@ class DashboardController extends Controller
             // Use database transaction to ensure data integrity
             return DB::transaction(function () use ($request, $priceCents) {
                 $user = Auth::user();
-                $seller = $user->seller;
-                
-                if (!$seller) {
-                    if ($request->expectsJson()) {
-                        return response()->json([
-                            'success' => false,
-                            'message' => 'Seller profile not found. Please contact support.'
-                        ], 404);
-                    }
-                    return redirect()->back()
-                        ->with('error', 'Seller profile not found. Please contact support.')
-                        ->withInput();
-                }
-
-                // Create the account with all relationships (SQL injection protection via Eloquent parameterized queries)
+                $seller = $user->ensureSellerProfile();
                 $account = AccountForSale::create([
                     'seller_id' => (int)$seller->id, // Ensure integer
                     'game_id' => (int)$request->game_id, // Ensure integer
@@ -287,7 +274,8 @@ class DashboardController extends Controller
                             
                             // Validate and sanitize: strip HTML tags and limit length
                             $sanitizedKey = substr(strip_tags(trim($key)), 0, 255);
-                            $sanitizedValue = substr(strip_tags(trim($valueString)), 0, 255);
+                            $maxLength = in_array($sanitizedKey, ['highlighted_recalls', 'highlighted_emotes'], true) ? 5000 : 255;
+                            $sanitizedValue = substr(strip_tags(trim($valueString)), 0, $maxLength);
 
                             // Normalize highlighted_skins to numeric IDs (comma-separated)
                             if ($sanitizedKey === 'highlighted_skins') {
@@ -316,11 +304,19 @@ class DashboardController extends Controller
                     }
                 }
 
-                // Handle image uploads (required, max 10 images) - using relationship
-                if (!$request->hasFile('images') || count($request->file('images')) === 0) {
+                // Handle image uploads: optional generated poster as cover, then gallery photos (max 10)
+                $galleryFiles = $request->file('images', []);
+                if (!is_array($galleryFiles)) {
+                    $galleryFiles = $galleryFiles ? [$galleryFiles] : [];
+                }
+                $hasCover = $request->hasFile('listing_cover');
+                $hasGallery = $request->hasFile('images') && count($galleryFiles) > 0;
+
+                if (!$hasCover && !$hasGallery) {
                     \Log::warning('createAccount: no images detected in request', [
                         'has_files' => $request->hasFile('images'),
-                        'files_count' => is_array($request->file('images')) ? count($request->file('images')) : 0,
+                        'has_cover' => $hasCover,
+                        'files_count' => count($galleryFiles),
                         'keys' => array_keys($request->all()),
                     ]);
                     if ($request->expectsJson()) {
@@ -333,51 +329,37 @@ class DashboardController extends Controller
                         ->with('error', 'At least one image is required.')
                         ->withInput();
                 }
-                
-                if ($request->hasFile('images')) {
-                    $images = $request->file('images');
-                    \Log::info('createAccount: images received', [
-                        'count' => is_array($images) ? count($images) : 0,
-                        'types' => array_map(function($f){ return $f->getMimeType(); }, is_array($images) ? $images : []),
-                    ]);
-                    
-                    // Enforce max 10 images
-                    if (count($images) > 10) {
-                        if ($request->expectsJson()) {
-                            return response()->json([
-                                'success' => false,
-                                'message' => 'Maximum 10 images allowed.'
-                            ], 422);
-                        }
-                        return redirect()->back()
-                            ->with('error', 'Maximum 10 images allowed.')
-                            ->withInput();
+
+                if (count($galleryFiles) > 10) {
+                    if ($request->expectsJson()) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Maximum 10 images allowed.'
+                        ], 422);
                     }
-                    
-                    $imagesToCreate = [];
-                    
-                    foreach ($images as $image) {
-                        // Validate file is actually an image
-                        if ($image->isValid() && $image->getMimeType() && strpos($image->getMimeType(), 'image/') === 0) {
-                            // Store the image directly in public/storage/account_images
-                            $filename = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
-                            $image->move(public_path('storage/account_images'), $filename);
-                            $path = 'account_images/' . $filename;
-                            
-                            // Prepare for bulk insert
-                            $imagesToCreate[] = [
-                                'account_id' => $account->id,
-                                'url' => $path,
-                                'created_at' => now(),
-                                'updated_at' => now(),
-                            ];
-                        }
+                    return redirect()->back()
+                        ->with('error', 'Maximum 10 images allowed.')
+                        ->withInput();
+                }
+
+                $imagesToCreate = [];
+
+                if ($hasCover) {
+                    $coverRow = $this->prepareAccountImageRow($request->file('listing_cover'), $account->id, true);
+                    if ($coverRow) {
+                        $imagesToCreate[] = $coverRow;
                     }
-                    
-                    // Bulk insert images for better performance
-                    if (!empty($imagesToCreate)) {
-                        AccountImage::insert($imagesToCreate);
+                }
+
+                foreach ($galleryFiles as $image) {
+                    $row = $this->prepareAccountImageRow($image, $account->id, false);
+                    if ($row) {
+                        $imagesToCreate[] = $row;
                     }
+                }
+
+                if (!empty($imagesToCreate)) {
+                    AccountImage::insert($imagesToCreate);
                 }
                 
                 // Reload account with all relationships
@@ -419,12 +401,7 @@ class DashboardController extends Controller
     public function editAccount($id)
     {
         $user = Auth::user();
-        $seller = $user->seller;
-        
-        if (!$seller) {
-            return redirect()->route('account.listed-accounts')
-                ->with('error', 'Seller profile not found.');
-        }
+        $seller = $user->ensureSellerProfile();
         
         // Fetch the account with all relationships
         $account = AccountForSale::with(['game', 'attributes', 'images'])
@@ -443,19 +420,7 @@ class DashboardController extends Controller
     public function updateAccount(Request $request, $id)
     {
         $user = Auth::user();
-        $seller = $user->seller;
-        
-        if (!$seller) {
-            \Log::error('Seller not found for user', ['user_id' => $user->id]);
-            if ($request->expectsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Seller profile not found.'
-                ], 404);
-            }
-            return redirect()->route('account.listed-accounts')
-                ->with('error', 'Seller profile not found.');
-        }
+        $seller = $user->ensureSellerProfile();
         
         $validator = Validator::make($request->all(), [
             'title' => 'required|string|max:255',
@@ -464,6 +429,8 @@ class DashboardController extends Controller
             'price_dzd' => 'required|string',
             'status' => 'required|in:available,disabled,pending,sold,cancelled',
             'attributes' => 'nullable|array',
+            'attributes.highlighted_recalls' => 'nullable|string|max:5000',
+            'attributes.highlighted_emotes' => 'nullable|string|max:5000',
             'attributes.*' => 'nullable|string|max:255',
             'images' => 'nullable|array|max:10',
             'images.*' => 'image|mimes:jpeg,png,jpg,webp|max:10240', // 10MB max per file
@@ -532,7 +499,8 @@ class DashboardController extends Controller
                         if (!empty($value) && is_string($key) && is_scalar($value)) {
                             $valueString = (string)$value;
                             $sanitizedKey = substr(strip_tags(trim($key)), 0, 255);
-                            $sanitizedValue = substr(strip_tags(trim($valueString)), 0, 255);
+                            $maxLength = in_array($sanitizedKey, ['highlighted_recalls', 'highlighted_emotes'], true) ? 5000 : 255;
+                            $sanitizedValue = substr(strip_tags(trim($valueString)), 0, $maxLength);
 
                             // Normalize highlighted_skins to numeric IDs (comma-separated)
                             if ($sanitizedKey === 'highlighted_skins') {
@@ -559,37 +527,33 @@ class DashboardController extends Controller
                     }
                 }
 
-                // Handle image deletions
-                // Delete all images NOT in keep_images array
-                // If keep_images is empty or not provided, delete all existing images
-                $currentImages = $account->images()->pluck('id')->toArray();
-                $keepImages = $request->has('keep_images') && is_array($request->keep_images) 
-                    ? array_map('intval', $request->keep_images) 
+                // Handle image deletions (never remove the generated listing poster)
+                $currentImages = $account->images()->where('is_cover', false)->pluck('id')->toArray();
+                $keepImages = $request->has('keep_images') && is_array($request->keep_images)
+                    ? array_map('intval', $request->keep_images)
                     : [];
-                
-                // Find images to delete (images not in keep_images)
+
                 $imagesToDelete = array_diff($currentImages, $keepImages);
-                
+
                 foreach ($imagesToDelete as $imageId) {
                     $image = AccountImage::where('id', $imageId)
                         ->where('account_id', $account->id)
+                        ->where('is_cover', false)
                         ->first();
-                    
+
                     if ($image) {
-                        // Delete file from storage
                         if (Storage::disk('public')->exists($image->url)) {
                             Storage::disk('public')->delete($image->url);
                         }
-                        // Delete database record
                         $image->delete();
                     }
                 }
-                
-                // Validate that at least one image remains (either kept existing or new uploads)
-                $remainingExistingCount = count($keepImages);
+
+                $remainingExistingCount = $account->images()->where('is_cover', false)->count();
                 $newImagesCount = $request->hasFile('images') ? count($request->file('images')) : 0;
-                $totalImagesAfterUpdate = $remainingExistingCount + $newImagesCount;
-                
+                $coverCount = $account->images()->where('is_cover', true)->count();
+                $totalImagesAfterUpdate = $remainingExistingCount + $newImagesCount + $coverCount;
+
                 if ($totalImagesAfterUpdate < 1) {
                     if ($request->expectsJson()) {
                         return response()->json([
@@ -602,42 +566,31 @@ class DashboardController extends Controller
                         ->withInput();
                 }
 
-                // Handle new image uploads
                 if ($request->hasFile('images')) {
-                    $currentImageCount = $account->images()->count();
+                    $currentGalleryCount = $account->images()->where('is_cover', false)->count();
                     $images = $request->file('images');
-                    
-                    // Check total image count (existing + new)
-                    if ($currentImageCount + count($images) > 10) {
+
+                    if ($currentGalleryCount + count($images) > 10) {
                         if ($request->expectsJson()) {
                             return response()->json([
                                 'success' => false,
-                                'message' => 'Maximum 10 images allowed. You currently have ' . $currentImageCount . ' images.'
+                                'message' => 'Maximum 10 images allowed. You currently have ' . $currentGalleryCount . ' images.'
                             ], 422);
                         }
                         return redirect()->back()
-                            ->with('error', 'Maximum 10 images allowed. You currently have ' . $currentImageCount . ' images.')
+                            ->with('error', 'Maximum 10 images allowed. You currently have ' . $currentGalleryCount . ' images.')
                             ->withInput();
                     }
-                    
+
                     $imagesToCreate = [];
-                    
+
                     foreach ($images as $image) {
-                        if ($image->isValid() && $image->getMimeType() && strpos($image->getMimeType(), 'image/') === 0) {
-                            // Store with timestamp_uniqueid.extension format (same as storeAccount)
-                            $filename = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
-                            $image->move(public_path('storage/account_images'), $filename);
-                            $path = 'account_images/' . $filename;
-                            
-                            $imagesToCreate[] = [
-                                'account_id' => $account->id,
-                                'url' => $path,
-                                'created_at' => now(),
-                                'updated_at' => now(),
-                            ];
+                        $row = $this->prepareAccountImageRow($image, $account->id, false);
+                        if ($row) {
+                            $imagesToCreate[] = $row;
                         }
                     }
-                    
+
                     if (!empty($imagesToCreate)) {
                         AccountImage::insert($imagesToCreate);
                     }
@@ -679,14 +632,7 @@ class DashboardController extends Controller
     public function updateAccountStatus(Request $request, $id)
     {
         $user = Auth::user();
-        $seller = $user->seller;
-        
-        if (!$seller) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Seller profile not found.'
-            ], 404);
-        }
+        $seller = $user->ensureSellerProfile();
         
         $validator = Validator::make($request->all(), [
             'status' => 'required|in:available,disabled,pending,sold,cancelled',
@@ -724,18 +670,7 @@ class DashboardController extends Controller
     public function deleteAccount($id)
     {
         $user = Auth::user();
-        $seller = $user->seller;
-        
-        if (!$seller) {
-            if (request()->expectsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Seller profile not found.'
-                ], 404);
-            }
-            return redirect()->route('account.listed-accounts')
-                ->with('error', 'Seller profile not found.');
-        }
+        $seller = $user->ensureSellerProfile();
         
         try {
             return \DB::transaction(function () use ($id, $seller) {
@@ -949,6 +884,25 @@ class DashboardController extends Controller
 
         $result = (int) $digitsOnly;
         return $result >= 0 ? $result : null;
+    }
+
+    private function prepareAccountImageRow($image, int $accountId, bool $isCover): ?array
+    {
+        if (!$image || !$image->isValid() || !$image->getMimeType() || !str_starts_with((string) $image->getMimeType(), 'image/')) {
+            return null;
+        }
+
+        $extension = $image->getClientOriginalExtension() ?: 'png';
+        $filename = time() . '_' . uniqid() . '.' . $extension;
+        $image->move(public_path('storage/account_images'), $filename);
+
+        return [
+            'account_id' => $accountId,
+            'url' => 'account_images/' . $filename,
+            'is_cover' => $isCover ? 1 : 0,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ];
     }
 }
 

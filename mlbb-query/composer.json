@@ -1,0 +1,20 @@
+{
+    "name": "wasit/mlbb-query",
+    "description": "MLBB data query module for Wasit admin dashboard",
+    "type": "project",
+    "license": "MIT",
+    "require": {
+        "php": "^8.2",
+        "mobaguides/mobile-legends-api": "^1.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Wasit\\MlbbQuery\\": "src/"
+        }
+    },
+    "bin": [
+        "bin/mlbb"
+    ],
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

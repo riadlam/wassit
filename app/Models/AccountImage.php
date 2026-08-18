@@ -11,7 +11,15 @@ class AccountImage extends Model
     protected $fillable = [
         'account_id',
         'url',
+        'is_cover',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'is_cover' => 'boolean',
+        ];
+    }
 
     protected static function booted(): void
     {

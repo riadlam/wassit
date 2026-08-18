@@ -62,6 +62,34 @@ class User extends Authenticatable implements FilamentUser
         return $this->role === 'admin';
     }
 
+    public function isSeller(): bool
+    {
+        return $this->role === 'seller';
+    }
+
+    /**
+     * Ensure a seller profile exists for seller-role users.
+     * Admins can assign the seller role directly without going through application approval.
+     */
+    public function ensureSellerProfile(): Seller
+    {
+        if (! $this->isSeller()) {
+            throw new \RuntimeException('User is not a seller.');
+        }
+
+        return Seller::firstOrCreate(
+            ['id' => $this->id],
+            [
+                'pfp' => null,
+                'rating' => 5.0,
+                'total_sales' => 0,
+                'bio' => null,
+                'verified' => false,
+                'wallet' => 0,
+            ]
+        );
+    }
+
     /**
      * Get the seller profile associated with the user.
      */

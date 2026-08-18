@@ -22,9 +22,11 @@ class EnsureUserIsSeller
         }
 
         // Check if user is a seller
-        if (Auth::user()->role !== 'seller') {
+        if (! Auth::user()->isSeller()) {
             return redirect()->route('account.index')->with('error', 'You must be a seller to access this page.');
         }
+
+        Auth::user()->ensureSellerProfile();
 
         return $next($request);
     }

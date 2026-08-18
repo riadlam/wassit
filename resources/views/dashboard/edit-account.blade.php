@@ -432,8 +432,8 @@
                                     <!-- All Images Grid (Current + New) -->
                                     <div id="allImagesContainer">
                                         <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="imagesGrid">
-                                            @if($account->images && $account->images->count() > 0)
-                                                @foreach($account->images as $image)
+                                            @if($account->images && $account->images->where('is_cover', false)->count() > 0)
+                                                @foreach($account->images->where('is_cover', false) as $image)
                                                     <div class="relative group" data-image-id="{{ $image->id }}" data-image-type="existing">
                                                         <div class="aspect-video rounded-lg overflow-hidden" style="background-color: #1b1a1e; border: 1px solid #2d2c31;">
                                                             <img 
@@ -532,7 +532,7 @@
             const uploadArea = document.getElementById('uploadArea');
             const fileInput = document.getElementById('images');
             const imagesGrid = document.getElementById('imagesGrid');
-            const currentImageCount = {{ $account->images ? $account->images->count() : 0 }};
+            const currentImageCount = {{ $account->images ? $account->images->where('is_cover', false)->count() : 0 }};
             const maxImages = 10;
             const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({
                 '&': '&amp;',

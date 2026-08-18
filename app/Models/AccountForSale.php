@@ -45,11 +45,23 @@ class AccountForSale extends Model
     }
 
     /**
-     * Get the images for this account.
+     * Get the images for this account (cover first).
      */
     public function images(): HasMany
     {
-        return $this->hasMany(AccountImage::class, 'account_id');
+        return $this->hasMany(AccountImage::class, 'account_id')
+            ->orderByDesc('is_cover')
+            ->orderBy('id');
+    }
+
+    /**
+     * Seller-uploaded gallery photos (excludes the generated listing poster).
+     */
+    public function galleryImages(): HasMany
+    {
+        return $this->hasMany(AccountImage::class, 'account_id')
+            ->where('is_cover', false)
+            ->orderBy('id');
     }
 
     /**

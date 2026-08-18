@@ -2,7 +2,6 @@
 
 namespace App\Services\Admin;
 
-use App\Models\Seller;
 use App\Models\SellerApplication;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -31,17 +30,7 @@ class SellerApplicationService
 
             $user->update(['role' => 'seller']);
 
-            Seller::firstOrCreate(
-                ['id' => $user->id],
-                [
-                    'pfp' => null,
-                    'rating' => 5.0,
-                    'total_sales' => 0,
-                    'bio' => null,
-                    'verified' => false,
-                    'wallet' => 0,
-                ]
-            );
+            $user->ensureSellerProfile();
 
             $lockedApplication->update([
                 'status' => 'approved',

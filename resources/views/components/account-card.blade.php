@@ -54,7 +54,11 @@
     
     $accountAttributes = $account->attributes->pluck('attribute_value', 'attribute_key')->toArray();
     $accountImages = $account->images;
+    $coverImage = $accountImages->firstWhere('is_cover', true) ?? $accountImages->first();
+    $galleryCount = $accountImages->where('is_cover', false)->count();
+    $hasCover = $accountImages->contains(fn ($image) => (bool) $image->is_cover);
     $imageCount = $accountImages->count();
+    $overlayCount = $hasCover ? $galleryCount : $imageCount;
     $collectionTier = $accountAttributes['collection_tier'] ?? null;
     // Translate collection tier label per locale while preserving original for image file lookup
     $collectionTierLabel = $collectionTier;
@@ -149,14 +153,14 @@
         <!-- Account Image -->
         <div style="margin-bottom: 15px;">
             <div class="relative overflow-hidden rounded-lg account-image-hover" style="height: 140px; border: 1px solid #2d2c31;">
-                @if($imageCount > 0)
+                @if($coverImage)
                     <button class="w-full h-full cursor-zoom-in">
                         <span class="sr-only">View Images</span>
-                        <img src="{{ asset('storage/' . $accountImages->first()->url) }}" alt="Account Image" class="object-cover w-full h-full" loading="lazy">
+                        <img src="{{ asset('storage/' . $coverImage->url) }}" alt="Account Image" class="object-cover w-full h-full" loading="lazy">
                     </button>
-                    @if($imageCount > 1)
+                    @if($overlayCount > 0 && ($hasCover ? $galleryCount > 0 : $imageCount > 1))
                         <button type="button" class="inline-flex items-center justify-center transition-colors overflow-hidden font-medium whitespace-nowrap py-1.5 px-2 text-xs rounded-md absolute right-2 bottom-2 backdrop-blur-md" style="background-color: rgba(27, 26, 30, 0.8); color: #ffffff; border: 1px solid #2d2c31;">
-                            <i class="mr-2 fas fa-images"></i> {{ $imageCount }}+
+                            <i class="mr-2 fas fa-images"></i> {{ $overlayCount }}+
                         </button>
                     @endif
                 @else

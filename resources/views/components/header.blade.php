@@ -44,7 +44,7 @@
                 <div class="hidden md:flex items-center space-x-6 ml-5">
                     <a href="{{ route('home') }}" class="text-gray-300 hover:text-white transition-colors font-medium">{{ __('messages.home') }}</a>
                     <a href="{{ route('home') }}" class="text-gray-300 hover:text-white transition-colors font-medium">{{ __('messages.browse_accounts') }}</a>
-                    <a href="{{ (Auth::check() && Auth::user()->role === 'seller') ? route('account.listed-accounts') : route('partner.apply') }}" class="text-gray-300 hover:text-white transition-colors font-medium">{{ __('messages.sell_account') }}</a>
+                    <a href="{{ (Auth::check() && Auth::user()->isSeller()) ? route('account.listed-accounts') : route('partner.apply') }}" class="text-gray-300 hover:text-white transition-colors font-medium">{{ __('messages.sell_account') }}</a>
                 </div>
             </div>
             
@@ -188,7 +188,7 @@
                     {{ __('messages.browse_accounts') }}
                 </a>
                 <a 
-                    href="{{ (Auth::check() && Auth::user()->role === 'seller') ? route('account.listed-accounts') : route('partner.apply') }}" 
+                    href="{{ (Auth::check() && Auth::user()->isSeller()) ? route('account.listed-accounts') : route('partner.apply') }}" 
                     @click="closeMenu()"
                     class="block text-gray-300 hover:text-white transition-colors font-medium py-2"
                 >

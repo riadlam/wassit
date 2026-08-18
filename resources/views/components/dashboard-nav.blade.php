@@ -1,7 +1,7 @@
 @php
     $currentRoute = request()->route()->getName() ?? 'account.index';
     $user = auth()->user();
-    $isSeller = $user && $user->role === 'seller';
+    $isSeller = $user && $user->isSeller();
     $chatUnread = $chatUnread ?? \App\Support\ChatUnreadSummary::forUser($user);
     $chatUrl = $chatUnread->conversationId
         ? route('account.chat', ['conversation' => $chatUnread->conversationId])
