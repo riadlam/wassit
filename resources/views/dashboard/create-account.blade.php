@@ -656,7 +656,8 @@
                                     <p class="text-gray-400 text-sm mt-3">Building preview...</p>
                                 </div>
 
-                                <div x-show="!loading" class="listing-poster-frame">
+                                <div x-show="!loading" class="listing-poster-frame" x-ref="posterFrame">
+                                <div class="listing-poster-scale-wrap" :style="posterPreviewStyle()">
                                 <div id="listingPoster" class="listing-poster" :class="isPremiumLayout ? 'is-premium' : 'is-basic'">
                                     <img class="lp-bg" :src="posterBg" alt="">
                                     <div class="lp-featured" x-show="isPremiumLayout">
@@ -664,6 +665,7 @@
                                             <div class="lp-skin lp-framable" :class="{ 'is-showing-hint': showFrameHint && idx === 0 }">
                                                 <div
                                                     class="lp-frame-viewport"
+                                                    :data-frame-key="'feat-' + idx"
                                                     @mousedown="startFrameDrag('feat-' + idx, $event)"
                                                     @touchstart.prevent="startFrameDrag('feat-' + idx, $event)"
                                                     @wheel.prevent="zoomFrame('feat-' + idx, $event)"
@@ -706,6 +708,7 @@
                                     <div class="lp-primary lp-framable">
                                         <div
                                             class="lp-frame-viewport"
+                                            data-frame-key="primary"
                                             @mousedown="startFrameDrag('primary', $event)"
                                             @touchstart.prevent="startFrameDrag('primary', $event)"
                                             @wheel.prevent="zoomFrame('primary', $event)"
@@ -774,6 +777,7 @@
                                             <div class="lp-skin lp-framable" :class="gallerySkinClass()" :style="gallerySkinStyle(idx)">
                                                 <div
                                                     class="lp-frame-viewport"
+                                                    :data-frame-key="'bot-' + idx"
                                                     @mousedown="startFrameDrag('bot-' + idx, $event)"
                                                     @touchstart.prevent="startFrameDrag('bot-' + idx, $event)"
                                                     @wheel.prevent="zoomFrame('bot-' + idx, $event)"
@@ -804,6 +808,7 @@
                                     <div class="lp-price-slot">
                                         <span class="lp-price-value" x-text="formattedPrice"></span>
                                     </div>
+                                </div>
                                 </div>
                                 </div>
                             </div>
@@ -906,7 +911,15 @@
 
         .listing-poster-frame {
             width: 100%;
-            overflow-x: auto;
+            display: flex;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .listing-poster-scale-wrap {
+            width: 681px;
+            height: 1024px;
+            transform-origin: top center;
+            will-change: transform;
         }
         .listing-poster,
         .listing-poster * {
@@ -2275,6 +2288,8 @@
                 gallerySkinCount: @json($listingPremiumPoster ? 6 : 48),
                 galleryLayout: { cols: 8, rows: 6, count: 0 },
                 imageFrames: {},
+                posterPreviewScale: 1,
+                _posterResizeHandler: null,
                 dragging: null,
                 showFrameHint: false,
                 frameHintPlayed: false,
@@ -2294,14 +2309,36 @@
                     this.galleryLayout = this.pickGalleryGrid(this.bottomSkins.length);
                     this.previewEmotes = this.padCatalogItems([], 6);
                     this.previewRecalls = this.padCatalogItems([], 6);
+                    this.updatePosterPreviewScale();
+                    this._posterResizeHandler = () => this.updatePosterPreviewScale();
+                    window.addEventListener('resize', this._posterResizeHandler);
                     const wizard = this.wizard();
                     if (!wizard) return;
                     this.$watch(() => wizard.currentStep, (step) => {
-                        if (step === 8) this.buildPreview();
+                        if (step === 8) {
+                            this.buildPreview();
+                            this.$nextTick(() => this.updatePosterPreviewScale());
+                        }
                     });
                     setTimeout(() => {
-                        if (wizard.currentStep === 8) this.buildPreview();
+                        if (wizard.currentStep === 8) {
+                            this.buildPreview();
+                            this.$nextTick(() => this.updatePosterPreviewScale());
+                        }
                     }, 250);
+                },
+                posterPreviewStyle() {
+                    return {
+                        transform: `scale(${this.posterPreviewScale})`,
+                        transformOrigin: 'top center',
+                    };
+                },
+                updatePosterPreviewScale() {
+                    const frame = this.$refs.posterFrame;
+                    if (!frame) return;
+                    const available = frame.clientWidth || 681;
+                    this.posterPreviewScale = Math.min(1, available / 681);
+                    frame.style.minHeight = `${Math.ceil(1024 * this.posterPreviewScale)}px`;
                 },
                 wizard() {
                     const form = document.getElementById('createAccountForm');
@@ -2422,14 +2459,24 @@
                     };
                 },
                 initImageFrames() {
-                    const frames = { primary: { x: 0, y: 0, scale: 1, coverScale: 1, adjusted: false } };
+                    const previous = { ...(this.imageFrames || {}) };
+                    const frames = {
+                        primary: this.cloneFrameState(previous.primary),
+                    };
                     for (let i = 0; i < 2; i++) {
-                        frames[`feat-${i}`] = { x: 0, y: 0, scale: 1, coverScale: 1, adjusted: false };
+                        frames[`feat-${i}`] = this.cloneFrameState(previous[`feat-${i}`]);
                     }
-                    for (let i = 0; i < Math.max(this.bottomSkins.length, this.isPremiumLayout ? 6 : 0); i++) {
-                        frames[`bot-${i}`] = { x: 0, y: 0, scale: 1, coverScale: 1, adjusted: false };
+                    const botCount = Math.max(this.bottomSkins.length, this.isPremiumLayout ? 6 : 48);
+                    for (let i = 0; i < botCount; i++) {
+                        frames[`bot-${i}`] = this.cloneFrameState(previous[`bot-${i}`]);
                     }
                     this.imageFrames = frames;
+                },
+                cloneFrameState(previous) {
+                    if (previous) {
+                        return { ...previous };
+                    }
+                    return { x: 0, y: 0, scale: 1, coverScale: 1, adjusted: false };
                 },
                 coverScaleFor(img) {
                     const viewport = img?.parentElement;
@@ -2477,6 +2524,7 @@
                                 this.refitFrameImage(`bot-${idx}`, img);
                             }
                         });
+                        this.updatePosterPreviewScale();
                         this.playFrameHint();
                     });
                 },
@@ -2554,10 +2602,11 @@
                     const point = this.framePoint(event);
                     const frame = this.imageFrames[this.dragging.key];
                     if (!frame) return;
+                    const previewScale = this.posterPreviewScale || 1;
                     this.imageFrames[this.dragging.key] = {
                         ...frame,
-                        x: this.dragging.origX + (point.x - this.dragging.startX),
-                        y: this.dragging.origY + (point.y - this.dragging.startY),
+                        x: this.dragging.origX + ((point.x - this.dragging.startX) / previewScale),
+                        y: this.dragging.origY + ((point.y - this.dragging.startY) / previewScale),
                         adjusted: true,
                     };
                 },
@@ -2682,12 +2731,71 @@
                 waitForImages(el) {
                     const images = [...el.querySelectorAll('img')];
                     return Promise.all(images.map((img) => {
-                        if (img.complete) return Promise.resolve();
+                        if (img.complete && img.naturalWidth > 0) return Promise.resolve();
                         return new Promise((resolve) => {
                             img.addEventListener('load', resolve, { once: true });
                             img.addEventListener('error', resolve, { once: true });
                         });
                     }));
+                },
+                blobToDataUrl(blob) {
+                    return new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(reader.result);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(blob);
+                    });
+                },
+                async buildPosterImageDataUrls(posterEl) {
+                    const images = [...posterEl.querySelectorAll('img')];
+                    return Promise.all(images.map(async (img) => {
+                        const src = img.currentSrc || img.src || '';
+                        if (!src) return '';
+                        if (src.startsWith('data:')) return src;
+                        try {
+                            const response = await fetch(src, { credentials: 'same-origin' });
+                            if (!response.ok) return src;
+                            return await this.blobToDataUrl(await response.blob());
+                        } catch {
+                            return src;
+                        }
+                    }));
+                },
+                bakePosterFrames(posterEl, imageFrames) {
+                    if (!posterEl) return;
+                    posterEl.querySelectorAll('[data-frame-key]').forEach((viewport) => {
+                        const key = viewport.getAttribute('data-frame-key');
+                        const img = viewport.querySelector('img');
+                        const frame = imageFrames?.[key];
+                        if (!img || !frame) return;
+
+                        const vw = viewport.offsetWidth || viewport.clientWidth;
+                        const vh = viewport.offsetHeight || viewport.clientHeight;
+                        const scale = Number(frame.scale) || 1;
+                        const x = Number(frame.x) || 0;
+                        const y = Number(frame.y) || 0;
+                        if (!vw || !vh) return;
+
+                        img.style.transform = 'none';
+                        img.style.position = 'absolute';
+                        img.style.objectFit = 'contain';
+                        img.style.objectPosition = 'center center';
+                        img.style.width = `${vw * scale}px`;
+                        img.style.height = `${vh * scale}px`;
+                        img.style.left = `${((vw - (vw * scale)) / 2) + x}px`;
+                        img.style.top = `${((vh - (vh * scale)) / 2) + y}px`;
+                        img.style.maxWidth = 'none';
+                        img.style.maxHeight = 'none';
+                        img.style.margin = '0';
+                        img.style.willChange = 'auto';
+                    });
+                },
+                applyPosterImageDataUrls(posterEl, dataUrls) {
+                    [...posterEl.querySelectorAll('img')].forEach((img, index) => {
+                        if (dataUrls[index]) {
+                            img.src = dataUrls[index];
+                        }
+                    });
                 },
                 async fetchSampleSkins(count) {
                     if (this.sampleSkinsCache?.length >= count) {
@@ -2762,7 +2870,6 @@
                     if (this.building) return;
                     this.building = true;
                     this.loading = false;
-                    this.initImageFrames();
 
                     try {
                         if (this.previewUseDummyData) {
@@ -2883,15 +2990,38 @@
                         await document.fonts.ready;
                     }
                     await this.waitForImages(el);
+                    this.refitPosterFrames();
+                    await this.$nextTick();
+                    await this.waitForImages(el);
+
+                    const imageDataUrls = await this.buildPosterImageDataUrls(el);
+                    const exportFrames = JSON.parse(JSON.stringify(this.imageFrames));
+
                     const canvas = await html2canvas(el, {
-                        backgroundColor: null,
+                        backgroundColor: '#c80000',
                         width: 681,
                         height: 1024,
                         scale: 2,
                         useCORS: true,
                         allowTaint: false,
                         logging: false,
+                        scrollX: 0,
+                        scrollY: 0,
+                        onclone: (clonedDoc) => {
+                            const clone = clonedDoc.getElementById('listingPoster');
+                            if (!clone) return;
+                            clone.style.transform = 'none';
+                            clone.style.width = '681px';
+                            clone.style.height = '1024px';
+                            clone.classList.remove('is-showing-hint');
+                            clone.querySelectorAll('.lp-move-hint,[data-html2canvas-ignore]').forEach((node) => {
+                                node.remove();
+                            });
+                            this.applyPosterImageDataUrls(clone, imageDataUrls);
+                            this.bakePosterFrames(clone, exportFrames);
+                        },
                     });
+
                     return new Promise((resolve, reject) => {
                         canvas.toBlob((file) => file ? resolve(file) : reject(new Error('Could not export PNG.')), 'image/png');
                     });
