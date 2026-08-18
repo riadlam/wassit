@@ -193,8 +193,8 @@
                                         <div>
                                             <label for="price_dzd" class="block text-sm font-medium text-gray-300 mb-2">Price (DA) <span class="text-red-500">*</span></label>
                                             <div class="relative">
-                                                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">DA</span>
-                                                <input type="number" id="price_dzd" name="price_dzd" step="0.01" required value="{{ old('price_dzd') }}" class="wizard-input pl-12" placeholder="16228">
+                                                <span class="wizard-field-addon">DA</span>
+                                                <input type="number" id="price_dzd" name="price_dzd" step="0.01" required value="{{ old('price_dzd') }}" class="wizard-input wizard-input--prefix" placeholder="16228">
                                             </div>
                                         </div>
                                         <div>
@@ -268,8 +268,8 @@
                                 <p class="text-sm text-gray-400 mb-4">Pick a hero, then check the skins you want to feature.</p>
 
                                 <div x-show="!selectedHero" class="mb-4 relative">
-                                    <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                                    <input type="text" x-model="searchQuery" placeholder="Search heroes..." class="wizard-input pl-10">
+                                    <i class="fa-solid fa-search wizard-field-icon"></i>
+                                    <input type="text" x-model="searchQuery" placeholder="Search heroes..." class="wizard-input wizard-input--icon">
                                 </div>
 
                                 <template x-if="selectedHero">
@@ -407,8 +407,8 @@
                                 <p class="text-sm text-gray-400 mb-4">Pick standout recall effects to feature on your listing.</p>
 
                                 <div class="mb-4 relative">
-                                    <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                                    <input type="text" x-model="searchQuery" placeholder="Search recalls..." class="wizard-input pl-10">
+                                    <i class="fa-solid fa-search wizard-field-icon"></i>
+                                    <input type="text" x-model="searchQuery" placeholder="Search recalls..." class="wizard-input wizard-input--icon">
                                 </div>
 
                                 <div x-show="error" x-cloak class="mb-4 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-300" x-text="error"></div>
@@ -484,8 +484,8 @@
                                 <p class="text-sm text-gray-400 mb-4">Pick standout battle emotes to feature on your listing.</p>
 
                                 <div class="mb-4 relative">
-                                    <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                                    <input type="text" x-model="searchQuery" placeholder="Search emotes..." class="wizard-input pl-10">
+                                    <i class="fa-solid fa-search wizard-field-icon"></i>
+                                    <input type="text" x-model="searchQuery" placeholder="Search emotes..." class="wizard-input wizard-input--icon">
                                 </div>
 
                                 <div x-show="error" x-cloak class="mb-4 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-300" x-text="error"></div>
@@ -854,19 +854,55 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@700;800;900&display=swap');
         .wizard-input {
+            display: block;
             width: 100%;
+            min-height: 2.75rem;
             border-radius: 0.375rem;
             padding: 0.625rem 1rem;
             font-size: 0.875rem;
+            line-height: 1.25rem;
             color: #fff;
             background-color: #1b1a1e;
             border: 1px solid #2d2c31;
+        }
+        .wizard-input--prefix {
+            padding-left: 2.75rem;
+        }
+        .wizard-input--icon {
+            padding-left: 2.5rem;
+        }
+        .wizard-field-addon,
+        .wizard-field-icon {
+            pointer-events: none;
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            display: flex;
+            align-items: center;
+            padding-left: 0.75rem;
+            color: #9ca3af;
+            font-size: 0.875rem;
+            line-height: 1;
+        }
+        .wizard-field-icon {
+            width: 2.5rem;
+            justify-content: center;
+            padding-left: 0;
         }
         .wizard-input:focus {
             outline: none;
             box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.35);
         }
         .wizard-input::placeholder { color: #6b7280; }
+        select.wizard-input {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.75rem center;
+            background-size: 1.25rem;
+            padding-right: 2.5rem;
+        }
 
         .listing-poster-frame {
             width: 100%;
