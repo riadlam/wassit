@@ -1,5 +1,11 @@
 *
 !.gitignore
+!home_games/
+!home_games/**
+!home_page/
+!home_page/**
+!game_cards_images/
+!game_cards_images/**
 !mlbb_skins/
 !mlbb_skins/**
 !mlbb_skin_tags/

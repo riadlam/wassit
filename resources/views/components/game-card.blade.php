@@ -3,7 +3,7 @@ use Illuminate\Support\Facades\Storage;
 
 $artworkPath = config('game_artwork.' . $game->slug);
 $hasArtwork = $artworkPath && Storage::disk('public')->exists($artworkPath);
-$imageUrl = $hasArtwork ? Storage::url($artworkPath) : null;
+$imageUrl = $hasArtwork ? '/storage/'.$artworkPath : null;
 $isPlayable = (bool) $game->is_active;
 @endphp
 

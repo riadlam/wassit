@@ -25,6 +25,26 @@ Route::get('/locale/{locale}', function (string $locale) {
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::view('/privacy-policy', 'privacy-policy')->name('privacy-policy');
 Route::view('/terms-of-service', 'terms-of-service')->name('terms-of-service');
+
+Route::get('/storage/{path}', function (string $path) {
+    $relative = str_replace('\\', '/', $path);
+    $relative = ltrim($relative, '/');
+
+    if ($relative === '' || str_contains($relative, '..')) {
+        abort(404);
+    }
+
+    $full = storage_path('app/public/'.$relative);
+
+    if (! is_file($full)) {
+        abort(404);
+    }
+
+    return response()->file($full, [
+        'Cache-Control' => 'public, max-age=86400',
+    ]);
+})->where('path', '.*');
+
 Route::get('/games/{slug}', [GameController::class, 'show'])->name('games.show');
 Route::get('/apply', [PartnerController::class, 'apply'])->name('partner.apply');
 Route::post('/apply', [PartnerController::class, 'submitApplication'])->name('partner.apply.submit');
@@ -137,13 +157,15 @@ Route::get('/mlbb/image-proxy', function (\Illuminate\Http\Request $request) {
     }
 
     $storagePath = (string) (parse_url($url, PHP_URL_PATH) ?: '');
-    if (str_contains($storagePath, '/storage/mlbb_skins/') || str_contains($storagePath, '/storage/mlbb_skin_tags/')) {
+    if (str_contains($storagePath, '/storage/')) {
         $relative = ltrim(str_after($storagePath, '/storage/'), '/');
-        $localPath = storage_path('app/public/'.$relative);
-        if (is_file($localPath)) {
-            return response()->file($localPath, [
-                'Cache-Control' => 'public, max-age=86400',
-            ]);
+        if ($relative !== '' && ! str_contains($relative, '..')) {
+            $localPath = storage_path('app/public/'.$relative);
+            if (is_file($localPath)) {
+                return response()->file($localPath, [
+                    'Cache-Control' => 'public, max-age=86400',
+                ]);
+            }
         }
     }
 
