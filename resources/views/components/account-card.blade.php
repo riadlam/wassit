@@ -36,6 +36,7 @@
 </style>
 
 @php
+    use App\Support\CollectionTierHelper;
     use Illuminate\Support\Facades\Storage;
     $seller = $account->seller;
     $user = $seller->user ?? null;
@@ -73,6 +74,7 @@
         $collectionTierLabel = $tierTranslationMap[$collectionTier];
     }
     $skinsCount = $accountAttributes['skins_count'] ?? null;
+    $tierImage = CollectionTierHelper::imageUrl($collectionTier);
     
     // Determine profile picture URL
     $sellerPfp = asset('storage/examplepfp.webp'); // Default fallback
@@ -108,17 +110,6 @@
         <div class="pt-1.5">
             <div class="flex items-center gap-x-2">
                 @if($collectionTier || $skinsCount)
-                    @php
-                        // Map collection tier to image filename
-                        $tierImage = null;
-                        if ($collectionTier) {
-                            // Collection tier values match the filename exactly (with spaces)
-                            $tierImagePath = 'mlbb_skins_rank/' . $collectionTier . '.webp';
-                            if (Storage::disk('public')->exists($tierImagePath)) {
-                                $tierImage = asset('storage/' . $tierImagePath);
-                            }
-                        }
-                    @endphp
                     @if($tierImage)
                         <img src="{{ $tierImage }}" alt="{{ $collectionTier ?? 'Collection Tier' }}" class="object-contain" style="width: 33.6px; height: 33.6px;">
                     @endif

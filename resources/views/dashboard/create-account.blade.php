@@ -1483,11 +1483,9 @@
     @endpush
 
     @php
-        $listingCollectionBadges = [];
-        foreach (['Expert Collector', 'Renowned Collector', 'Exalted Collector', 'Mega Collector', 'World Collector'] as $tierName) {
-            $listingCollectionBadges[$tierName] = asset('storage/mlbb_skins_rank/'.$tierName.'.webp');
-        }
-        $listingDummyCollectionBadge = $listingCollectionBadges['World Collector'];
+        use App\Support\CollectionTierHelper;
+        $listingCollectionBadges = CollectionTierHelper::badgeMap();
+        $listingDummyCollectionBadge = $listingCollectionBadges['World Collector'] ?? '';
         $listingPremiumPoster = strtolower((string) (auth()->user()?->email ?? '')) === 'riadlaamari@gmail.com';
     @endphp
 

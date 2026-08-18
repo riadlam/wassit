@@ -202,6 +202,7 @@ if ($seller && !empty($seller->pfp)) {
             <!-- Title Section with Collection Tier Icon and Badges -->
             <div class="rounded-xl p-6" style="background-color: #0e1015; border: 1px solid #2d2c31;">
                 @php
+                    use App\Support\CollectionTierHelper;
                     $collectionTier = $accountAttributes['collection_tier'] ?? null;
                     // Localized label for collection tier
                     $collectionTierLabel = $collectionTier;
@@ -216,18 +217,8 @@ if ($seller && !empty($seller->pfp)) {
                         $collectionTierLabel = $tierTranslationMap[$collectionTier];
                     }
                     $skinsCount = $accountAttributes['skins_count'] ?? null;
-                    
-                    // Map collection tier to image filename (same as account card)
-                    $collectionTierImage = null;
-                    if ($collectionTier) {
-                        // Collection tier values match the filename exactly (with spaces)
-                        $tierImagePath = 'mlbb_skins_rank/' . $collectionTier . '.webp';
-                        if (Storage::disk('public')->exists($tierImagePath)) {
-                            $collectionTierImage = asset('storage/' . $tierImagePath);
-                        }
-                    }
+                    $collectionTierImage = CollectionTierHelper::imageUrl($collectionTier);
                 @endphp
-                
                 <!-- Mobile Layout: Attributes on top row, then badge and title below -->
                 <div class="flex flex-col md:hidden gap-3">
                     <!-- Attributes Row (Mobile) -->
