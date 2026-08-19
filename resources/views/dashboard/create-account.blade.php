@@ -3677,7 +3677,13 @@
                         node.style.justifyContent = 'center';
                     });
                     clone.querySelectorAll('.lp-price-value').forEach((node) => {
-                        const isBasic = node.closest('.listing-poster.is-basic');
+                        const isBasic = !this.isPremiumLayout;
+                        let exportFontSize = isBasic ? 50 : 64;
+                        let exportTranslateX = 0;
+                        if (this.isPremiumLayout) {
+                            exportFontSize = Math.round(exportFontSize * 0.95);
+                            exportTranslateX = -15;
+                        }
                         node.style.background = 'none';
                         node.style.backgroundClip = 'border-box';
                         node.style.webkitBackgroundClip = 'border-box';
@@ -3687,11 +3693,11 @@
                         node.style.display = 'inline-block';
                         node.style.lineHeight = '1';
                         node.style.fontFamily = '"Bebas Neue", "Montserrat", Impact, sans-serif';
-                        node.style.fontSize = isBasic ? '50px' : '64px';
+                        node.style.fontSize = `${exportFontSize}px`;
                         node.style.fontWeight = '700';
                         node.style.letterSpacing = '0.02em';
                         node.style.transformOrigin = 'center center';
-                        node.style.transform = `rotate(-10deg) translateY(-${9 + priceExportLiftPx}px)`;
+                        node.style.transform = `rotate(-10deg) translate(${exportTranslateX}px, -${9 + priceExportLiftPx}px)`;
                         node.style.opacity = '1';
                         node.style.visibility = 'visible';
                     });
