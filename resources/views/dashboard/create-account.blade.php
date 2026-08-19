@@ -360,12 +360,6 @@
                                                         <template x-for="tag in (skin.tags || [])" :key="tag.name">
                                                             <img x-show="tag.image_url" :src="skinImage(tag)" :alt="tag.name" class="h-5 w-auto max-w-full object-contain object-left drop-shadow" loading="lazy">
                                                         </template>
-                                                        <span
-                                                            x-show="!skin.painted && (!skin.tags || !skin.tags.some(tag => tag.image_url)) && skin.rarity"
-                                                            class="rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ring-1"
-                                                            :class="rarityBadgeClass(skin.rarity)"
-                                                            x-text="skin.rarity"
-                                                        ></span>
                                                     </div>
                                                 </div>
                                                 <div class="px-1.5 py-1.5 sm:px-2.5 sm:py-2">
@@ -695,12 +689,6 @@
                                                     <template x-for="tag in (skin.tags || [])" :key="tag.name">
                                                         <img x-show="tag.image_url" :src="tag.image_url" :alt="tag.name" class="lp-tag-img" @@error="$event.target.style.display='none'">
                                                     </template>
-                                                    <span
-                                                        x-show="!skin.painted && (!skin.tags || !skin.tags.some(tag => tag.image_url)) && skin.rarity"
-                                                        class="lp-rarity"
-                                                        :class="rarityClass(skin.rarity)"
-                                                        x-text="skin.rarity"
-                                                    ></span>
                                                 </div>
                                                 <div class="lp-skin-meta">
                                                     <p class="lp-skin-name" x-text="skin.name"></p>
@@ -795,12 +783,6 @@
                                                     <template x-for="tag in (skin.tags || [])" :key="tag.name">
                                                         <img x-show="tag.image_url" :src="tag.image_url" :alt="tag.name" class="lp-tag-img" @@error="$event.target.style.display='none'">
                                                     </template>
-                                                    <span
-                                                        x-show="!skin.painted && (!skin.tags || !skin.tags.some(tag => tag.image_url)) && skin.rarity"
-                                                        class="lp-rarity"
-                                                        :class="rarityClass(skin.rarity)"
-                                                        x-text="skin.rarity"
-                                                    ></span>
                                                 </div>
                                                 <div class="lp-skin-meta">
                                                     <p class="lp-skin-name" x-text="skin.name"></p>
