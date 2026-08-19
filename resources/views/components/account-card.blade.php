@@ -33,6 +33,56 @@
         transform: scale(1.1);
         box-shadow: 0 2px 8px rgba(59, 130, 246, 0.5) !important;
     }
+    .account-card-image {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 681 / 1024;
+        flex-shrink: 0;
+        overflow: hidden;
+        border-radius: 0.5rem;
+        border: 1px solid #2d2c31;
+        background-color: #0e1015;
+    }
+    .account-card-image > img {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        object-position: center center;
+    }
+    .account-card-image-empty {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #6b7280;
+        font-size: 0.875rem;
+    }
+    @media (max-width: 639px) {
+        .account-card .account-card-body {
+            padding: 0.75rem 0.7rem 0.85rem !important;
+            gap: 0.65rem !important;
+        }
+        .account-card .account-card-price {
+            font-size: 1.25rem !important;
+        }
+        .account-card .account-buy-btn {
+            padding: 0.35rem 0.65rem;
+            font-size: 0.7rem;
+        }
+        .account-card .account-card-seller {
+            padding-left: 0.7rem !important;
+            padding-right: 0.7rem !important;
+            margin-bottom: 8px !important;
+        }
+        .account-card .account-card-attrs {
+            height: 48px !important;
+            margin-left: 0 !important;
+            margin-right: 0 !important;
+        }
+    }
 </style>
 
 @php
@@ -105,7 +155,7 @@
     </div>
 
     <!-- Card Content -->
-    <div class="flex flex-col flex-1 justify-between px-4 py-4 space-y-4 sm:px-5">
+    <div class="account-card-body flex flex-col flex-1 justify-between px-4 py-4 space-y-4 sm:px-5">
         <!-- Collection Tier/Skins Section -->
         <div class="pt-1.5">
             <div class="flex items-center gap-x-2">
@@ -142,28 +192,21 @@
         </div>
 
         <!-- Account Image -->
-        <div style="margin-bottom: 15px;">
-            <div class="relative overflow-hidden rounded-lg account-image-hover flex items-center justify-center" style="aspect-ratio: 681 / 1024; width: 100%; border: 1px solid #2d2c31; background-color: #0e1015;">
-                @if($coverImage)
-                    <button class="w-full h-full cursor-zoom-in flex items-center justify-center">
-                        <span class="sr-only">View Images</span>
-                        <img src="{{ asset('storage/' . $coverImage->url) }}" alt="Account Image" class="object-contain w-full h-full" loading="lazy">
-                    </button>
-                    @if($overlayCount > 0 && ($hasCover ? $galleryCount > 0 : $imageCount > 1))
-                        <button type="button" class="inline-flex items-center justify-center transition-colors overflow-hidden font-medium whitespace-nowrap py-1.5 px-2 text-xs rounded-md absolute right-2 bottom-2 backdrop-blur-md" style="background-color: rgba(27, 26, 30, 0.8); color: #ffffff; border: 1px solid #2d2c31;">
-                            <i class="mr-2 fas fa-images"></i> {{ $overlayCount }}+
-                        </button>
-                    @endif
-                @else
-                    <div class="w-full h-full flex items-center justify-center" style="background-color: #0e1015;">
-                        <span class="text-gray-500 text-sm">No Image</span>
-                    </div>
+        <div class="account-card-image account-image-hover">
+            @if($coverImage)
+                <img src="{{ asset('storage/' . $coverImage->url) }}" alt="Account Image" loading="lazy">
+                @if($overlayCount > 0 && ($hasCover ? $galleryCount > 0 : $imageCount > 1))
+                    <span class="inline-flex items-center justify-center overflow-hidden font-medium whitespace-nowrap py-1.5 px-2 text-xs rounded-md absolute right-2 bottom-2 backdrop-blur-md" style="background-color: rgba(27, 26, 30, 0.8); color: #ffffff; border: 1px solid #2d2c31;">
+                        <i class="mr-2 fas fa-images"></i> {{ $overlayCount }}+
+                    </span>
                 @endif
-            </div>
+            @else
+                <div class="account-card-image-empty">No Image</div>
+            @endif
         </div>
 
         <!-- Account Attributes - Individual Items with Borders -->
-        <div class="attributes-scroll overflow-y-auto overflow-x-hidden rounded-md flex flex-wrap gap-1.5" style="height: 60px; margin-left: 5px; margin-right: 5px; padding: 0.5rem; background-color: rgba(27, 26, 30, 0.5); border: 1px solid rgba(255, 255, 255, 0.05);">
+        <div class="account-card-attrs attributes-scroll overflow-y-auto overflow-x-hidden rounded-md flex flex-wrap gap-1.5" style="height: 60px; margin-left: 5px; margin-right: 5px; padding: 0.5rem; background-color: rgba(27, 26, 30, 0.5); border: 1px solid rgba(255, 255, 255, 0.05);">
             @php
                 $attributesList = [];
                 if (isset($accountAttributes['skins_count'])) {
@@ -203,7 +246,7 @@
         <!-- Price and Buy Button -->
         <div class="flex relative gap-1 justify-between items-center pt-1">
             <div class="flex gap-x-1 items-baseline truncate">
-                <span class="text-3xl font-bold tracking-tight text-transparent bg-clip-text" style="background: linear-gradient(to left, #ffffff, rgba(255, 255, 255, 0.6)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                <span class="account-card-price text-3xl font-bold tracking-tight text-transparent bg-clip-text" style="background: linear-gradient(to left, #ffffff, rgba(255, 255, 255, 0.6)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
                     {{ number_format($account->price_dzd, 0, '.', '') }}
                 </span>
                 <span class="text-sm font-semibold leading-6" style="color: rgba(255, 255, 255, 0.6);">DA</span>
@@ -225,7 +268,7 @@
     <div class="h-px w-full" style="background: linear-gradient(90deg, rgba(45, 44, 49, 0.1), #2d2c31, rgba(45, 44, 49, 0.1));"></div>
 
     <!-- Seller Info (Bottom Section) -->
-    <button class="flex gap-x-2 justify-between items-center px-5 py-3 rounded-b-xl border-t group-hover:bg-opacity-50" style="background-color: rgba(27, 26, 30, 0.5); border-color: #2d2c31; margin-bottom: 15px;">
+    <button class="account-card-seller flex gap-x-2 justify-between items-center px-5 py-3 rounded-b-xl border-t group-hover:bg-opacity-50" style="background-color: rgba(27, 26, 30, 0.5); border-color: #2d2c31; margin-bottom: 15px;">
         <div class="flex items-center truncate cursor-pointer">
             @if($user)
                 <div class="relative block shrink-0 rounded-full border flex items-center justify-center" style="height: 36px; width: 36px; border-color: #252429; margin-bottom: 5px; margin-right: 5px;">

@@ -911,6 +911,7 @@
 
         .listing-poster-frame {
             width: 100%;
+            max-width: 100%;
             display: flex;
             justify-content: center;
             overflow: hidden;
@@ -920,6 +921,7 @@
             height: 1024px;
             transform-origin: top center;
             will-change: transform;
+            flex-shrink: 0;
         }
         .listing-poster,
         .listing-poster * {
@@ -2346,9 +2348,11 @@
                 updatePosterPreviewScale() {
                     const frame = this.$refs.posterFrame;
                     if (!frame) return;
-                    const available = frame.clientWidth || 681;
+                    const available = Math.max(0, frame.clientWidth) || 681;
                     this.posterPreviewScale = Math.min(1, available / 681);
-                    frame.style.minHeight = `${Math.ceil(1024 * this.posterPreviewScale)}px`;
+                    const scaledHeight = Math.ceil(1024 * this.posterPreviewScale);
+                    frame.style.height = `${scaledHeight}px`;
+                    frame.style.minHeight = `${scaledHeight}px`;
                 },
                 wizard() {
                     const form = document.getElementById('createAccountForm');

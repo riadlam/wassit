@@ -335,10 +335,10 @@ if ($seller && !empty($seller->pfp)) {
                                 @foreach($images as $index => $image)
                                     <div class="swiper-slide">
                                         <a href="{{ asset('storage/' . $image->url) }}" class="glightbox" data-gallery="account-gallery">
-                                            <div class="relative overflow-clip rounded-lg ring-1 hover:ring-2 cursor-zoom-in transition-all duration-300 h-[293px]" style="border-color: #2d2c31; background-color: rgba(27, 26, 30, 0.5);">
+                                            <div class="relative overflow-hidden rounded-lg ring-1 hover:ring-2 cursor-zoom-in transition-all duration-300 account-gallery-frame" style="border-color: #2d2c31; background-color: rgba(27, 26, 30, 0.5);">
                                                 <button class="w-full h-full" type="button">
                                                     <span class="sr-only">View Images</span>
-                                                    <img src="{{ asset('storage/' . $image->url) }}" alt="Account Image" class="object-cover w-full h-full transition-transform duration-300 hover:scale-125" loading="lazy">
+                                                    <img src="{{ asset('storage/' . $image->url) }}" alt="Account Image" class="account-gallery-img transition-transform duration-300 hover:scale-105" loading="lazy">
                                                 </button>
                                                 @if($index === 0 && $imageCount > 1)
                                                     <button type="button" class="inline-flex items-center justify-center transition-colors focus:outline focus:outline-offset-2 focus-visible:outline outline-none disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden font-medium active:translate-y-px whitespace-nowrap py-1.5 px-2 text-xs rounded-md absolute right-2 bottom-2 backdrop-blur-md" style="background-color: rgba(27, 26, 30, 0.8); color: rgba(255, 255, 255, 0.9); border: 1px solid rgba(45, 44, 49, 0.5);">
@@ -1079,6 +1079,35 @@ if ($seller && !empty($seller->pfp)) {
             display: flex;
             justify-content: center;
             align-items: center;
+        }
+        .account-gallery-frame {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 681 / 1024;
+            max-height: min(80vh, 720px);
+        }
+        .account-gallery-frame button {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+            padding: 0;
+            border: 0;
+            background: transparent;
+        }
+        .account-gallery-img {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            object-position: center center;
+        }
+        @media (max-width: 639px) {
+            .account-gallery-frame {
+                max-height: 70vh;
+            }
         }
         .swiper-button-prev-custom,
         .swiper-button-next-custom {
