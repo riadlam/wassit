@@ -3668,6 +3668,7 @@
 
                     this.hardenPosterTextForExport(clone);
 
+                    const priceExportLiftPx = Math.round(POSTER_HEIGHT * 0.03);
                     clone.querySelectorAll('.lp-price-slot').forEach((node) => {
                         node.style.overflow = 'visible';
                         node.style.zIndex = '10';
@@ -3690,7 +3691,7 @@
                         node.style.fontWeight = '700';
                         node.style.letterSpacing = '0.02em';
                         node.style.transformOrigin = 'center center';
-                        node.style.transform = 'rotate(-10deg) translateY(-9px)';
+                        node.style.transform = `rotate(-10deg) translateY(-${9 + priceExportLiftPx}px)`;
                         node.style.opacity = '1';
                         node.style.visibility = 'visible';
                     });
