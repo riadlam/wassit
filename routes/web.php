@@ -1,13 +1,14 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Broadcast;
-use App\Http\Controllers\HomeController;
-use App\Http\Controllers\GameController;
-use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\PartnerController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\GameController;
+use App\Http\Controllers\HomeController;
+use App\Http\Controllers\ListingPosterController;
+use App\Http\Controllers\PartnerController;
 use App\Http\Controllers\WithdrawalController;
+use Illuminate\Support\Facades\Broadcast;
+use Illuminate\Support\Facades\Route;
 
 // Broadcasting authentication routes (must be first, before any catch-all routes)
 Broadcast::routes(['middleware' => ['web', 'auth']]);
@@ -64,12 +65,22 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middl
 Route::get('/auth/google', [AuthController::class, 'redirectToGoogle'])->name('auth.google');
 Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallback'])->name('auth.google.callback');
 
+Route::get('/internal/listing-poster/{token}', [ListingPosterController::class, 'renderPreview'])
+    ->withoutMiddleware([
+        \Illuminate\Cookie\Middleware\EncryptCookies::class,
+        \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+        \Illuminate\Session\Middleware\StartSession::class,
+        \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+        \App\Http\Middleware\VerifyCsrfToken::class,
+    ])
+    ->name('account.listing-poster.render');
+
 // Dashboard Routes (must come before catch-all route) - Auth Protected
 Route::prefix('account')->name('account.')->middleware('auth')->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('index');
     Route::get('/orders', [DashboardController::class, 'orders'])->name('orders');
     Route::get('/chat', [DashboardController::class, 'chat'])->name('chat');
-    
+
     // Chat API routes
     Route::prefix('chat')->name('chat.')->group(function () {
         Route::get('/conversations', [\App\Http\Controllers\ChatController::class, 'getConversations'])->name('conversations');
@@ -79,10 +90,10 @@ Route::prefix('account')->name('account.')->middleware('auth')->group(function (
         Route::post('/conversations/{id}/messages', [\App\Http\Controllers\ChatController::class, 'sendMessage'])->name('send');
         Route::post('/conversations/{id}/confirm-delivery', [\App\Http\Controllers\ChatController::class, 'confirmDelivery'])->name('confirm-delivery');
     });
-    
+
     Route::get('/wallet', [DashboardController::class, 'wallet'])->name('wallet');
     Route::get('/library', [DashboardController::class, 'library'])->name('library');
-    
+
     // Seller-only routes
     Route::middleware(\App\Http\Middleware\EnsureUserIsSeller::class)->group(function () {
         Route::post('/wallet/withdrawals', [WithdrawalController::class, 'store'])
@@ -95,8 +106,10 @@ Route::prefix('account')->name('account.')->middleware('auth')->group(function (
         Route::put('/listed-accounts/{id}', [DashboardController::class, 'updateAccount'])->name('listed-accounts.update');
         Route::patch('/listed-accounts/{id}/status', [DashboardController::class, 'updateAccountStatus'])->name('listed-accounts.update-status');
         Route::delete('/listed-accounts/{id}', [DashboardController::class, 'deleteAccount'])->name('listed-accounts.delete');
+        Route::post('/listing-poster/export', [ListingPosterController::class, 'export'])->name('listing-poster.export');
+        Route::get('/listing-poster/download/{path}', [ListingPosterController::class, 'download'])->name('listing-poster.download');
     });
-    
+
     Route::get('/settings', [DashboardController::class, 'settings'])->name('settings');
     Route::post('/settings/update-profile', [DashboardController::class, 'updateProfile'])->name('settings.update-profile');
     Route::post('/settings/logout-all', [DashboardController::class, 'logoutAllDevices'])->name('settings.logout-all');
