@@ -339,7 +339,7 @@ if ($seller && !empty($seller->pfp)) {
                                                 </button>
                                                 @if($index === 0 && $imageCount > 1)
                                                     <button type="button" class="inline-flex items-center justify-center transition-colors focus:outline focus:outline-offset-2 focus-visible:outline outline-none disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden font-medium active:translate-y-px whitespace-nowrap py-1.5 px-2 text-xs rounded-md absolute right-2 bottom-2 backdrop-blur-md" style="background-color: rgba(27, 26, 30, 0.8); color: rgba(255, 255, 255, 0.9); border: 1px solid rgba(45, 44, 49, 0.5);">
-                                                        <i class="mr-2 fa-solid fa-images"></i> {{ $imageCount }}+
+                                                        <i class="mr-2 fa-solid fa-images"></i> {{ $imageCount }}
                                                     </button>
                                                 @endif
                                             </div>

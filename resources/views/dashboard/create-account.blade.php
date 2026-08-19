@@ -1834,7 +1834,10 @@
                     const el = document.getElementById('listingPoster');
                     if (!el || typeof Alpine === 'undefined') return null;
                     try {
-                        return Alpine.$data(el) ?? null;
+                        const root = el.closest('[x-data]');
+                        if (!root) return null;
+                        const data = Alpine.$data(root);
+                        return data && typeof data.exportPosterFile === 'function' ? data : null;
                     } catch {
                         return null;
                     }
@@ -1952,7 +1955,7 @@
                         const preview = this.getListingPreview();
                         if (preview && typeof preview.exportPosterFile === 'function') {
                             try {
-                                const cover = await preview.exportPosterFile();
+                                const cover = await preview.exportPosterFile(true);
                                 if (cover) {
                                     formData.append('listing_cover', cover, 'listing-poster.png');
                                 }
@@ -4085,8 +4088,8 @@
                     return blob;
                     });
                 },
-                async exportPosterFile() {
-                    if (!this.canDownloadPoster()) {
+                async exportPosterFile(forUpload = false) {
+                    if (!forUpload && !this.canDownloadPoster()) {
                         return null;
                     }
                     const blob = await this.exportPosterBlob();

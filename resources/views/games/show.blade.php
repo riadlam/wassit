@@ -1588,9 +1588,7 @@ use Illuminate\Support\Facades\Storage;
 
                     const accountImages = Array.isArray(account.images) ? account.images : [];
                     const coverImage = accountImages.find((image) => image.is_cover) || accountImages[0];
-                    const galleryCount = accountImages.filter((image) => !image.is_cover).length;
-                    const hasCover = accountImages.some((image) => image.is_cover);
-                    const overlayCount = hasCover ? galleryCount : accountImages.length;
+                    const imageCount = accountImages.length;
                     const mainImage = coverImage
                         ? storageUrl(coverImage.url, '{{ asset("storage/default-account.png") }}')
                         : '{{ asset("storage/default-account.png") }}';
@@ -1710,9 +1708,9 @@ use Illuminate\Support\Facades\Storage;
                                 <!-- Account Image -->
                                 <div class="account-card-image account-image-hover">
                                     <img src="${escapeHtml(mainImage)}" alt="Account Image">
-                                    ${overlayCount > 0 && (hasCover ? galleryCount > 0 : accountImages.length > 1) ? `
+                                    ${imageCount > 1 ? `
                                         <span class="inline-flex items-center justify-center overflow-hidden font-medium whitespace-nowrap py-1.5 px-2 text-xs rounded-md absolute right-2 bottom-2 backdrop-blur-md" style="background-color: rgba(27, 26, 30, 0.8); color: #ffffff; border: 1px solid #2d2c31;">
-                                            <i class="mr-2 fas fa-images"></i> ${overlayCount}+
+                                            <i class="mr-2 fas fa-images"></i> ${imageCount}
                                         </span>
                                     ` : ''}
                                 </div>
