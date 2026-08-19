@@ -3331,9 +3331,15 @@
                     ctx.drawImage(sourceImg, dx, dy, dw, dh);
                     ctx.restore();
 
-                    const dataUrl = canvas.toDataURL('image/png');
-                    this.releaseCanvas(canvas);
-                    return dataUrl;
+                    try {
+                        const dataUrl = canvas.toDataURL('image/png');
+                        this.releaseCanvas(canvas);
+                        return dataUrl;
+                    } catch (error) {
+                        console.warn('Frame rasterize toDataURL failed', error);
+                        this.releaseCanvas(canvas);
+                        return null;
+                    }
                 },
                 flattenCloneFrameImage(img) {
                     img.style.transform = 'none';
@@ -3381,6 +3387,59 @@
                         }
                     });
                 },
+                applyPosterImageDataMap(posterEl, imageMap) {
+                    posterEl.querySelectorAll('img').forEach((img) => {
+                        if (img.closest('[data-frame-key]')) return;
+                        const original = img.dataset.posterSrc || img.currentSrc || img.getAttribute('src') || '';
+                        const inlined = this.lookupPosterImageDataUrl(imageMap, original);
+                        if (inlined?.startsWith('data:')) {
+                            img.src = inlined;
+                            img.setAttribute('src', inlined);
+                        }
+                    });
+                },
+                async bakePosterFrames(posterEl, imageMap) {
+                    const rasterized = new Map();
+
+                    for (const viewport of posterEl.querySelectorAll('[data-frame-key]')) {
+                        const key = viewport.getAttribute('data-frame-key');
+                        const img = viewport.querySelector('img');
+                        if (!key || !img) continue;
+
+                        const vw = Math.max(1, Math.round(viewport.clientWidth || viewport.offsetWidth));
+                        const vh = Math.max(1, Math.round(viewport.clientHeight || viewport.offsetHeight));
+                        const background = this.frameViewportBackground(viewport);
+                        const original = img.dataset.posterSrc || img.currentSrc || img.src || '';
+                        const inlined = this.lookupPosterImageDataUrl(imageMap, original);
+
+                        let dataUrl = null;
+
+                        if (img.complete && img.naturalWidth > 0) {
+                            dataUrl = this.rasterizeFrameFromComputedStyle(img, vw, vh, background);
+                        }
+
+                        if (!dataUrl && inlined) {
+                            try {
+                                const decoded = await this.loadDecodedImage(inlined);
+                                const frame = this.readFrameState(key, img);
+                                dataUrl = this.rasterizeFrameImage(decoded, vw, vh, frame, background);
+                            } catch (error) {
+                                console.warn('Frame bake fallback failed', key, error);
+                            }
+                        }
+
+                        if (!dataUrl && img.complete && img.naturalWidth > 0) {
+                            const frame = this.readFrameState(key, img);
+                            dataUrl = this.rasterizeFrameImage(img, vw, vh, frame, background);
+                        }
+
+                        if (dataUrl) {
+                            rasterized.set(key, dataUrl);
+                        }
+                    }
+
+                    return rasterized;
+                },
                 async bakeLivePosterFramesInPlace(posterEl) {
                     for (const viewport of posterEl.querySelectorAll('[data-frame-key]')) {
                         const key = viewport.getAttribute('data-frame-key');
@@ -3409,6 +3468,7 @@
                         const img = viewport?.querySelector('img');
                         if (!img) return;
                         img.src = dataUrl;
+                        img.setAttribute('src', dataUrl);
                         this.flattenCloneFrameImage(img);
                     });
 
@@ -3418,9 +3478,10 @@
                         const img = viewport.querySelector('img');
                         if (!img) return;
                         const original = img.dataset.posterSrc || img.getAttribute('src') || '';
-                        const inlined = imageMap.get(original);
+                        const inlined = this.lookupPosterImageDataUrl(imageMap, original);
                         if (inlined?.startsWith('data:')) {
                             img.src = inlined;
+                            img.setAttribute('src', inlined);
                             this.flattenCloneFrameImage(img);
                         }
                     });
@@ -3513,7 +3574,7 @@
                         node.style.zIndex = '6';
                     });
                 },
-                preparePosterCloneForExport(clone) {
+                preparePosterCloneForExport(clone, { imageMap, rasterized } = {}) {
                     if (!clone) return;
                     const scaleWrap = clone.closest('.listing-poster-scale-wrap');
                     if (scaleWrap) {
@@ -3531,7 +3592,16 @@
                         node.style.display = '';
                     });
 
-                    clone.querySelectorAll('.lp-frame-viewport img').forEach((img) => {
+                    if (imageMap?.size) {
+                        this.stampPosterImageSources(clone);
+                        this.applyPosterImageDataMap(clone, imageMap);
+                    }
+                    if (rasterized?.size || imageMap?.size) {
+                        this.applyRasterizedFrames(clone, rasterized || new Map(), imageMap);
+                    }
+
+                    clone.querySelectorAll('[data-frame-key] img').forEach((img) => {
+                        img.removeAttribute('x-bind:src');
                         img.style.visibility = 'visible';
                         img.style.opacity = '1';
                     });
@@ -3824,50 +3894,42 @@
                         throw new Error('Could not prepare poster images. Wait for the preview to finish loading, then try again.');
                     }
 
-                    const savedImages = this.savePosterImageStates(el);
-                    let canvas;
-                    try {
-                        this.applyAllPosterImageDataMap(el, imageMap);
-                        await this.waitForImages(el, 10000);
-                        await this.yieldToBrowser(50);
+                    this.downloadStatus = 'Baking skin positions…';
+                    const rasterized = await this.bakePosterFrames(el, imageMap);
+                    await this.yieldToBrowser(50);
 
-                        this.downloadStatus = 'Baking skin positions…';
-                        await this.bakeLivePosterFramesInPlace(el);
-                        await this.waitForImages(el, 3000);
-                        await this.yieldToBrowser(100);
-
-                        this.downloadStatus = 'Rendering PNG…';
-                        const exportScale = this.posterExportScale();
-                        canvas = await Promise.race([
-                            html2canvas(el, {
-                                backgroundColor: '#c80000',
-                                width: POSTER_WIDTH,
-                                height: POSTER_HEIGHT,
-                                scale: exportScale,
-                                useCORS: true,
-                                allowTaint: true,
-                                logging: false,
-                                foreignObjectRendering: false,
-                                scrollX: 0,
-                                scrollY: 0,
-                                imageTimeout: 15000,
-                                onclone: (clonedDoc) => {
-                                    this.preparePosterCloneForExport(
-                                        clonedDoc.getElementById('listingPoster')
-                                    );
-                                },
-                            }),
-                            new Promise((_, reject) => {
-                                window.setTimeout(
-                                    () => reject(new Error('Poster export timed out. Try again when images finish loading.')),
-                                    this.exportTimeoutMs()
+                    this.downloadStatus = 'Rendering PNG…';
+                    const exportScale = this.posterExportScale();
+                    const canvas = await Promise.race([
+                        html2canvas(el, {
+                            backgroundColor: '#c80000',
+                            width: POSTER_WIDTH,
+                            height: POSTER_HEIGHT,
+                            scale: exportScale,
+                            useCORS: true,
+                            allowTaint: true,
+                            logging: false,
+                            foreignObjectRendering: false,
+                            scrollX: 0,
+                            scrollY: 0,
+                            imageTimeout: 15000,
+                            onclone: (clonedDoc) => {
+                                this.preparePosterCloneForExport(
+                                    clonedDoc.getElementById('listingPoster'),
+                                    { imageMap, rasterized }
                                 );
-                            }),
-                        ]);
-                    } finally {
-                        this.restorePosterImageStates(savedImages);
-                        imageMap.clear();
-                    }
+                            },
+                        }),
+                        new Promise((_, reject) => {
+                            window.setTimeout(
+                                () => reject(new Error('Poster export timed out. Try again when images finish loading.')),
+                                this.exportTimeoutMs()
+                            );
+                        }),
+                    ]);
+
+                    imageMap.clear();
+                    rasterized.clear();
 
                     const mime = this.posterExportMime();
                     const quality = this.posterExportQuality();
