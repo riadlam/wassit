@@ -2864,7 +2864,7 @@
                 },
                 async buildPosterImageDataMap(posterEl) {
                     const map = new Map();
-                    const images = [...posterEl.querySelectorAll('img')].filter((img) => !img.closest('[data-frame-key]'));
+                    const images = [...posterEl.querySelectorAll('img')];
 
                     for (const img of images) {
                         const key = img.dataset.posterSrc || img.currentSrc || img.src || '';
@@ -2878,17 +2878,46 @@
 
                     return map;
                 },
+                async withPosterExportLayout(run) {
+                    const frame = this.$refs.posterFrame;
+                    const prevScale = this.posterPreviewScale;
+                    const prevHeight = frame?.style.height || '';
+                    const prevMinHeight = frame?.style.minHeight || '';
+
+                    this.posterPreviewScale = 1;
+                    if (frame) {
+                        frame.style.height = `${POSTER_HEIGHT}px`;
+                        frame.style.minHeight = `${POSTER_HEIGHT}px`;
+                    }
+
+                    await this.$nextTick();
+                    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+                    this.refitPosterFrames();
+                    await new Promise((resolve) => window.setTimeout(resolve, 150));
+
+                    try {
+                        return await run();
+                    } finally {
+                        this.posterPreviewScale = prevScale;
+                        if (frame) {
+                            frame.style.height = prevHeight;
+                            frame.style.minHeight = prevMinHeight;
+                            this.updatePosterPreviewScale();
+                        }
+                    }
+                },
                 getFrameViewportSize(viewport) {
-                    let vw = Math.round(viewport.clientWidth || viewport.offsetWidth || 0);
-                    let vh = Math.round(viewport.clientHeight || viewport.offsetHeight || 0);
+                    const previewScale = this.posterPreviewScale || 1;
+                    let vw = Math.round((viewport.clientWidth || viewport.offsetWidth || 0) / previewScale);
+                    let vh = Math.round((viewport.clientHeight || viewport.offsetHeight || 0) / previewScale);
                     if (vw > 0 && vh > 0) {
                         return { vw, vh };
                     }
 
                     const host = viewport.closest('.lp-skin, .lp-primary, .lp-framable');
                     if (host) {
-                        vw = Math.round(host.clientWidth || host.offsetWidth || 0);
-                        vh = Math.round(host.clientHeight || host.offsetHeight || 0);
+                        vw = Math.round((host.clientWidth || host.offsetWidth || 0) / previewScale);
+                        vh = Math.round((host.clientHeight || host.offsetHeight || 0) / previewScale);
                     }
 
                     return {
@@ -2972,6 +3001,9 @@
                             return;
                         }
                         const image = new Image();
+                        if (!src.startsWith('data:') && !src.startsWith('blob:')) {
+                            image.crossOrigin = 'anonymous';
+                        }
                         image.onload = () => resolve(image);
                         image.onerror = () => reject(new Error('image load failed'));
                         image.src = src;
@@ -3030,9 +3062,7 @@
                     ctx.drawImage(sourceImg, dx, dy, dw, dh);
                     ctx.restore();
 
-                    const dataUrl = this.isMobileExportDevice()
-                        ? canvas.toDataURL('image/jpeg', 0.88)
-                        : canvas.toDataURL('image/png');
+                    const dataUrl = canvas.toDataURL('image/png');
                     this.releaseCanvas(canvas);
                     return dataUrl;
                 },
@@ -3087,7 +3117,6 @@
                 },
                 applyPosterImageDataMap(posterEl, imageMap) {
                     posterEl.querySelectorAll('img').forEach((img) => {
-                        if (img.closest('[data-frame-key]')) return;
                         const original = img.dataset.posterSrc || img.getAttribute('src') || '';
                         const inlined = imageMap.get(original);
                         if (inlined?.startsWith('data:')) {
@@ -3171,6 +3200,12 @@
                 },
                 preparePosterCloneForExport(clone, { imageMap, rasterized, live, framesAlreadyBaked = false }) {
                     if (!clone) return;
+                    const scaleWrap = clone.closest('.listing-poster-scale-wrap');
+                    if (scaleWrap) {
+                        scaleWrap.style.transform = 'none';
+                        scaleWrap.style.width = `${POSTER_WIDTH}px`;
+                        scaleWrap.style.height = `${POSTER_HEIGHT}px`;
+                    }
                     clone.style.transform = 'none';
                     clone.style.width = `${POSTER_WIDTH}px`;
                     clone.style.height = `${POSTER_HEIGHT}px`;
@@ -3411,6 +3446,7 @@
                     this.previewRecalls = this.padCatalogItems(recalls, 6);
                 },
                 async exportPosterBlob() {
+                    return this.withPosterExportLayout(async () => {
                     const el = document.getElementById('listingPoster');
                     if (!el || typeof html2canvas !== 'function') {
                         return null;
@@ -3444,6 +3480,7 @@
                     }
 
                     const restoreState = this.applyPosterFrameImages(el, rasterized);
+                    this.applyPosterImageDataMap(el, imageMap);
                     await this.waitForImages(el, 3000);
                     await this.yieldToBrowser(50);
 
@@ -3496,6 +3533,7 @@
                     this.releaseCanvas(canvas);
                     await this.yieldToBrowser(50);
                     return blob;
+                    });
                 },
                 async exportPosterFile() {
                     const blob = await this.exportPosterBlob();
