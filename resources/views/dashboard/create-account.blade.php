@@ -635,9 +635,9 @@
                                             <i class="fa-solid fa-eye text-red-600"></i>
                                             View Listing
                                         </h2>
-                                        <p class="text-sm text-gray-400">This poster is saved as the store cover. Gallery photos stay on the account page. Download exports at 1080px width for social posts.</p>
+                                        <p class="text-sm text-gray-400">This poster is saved as the store cover on desktop. Gallery photos stay on the account page. PNG download is desktop only (1080px for social posts).</p>
                                     </div>
-                                    <div class="flex flex-wrap items-center gap-2">
+                                    <div class="flex flex-wrap items-center gap-2" x-show="canDownloadPoster()">
                                         <button
                                             type="button"
                                             @click="downloadPoster()"
@@ -649,6 +649,10 @@
                                         </button>
                                     </div>
                                 </div>
+                                <p x-show="!canDownloadPoster()" class="mb-4 text-sm text-amber-200/90 rounded-lg px-3 py-2" style="background: rgba(251, 191, 36, 0.08); border: 1px solid rgba(251, 191, 36, 0.2);">
+                                    <i class="fa-solid fa-desktop mr-1.5"></i>
+                                    PNG download needs a desktop browser. You can still preview here and create the listing — your primary screenshot is used as the store cover on mobile.
+                                </p>
                                 <p x-show="downloadError" x-text="downloadError" class="mb-4 text-sm text-red-400"></p>
                                 <p x-show="downloading && downloadStatus" x-text="downloadStatus" class="mb-4 text-sm text-gray-400"></p>
 
@@ -2779,6 +2783,13 @@
                     });
                     await this.waitForImages(el, 12000);
                 },
+                isMobileDevice() {
+                    return window.matchMedia('(max-width: 767px)').matches
+                        || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+                },
+                canDownloadPoster() {
+                    return !this.isMobileDevice();
+                },
                 posterExportScale() {
                     return POSTER_EXPORT_SCALE;
                 },
@@ -3536,6 +3547,9 @@
                     });
                 },
                 async exportPosterFile() {
+                    if (!this.canDownloadPoster()) {
+                        return null;
+                    }
                     const blob = await this.exportPosterBlob();
                     if (!blob) return null;
                     return new File([blob], 'listing-poster.png', { type: 'image/png' });
@@ -3543,6 +3557,10 @@
                 async downloadPoster() {
                     this.downloadError = '';
                     this.downloadStatus = '';
+                    if (!this.canDownloadPoster()) {
+                        this.downloadError = 'PNG download is available on desktop only. Open this page on a computer to export.';
+                        return;
+                    }
                     if (typeof html2canvas !== 'function') {
                         this.downloadError = 'Download library failed to load. Refresh and try again.';
                         return;
