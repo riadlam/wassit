@@ -3063,14 +3063,71 @@
                         image.src = src;
                     });
                 },
-                readFrameState(key) {
+                readFrameState(key, img) {
                     const stored = this.imageFrames?.[key] || {};
-
+                    const transform = String(img?.style?.transform || '').trim();
+                    const match = transform.match(/translate\(\s*([-\d.]+)px\s*,\s*([-\d.]+)px\s*\)\s*scale\(\s*([-\d.]+)\s*\)/);
+                    if (match) {
+                        return {
+                            x: parseFloat(match[1]) || 0,
+                            y: parseFloat(match[2]) || 0,
+                            scale: parseFloat(match[3]) || 1,
+                        };
+                    }
                     return {
                         x: Number(stored.x) || 0,
                         y: Number(stored.y) || 0,
                         scale: Number(stored.scale) || 1,
                     };
+                },
+                rasterizeFrameFromComputedStyle(img, vw, vh, background = '#111111') {
+                    const iw = img.naturalWidth;
+                    const ih = img.naturalHeight;
+                    if (!iw || !ih || !vw || !vh) return null;
+
+                    const contain = Math.min(vw / iw, vh / ih);
+                    const dw = iw * contain;
+                    const dh = ih * contain;
+                    const dx = (vw - dw) / 2;
+                    const dy = (vh - dh) / 2;
+
+                    const layer = document.createElement('canvas');
+                    layer.width = vw;
+                    layer.height = vh;
+                    const layerCtx = layer.getContext('2d');
+                    if (!layerCtx) return null;
+                    layerCtx.clearRect(0, 0, vw, vh);
+                    layerCtx.drawImage(img, dx, dy, dw, dh);
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width = vw;
+                    canvas.height = vh;
+                    const ctx = canvas.getContext('2d');
+                    if (!ctx) {
+                        this.releaseCanvas(layer);
+                        return null;
+                    }
+
+                    ctx.fillStyle = background;
+                    ctx.fillRect(0, 0, vw, vh);
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.rect(0, 0, vw, vh);
+                    ctx.clip();
+
+                    const transform = window.getComputedStyle(img).transform;
+                    if (transform && transform !== 'none') {
+                        const matrix = new DOMMatrixReadOnly(transform);
+                        ctx.transform(matrix.a, matrix.b, matrix.c, matrix.d, matrix.e, matrix.f);
+                    }
+
+                    ctx.drawImage(layer, 0, 0, vw, vh);
+                    ctx.restore();
+
+                    const dataUrl = canvas.toDataURL('image/png');
+                    this.releaseCanvas(canvas);
+                    this.releaseCanvas(layer);
+                    return dataUrl;
                 },
                 rasterizeFrameImage(sourceImg, vw, vh, frame, background = '#111111') {
                     const iw = sourceImg.naturalWidth || sourceImg.width;
@@ -3134,24 +3191,32 @@
                         const img = viewport.querySelector('img');
                         if (!key || !img) continue;
 
-                        const original = img.dataset.posterSrc || img.currentSrc || img.src || '';
-                        const inlined = imageMap.get(original);
+                        const { vw, vh } = this.getFrameViewportSize(viewport);
+                        const background = this.frameViewportBackground(viewport);
 
                         try {
-                            let decoded = null;
+                            let dataUrl = null;
                             if (img.complete && img.naturalWidth > 0) {
-                                decoded = img;
-                            } else if (inlined) {
-                                decoded = await this.loadDecodedImage(inlined);
-                            } else if (original) {
-                                decoded = await this.loadDecodedImage(original);
+                                dataUrl = this.rasterizeFrameFromComputedStyle(img, vw, vh, background);
                             }
-                            if (!decoded) continue;
 
-                            const { vw, vh } = this.getFrameViewportSize(viewport);
-                            const background = this.frameViewportBackground(viewport);
-                            const frame = this.readFrameState(key);
-                            const dataUrl = this.rasterizeFrameImage(decoded, vw, vh, frame, background);
+                            if (!dataUrl) {
+                                const original = img.dataset.posterSrc || img.currentSrc || img.src || '';
+                                const inlined = imageMap.get(original);
+                                let decoded = null;
+                                if (img.complete && img.naturalWidth > 0) {
+                                    decoded = img;
+                                } else if (inlined) {
+                                    decoded = await this.loadDecodedImage(inlined);
+                                } else if (original) {
+                                    decoded = await this.loadDecodedImage(original);
+                                }
+                                if (!decoded) continue;
+
+                                const frame = this.readFrameState(key, img);
+                                dataUrl = this.rasterizeFrameImage(decoded, vw, vh, frame, background);
+                            }
+
                             if (dataUrl) {
                                 rasterized.set(key, dataUrl);
                             }
@@ -3281,7 +3346,7 @@
                         node.style.zIndex = '6';
                     });
                 },
-                preparePosterCloneForExport(clone, { imageMap, rasterized, live, framesAlreadyBaked = false }) {
+                preparePosterCloneForExport(clone, { imageMap, rasterized, live }) {
                     if (!clone) return;
                     const scaleWrap = clone.closest('.listing-poster-scale-wrap');
                     if (scaleWrap) {
@@ -3296,12 +3361,7 @@
                     clone.querySelectorAll('.lp-move-hint,[data-html2canvas-ignore]').forEach((node) => node.remove());
 
                     this.applyPosterImageDataMap(clone, imageMap);
-
-                    if (live && framesAlreadyBaked) {
-                        this.syncPosterFrameImagesFromLive(live, clone);
-                    } else {
-                        this.applyRasterizedFrames(clone, rasterized, imageMap);
-                    }
+                    this.applyRasterizedFrames(clone, rasterized, imageMap);
 
                     if (live) {
                         this.syncPosterCloneFromLive(live, clone);
@@ -3539,16 +3599,12 @@
                     this.stampPosterImageSources(el);
                     this.downloadStatus = 'Preparing artwork…';
                     const imageMap = await this.buildPosterImageDataMap(el);
+                    await this.yieldToBrowser(50);
                     const rasterized = await this.bakePosterFrames(el, imageMap);
 
                     if (rasterized.size === 0 && imageMap.size === 0) {
                         throw new Error('Could not prepare poster images. Wait for the preview to finish loading, then try again.');
                     }
-
-                    const restoreState = this.applyPosterFrameImages(el, rasterized);
-                    this.applyPosterImageDataMap(el, imageMap);
-                    await this.waitForImages(el, 3000);
-                    await this.yieldToBrowser(50);
 
                     this.downloadStatus = 'Rendering PNG…';
                     const exportScale = this.posterExportScale();
@@ -3570,7 +3626,7 @@
                                 onclone: (clonedDoc) => {
                                     this.preparePosterCloneForExport(
                                         clonedDoc.getElementById('listingPoster'),
-                                        { imageMap, rasterized, live: el, framesAlreadyBaked: true }
+                                        { imageMap, rasterized, live: el }
                                     );
                                 },
                             }),
@@ -3582,7 +3638,6 @@
                             }),
                         ]);
                     } finally {
-                        this.restorePosterImageState(restoreState);
                         imageMap.clear();
                         rasterized.clear();
                     }
