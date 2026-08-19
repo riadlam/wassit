@@ -322,12 +322,32 @@ if ($seller && !empty($seller->pfp)) {
                                 <span class="inline-block px-2 py-0.5 rounded text-xs whitespace-nowrap" style="color: rgba(255, 255, 255, 0.7); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 6px; background-color: rgba(27, 26, 30, 0.5);">{{ $imageCount }}</span>
                             </div>
                             <!-- Navigation arrows on top right -->
+                            @if($imageCount > 2)
                             <div class="flex items-center gap-2">
                                 <div class="swiper-button-prev-custom swiper-button-prev"></div>
                                 <div class="swiper-button-next-custom swiper-button-next"></div>
                             </div>
+                            @endif
                         </div>
-                            <div class="swiper account-gallery-swiper" style="--swiper-navigation-color: #ffffff; --swiper-pagination-color: #ef4444;">
+                        @if($imageCount === 0)
+                            <div class="mt-4 rounded-lg border border-dashed px-4 py-12 text-center text-sm text-gray-400" style="border-color: #2d2c31;">
+                                {{ __('messages.no_image') ?? 'No images uploaded yet.' }}
+                            </div>
+                        @elseif($imageCount <= 2)
+                            <div class="mt-4 grid grid-cols-1 gap-4 {{ $imageCount === 2 ? 'sm:grid-cols-2' : '' }}">
+                                @foreach($images as $image)
+                                    <a href="{{ asset('storage/' . $image->url) }}" class="glightbox block" data-gallery="account-gallery">
+                                        <div class="relative overflow-hidden rounded-lg ring-1 hover:ring-2 cursor-zoom-in transition-all duration-300 account-gallery-frame" style="border-color: #2d2c31; background-color: rgba(27, 26, 30, 0.5);">
+                                            <img src="{{ asset('storage/' . $image->url) }}" alt="{{ $image->is_cover ? 'Listing poster' : 'Account photo' }}" class="account-gallery-img transition-transform duration-300 hover:scale-105" loading="lazy">
+                                            <span class="absolute left-2 top-2 rounded-md px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-white backdrop-blur-md" style="background-color: rgba(27, 26, 30, 0.85); border: 1px solid rgba(255, 255, 255, 0.12);">
+                                                {{ $image->is_cover ? 'Listing Poster' : 'Account Photo' }}
+                                            </span>
+                                        </div>
+                                    </a>
+                                @endforeach
+                            </div>
+                        @else
+                            <div class="swiper account-gallery-swiper mt-4" style="--swiper-navigation-color: #ffffff; --swiper-pagination-color: #ef4444;">
                             <div class="swiper-wrapper">
                                 @foreach($images as $index => $image)
                                     <div class="swiper-slide">
@@ -337,17 +357,14 @@ if ($seller && !empty($seller->pfp)) {
                                                     <span class="sr-only">View Images</span>
                                                     <img src="{{ asset('storage/' . $image->url) }}" alt="Account Image" class="account-gallery-img transition-transform duration-300 hover:scale-105" loading="lazy">
                                                 </button>
-                                                @if($index === 0 && $imageCount > 1)
-                                                    <button type="button" class="inline-flex items-center justify-center transition-colors focus:outline focus:outline-offset-2 focus-visible:outline outline-none disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden font-medium active:translate-y-px whitespace-nowrap py-1.5 px-2 text-xs rounded-md absolute right-2 bottom-2 backdrop-blur-md" style="background-color: rgba(27, 26, 30, 0.8); color: rgba(255, 255, 255, 0.9); border: 1px solid rgba(45, 44, 49, 0.5);">
-                                                        <i class="mr-2 fa-solid fa-images"></i> {{ $imageCount }}
-                                                    </button>
-                                                @endif
                                             </div>
                                         </a>
                                     </div>
                                 @endforeach
                             </div>
+                            <div class="account-gallery-pagination swiper-pagination !relative mt-4"></div>
                         </div>
+                        @endif
                     </div>
                     
                     <!-- Account Data Section -->
@@ -1359,30 +1376,33 @@ if ($seller && !empty($seller->pfp)) {
                 return;
             }
 
-            // Initialize Swiper
-            const swiper = new Swiper('.account-gallery-swiper', {
-                slidesPerView: 1,
-                spaceBetween: 20,
-                loop: true,
-                navigation: {
-                    nextEl: '.swiper-button-next-custom',
-                    prevEl: '.swiper-button-prev-custom',
-                },
-                breakpoints: {
-                    640: {
-                        slidesPerView: 2,
-                        spaceBetween: 20,
+            const gallerySwiperEl = document.querySelector('.account-gallery-swiper');
+            if (gallerySwiperEl) {
+                const slideCount = gallerySwiperEl.querySelectorAll('.swiper-slide').length;
+                new Swiper(gallerySwiperEl, {
+                    slidesPerView: 1,
+                    spaceBetween: 20,
+                    loop: slideCount > 3,
+                    pagination: {
+                        el: gallerySwiperEl.querySelector('.account-gallery-pagination'),
+                        clickable: true,
                     },
-                    768: {
-                        slidesPerView: 2.5,
-                        spaceBetween: 30,
+                    navigation: {
+                        nextEl: '.swiper-button-next-custom',
+                        prevEl: '.swiper-button-prev-custom',
                     },
-                    1024: {
-                        slidesPerView: 2.5,
-                        spaceBetween: 30,
+                    breakpoints: {
+                        640: {
+                            slidesPerView: Math.min(2, slideCount),
+                            spaceBetween: 20,
+                        },
+                        1024: {
+                            slidesPerView: Math.min(2.5, slideCount),
+                            spaceBetween: 30,
+                        },
                     },
-                },
-            });
+                });
+            }
 
             // Initialize Related Accounts Swiper
             const relatedAccountsSwiper = new Swiper('.related-accounts-swiper', {
