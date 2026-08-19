@@ -3124,7 +3124,12 @@
                     ctx.drawImage(layer, 0, 0, vw, vh);
                     ctx.restore();
 
-                    const dataUrl = canvas.toDataURL('image/png');
+                    let dataUrl = null;
+                    try {
+                        dataUrl = canvas.toDataURL('image/png');
+                    } catch (error) {
+                        console.warn('Frame rasterize toDataURL failed', error);
+                    }
                     this.releaseCanvas(canvas);
                     this.releaseCanvas(layer);
                     return dataUrl;
@@ -3225,6 +3230,32 @@
                         }
                     }
                     return rasterized;
+                },
+                async inlinePosterFrameSources(posterEl, imageMap) {
+                    const saved = [];
+                    posterEl.querySelectorAll('[data-frame-key] img').forEach((img) => {
+                        const original = img.dataset.posterSrc || img.currentSrc || img.src || '';
+                        saved.push({
+                            img,
+                            src: img.getAttribute('src') || '',
+                            transform: img.style.transform || '',
+                        });
+                        const inlined = imageMap.get(original);
+                        if (inlined?.startsWith('data:')) {
+                            img.src = inlined;
+                        }
+                    });
+                    if (saved.length) {
+                        await this.waitForImages(posterEl, 8000);
+                    }
+                    return saved;
+                },
+                restoreInlinePosterFrameSources(saved) {
+                    (saved || []).forEach(({ img, src, transform }) => {
+                        if (!img) return;
+                        img.src = src;
+                        img.style.transform = transform;
+                    });
                 },
                 applyPosterImageDataMap(posterEl, imageMap) {
                     posterEl.querySelectorAll('img').forEach((img) => {
@@ -3346,7 +3377,7 @@
                         node.style.zIndex = '6';
                     });
                 },
-                preparePosterCloneForExport(clone, { imageMap, rasterized, live }) {
+                preparePosterCloneForExport(clone, { imageMap, rasterized, live, liveFramesBaked = false }) {
                     if (!clone) return;
                     const scaleWrap = clone.closest('.listing-poster-scale-wrap');
                     if (scaleWrap) {
@@ -3361,12 +3392,36 @@
                     clone.querySelectorAll('.lp-move-hint,[data-html2canvas-ignore]').forEach((node) => node.remove());
 
                     this.applyPosterImageDataMap(clone, imageMap);
-                    this.applyRasterizedFrames(clone, rasterized, imageMap);
+
+                    if (live && liveFramesBaked) {
+                        this.syncPosterFrameImagesFromLive(live, clone);
+                    } else {
+                        this.applyRasterizedFrames(clone, rasterized, imageMap);
+                    }
 
                     if (live) {
                         this.syncPosterCloneFromLive(live, clone);
                     }
                     this.hardenPosterTextForExport(clone);
+
+                    if (live) {
+                        ['.lp-featured', '.lp-gallery'].forEach((selector) => {
+                            const liveEl = live.querySelector(selector);
+                            const cloneEl = clone.querySelector(selector);
+                            if (liveEl && cloneEl) {
+                                cloneEl.style.display = window.getComputedStyle(liveEl).display;
+                            }
+                        });
+                        const liveSkins = live.querySelectorAll('.lp-skin');
+                        const cloneSkins = clone.querySelectorAll('.lp-skin');
+                        liveSkins.forEach((liveSkin, index) => {
+                            const cloneSkin = cloneSkins[index];
+                            if (!cloneSkin) return;
+                            cloneSkin.style.display = window.getComputedStyle(liveSkin).display;
+                            cloneSkin.style.visibility = 'visible';
+                            cloneSkin.style.opacity = '1';
+                        });
+                    }
 
                     clone.querySelectorAll('.lp-price-slot').forEach((node) => {
                         node.style.overflow = 'visible';
@@ -3599,12 +3654,19 @@
                     this.stampPosterImageSources(el);
                     this.downloadStatus = 'Preparing artwork…';
                     const imageMap = await this.buildPosterImageDataMap(el);
+                    const frameInlineState = await this.inlinePosterFrameSources(el, imageMap);
                     await this.yieldToBrowser(50);
                     const rasterized = await this.bakePosterFrames(el, imageMap);
 
                     if (rasterized.size === 0 && imageMap.size === 0) {
+                        this.restoreInlinePosterFrameSources(frameInlineState);
                         throw new Error('Could not prepare poster images. Wait for the preview to finish loading, then try again.');
                     }
+
+                    const restoreState = this.applyPosterFrameImages(el, rasterized);
+                    this.applyPosterImageDataMap(el, imageMap);
+                    await this.waitForImages(el, 8000);
+                    await this.yieldToBrowser(50);
 
                     this.downloadStatus = 'Rendering PNG…';
                     const exportScale = this.posterExportScale();
@@ -3626,7 +3688,7 @@
                                 onclone: (clonedDoc) => {
                                     this.preparePosterCloneForExport(
                                         clonedDoc.getElementById('listingPoster'),
-                                        { imageMap, rasterized, live: el }
+                                        { imageMap, rasterized, live: el, liveFramesBaked: true }
                                     );
                                 },
                             }),
@@ -3638,6 +3700,8 @@
                             }),
                         ]);
                     } finally {
+                        this.restorePosterImageState(restoreState);
+                        this.restoreInlinePosterFrameSources(frameInlineState);
                         imageMap.clear();
                         rasterized.clear();
                     }
