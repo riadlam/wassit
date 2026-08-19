@@ -3016,9 +3016,10 @@
                     if (fromElement) return fromElement;
 
                     try {
+                        const fetchUrl = src.startsWith('http') ? src : new URL(src, window.location.origin).href;
                         const controller = new AbortController();
                         const timer = window.setTimeout(() => controller.abort(), 12000);
-                        const response = await fetch(src, {
+                        const response = await fetch(fetchUrl, {
                             credentials: 'same-origin',
                             signal: controller.signal,
                         });
@@ -3226,6 +3227,13 @@
                 },
                 readFrameState(key, img) {
                     const stored = this.imageFrames?.[key] || {};
+                    if (stored && (stored.adjusted || stored.scale || stored.coverScale)) {
+                        return {
+                            x: Number(stored.x) || 0,
+                            y: Number(stored.y) || 0,
+                            scale: Number(stored.scale) || Number(stored.coverScale) || 1,
+                        };
+                    }
                     const transform = String(img?.style?.transform || '').trim();
                     const match = transform.match(/translate\(\s*([-\d.]+)px\s*,\s*([-\d.]+)px\s*\)\s*scale\(\s*([-\d.]+)\s*\)/);
                     if (match) {
@@ -3238,7 +3246,7 @@
                     return {
                         x: Number(stored.x) || 0,
                         y: Number(stored.y) || 0,
-                        scale: Number(stored.scale) || 1,
+                        scale: Number(stored.scale) || Number(stored.coverScale) || 1,
                     };
                 },
                 rasterizeFrameFromComputedStyle(img, vw, vh, background = '#111111') {
@@ -3352,9 +3360,42 @@
                     img.style.maxWidth = 'none';
                     img.style.maxHeight = 'none';
                     img.style.margin = '0';
+                    img.style.padding = '0';
+                    img.style.border = '0';
                     img.style.objectFit = 'fill';
                     img.style.objectPosition = 'center center';
+                    img.style.display = 'block';
+                    img.style.visibility = 'visible';
+                    img.style.opacity = '1';
                     img.style.willChange = 'auto';
+                },
+                async ensureFrameImagesInMap(posterEl, imageMap) {
+                    for (const img of posterEl.querySelectorAll('[data-frame-key] img')) {
+                        const candidates = [
+                            img.dataset.posterSrc,
+                            img.currentSrc,
+                            img.src,
+                            img.getAttribute('src'),
+                        ].filter(Boolean);
+
+                        let found = false;
+                        for (const original of candidates) {
+                            if (this.lookupPosterImageDataUrl(imageMap, original)) {
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (found) continue;
+
+                        for (const original of candidates) {
+                            const dataUrl = await this.resolvePosterImageDataUrl(img, original);
+                            if (dataUrl) {
+                                this.registerPosterImageMapEntry(imageMap, original, dataUrl);
+                                break;
+                            }
+                        }
+                        await this.yieldToBrowser(0);
+                    }
                 },
                 savePosterImageStates(posterEl) {
                     return [...posterEl.querySelectorAll('img')].map((img) => ({
@@ -3408,33 +3449,32 @@
 
                         const vw = Math.max(1, Math.round(viewport.clientWidth || viewport.offsetWidth));
                         const vh = Math.max(1, Math.round(viewport.clientHeight || viewport.offsetHeight));
+                        if (vw < 2 || vh < 2) continue;
+
                         const background = this.frameViewportBackground(viewport);
-                        const original = img.dataset.posterSrc || img.currentSrc || img.src || '';
-                        const inlined = this.lookupPosterImageDataUrl(imageMap, original);
+                        const candidates = [
+                            img.dataset.posterSrc,
+                            img.currentSrc,
+                            img.src,
+                            img.getAttribute('src'),
+                        ].filter(Boolean);
 
-                        let dataUrl = null;
-
-                        if (img.complete && img.naturalWidth > 0) {
-                            dataUrl = this.rasterizeFrameFromComputedStyle(img, vw, vh, background);
+                        let inlined = null;
+                        for (const original of candidates) {
+                            inlined = this.lookupPosterImageDataUrl(imageMap, original);
+                            if (inlined) break;
                         }
+                        if (!inlined) continue;
 
-                        if (!dataUrl && inlined) {
-                            try {
-                                const decoded = await this.loadDecodedImage(inlined);
-                                const frame = this.readFrameState(key, img);
-                                dataUrl = this.rasterizeFrameImage(decoded, vw, vh, frame, background);
-                            } catch (error) {
-                                console.warn('Frame bake fallback failed', key, error);
-                            }
-                        }
-
-                        if (!dataUrl && img.complete && img.naturalWidth > 0) {
+                        try {
+                            const decoded = await this.loadDecodedImage(inlined);
                             const frame = this.readFrameState(key, img);
-                            dataUrl = this.rasterizeFrameImage(img, vw, vh, frame, background);
-                        }
-
-                        if (dataUrl) {
-                            rasterized.set(key, dataUrl);
+                            const dataUrl = this.rasterizeFrameImage(decoded, vw, vh, frame, background);
+                            if (dataUrl) {
+                                rasterized.set(key, dataUrl);
+                            }
+                        } catch (error) {
+                            console.warn('Frame bake failed', key, error);
                         }
                     }
 
@@ -3462,28 +3502,50 @@
                     }
                     await this.yieldToBrowser(100);
                 },
-                applyRasterizedFrames(posterEl, rasterized, imageMap) {
-                    rasterized.forEach((dataUrl, key) => {
-                        const viewport = posterEl.querySelector(`[data-frame-key="${key}"]`);
-                        const img = viewport?.querySelector('img');
-                        if (!img) return;
-                        img.src = dataUrl;
-                        img.setAttribute('src', dataUrl);
-                        this.flattenCloneFrameImage(img);
-                    });
+                applyRasterizedFrames(posterEl, rasterized, imageMap, liveEl = null) {
+                    const liveSources = new Map();
+                    if (liveEl) {
+                        liveEl.querySelectorAll('[data-frame-key]').forEach((viewport) => {
+                            const key = viewport.getAttribute('data-frame-key');
+                            const img = viewport.querySelector('img');
+                            if (!key || !img) return;
+                            liveSources.set(key, [
+                                img.dataset.posterSrc,
+                                img.currentSrc,
+                                img.src,
+                                img.getAttribute('src'),
+                            ].filter(Boolean));
+                        });
+                    }
 
                     posterEl.querySelectorAll('[data-frame-key]').forEach((viewport) => {
                         const key = viewport.getAttribute('data-frame-key');
-                        if (!key || rasterized.has(key)) return;
-                        const img = viewport.querySelector('img');
-                        if (!img) return;
-                        const original = img.dataset.posterSrc || img.getAttribute('src') || '';
-                        const inlined = this.lookupPosterImageDataUrl(imageMap, original);
-                        if (inlined?.startsWith('data:')) {
-                            img.src = inlined;
-                            img.setAttribute('src', inlined);
-                            this.flattenCloneFrameImage(img);
+                        if (!key) return;
+
+                        let dataUrl = rasterized.get(key) || null;
+                        if (!dataUrl) {
+                            const sources = liveSources.get(key) || [
+                                viewport.querySelector('img')?.dataset?.posterSrc,
+                                viewport.querySelector('img')?.currentSrc,
+                                viewport.querySelector('img')?.src,
+                                viewport.querySelector('img')?.getAttribute('src'),
+                            ].filter(Boolean);
+                            for (const original of sources) {
+                                dataUrl = this.lookupPosterImageDataUrl(imageMap, original);
+                                if (dataUrl) break;
+                            }
                         }
+
+                        if (!dataUrl?.startsWith('data:')) return;
+
+                        const doc = viewport.ownerDocument;
+                        const newImg = doc.createElement('img');
+                        newImg.src = dataUrl;
+                        newImg.setAttribute('src', dataUrl);
+                        newImg.setAttribute('draggable', 'false');
+                        this.flattenCloneFrameImage(newImg);
+                        viewport.innerHTML = '';
+                        viewport.appendChild(newImg);
                     });
                 },
                 syncPosterFrameImagesFromLive(live, clone) {
@@ -3574,7 +3636,7 @@
                         node.style.zIndex = '6';
                     });
                 },
-                preparePosterCloneForExport(clone, { imageMap, rasterized } = {}) {
+                preparePosterCloneForExport(clone, { imageMap, rasterized, live } = {}) {
                     if (!clone) return;
                     const scaleWrap = clone.closest('.listing-poster-scale-wrap');
                     if (scaleWrap) {
@@ -3596,14 +3658,12 @@
                         this.stampPosterImageSources(clone);
                         this.applyPosterImageDataMap(clone, imageMap);
                     }
-                    if (rasterized?.size || imageMap?.size) {
-                        this.applyRasterizedFrames(clone, rasterized || new Map(), imageMap);
-                    }
+                    this.applyRasterizedFrames(clone, rasterized || new Map(), imageMap || new Map(), live);
 
-                    clone.querySelectorAll('[data-frame-key] img').forEach((img) => {
-                        img.removeAttribute('x-bind:src');
-                        img.style.visibility = 'visible';
-                        img.style.opacity = '1';
+                    clone.querySelectorAll('[data-frame-key]').forEach((viewport) => {
+                        viewport.style.overflow = 'hidden';
+                        viewport.style.position = 'absolute';
+                        viewport.style.inset = '0';
                     });
 
                     this.hardenPosterTextForExport(clone);
@@ -3890,12 +3950,17 @@
                     this.stampPosterImageSources(el);
                     this.downloadStatus = 'Preparing artwork…';
                     const imageMap = await this.buildPosterImageDataMap(el);
+                    this.downloadStatus = 'Inlining skin artwork…';
+                    await this.ensureFrameImagesInMap(el, imageMap);
                     if (imageMap.size === 0) {
                         throw new Error('Could not prepare poster images. Wait for the preview to finish loading, then try again.');
                     }
 
                     this.downloadStatus = 'Baking skin positions…';
                     const rasterized = await this.bakePosterFrames(el, imageMap);
+                    if (rasterized.size === 0) {
+                        console.warn('Poster export: no baked skin frames, using inline fallbacks');
+                    }
                     await this.yieldToBrowser(50);
 
                     this.downloadStatus = 'Rendering PNG…';
@@ -3916,7 +3981,7 @@
                             onclone: (clonedDoc) => {
                                 this.preparePosterCloneForExport(
                                     clonedDoc.getElementById('listingPoster'),
-                                    { imageMap, rasterized }
+                                    { imageMap, rasterized, live: el }
                                 );
                             },
                         }),
