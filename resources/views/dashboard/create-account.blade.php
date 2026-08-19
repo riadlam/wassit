@@ -635,7 +635,7 @@
                                             <i class="fa-solid fa-eye text-red-600"></i>
                                             View Listing
                                         </h2>
-                                        <p class="text-sm text-gray-400">This poster is saved as the store cover. Gallery photos stay on the account page. Download is generated on the server at 1080px width.</p>
+                                        <p class="text-sm text-gray-400">This poster is saved as the store cover. Gallery photos stay on the account page. Download exports at 1080px width for social posts.</p>
                                     </div>
                                     <div class="flex flex-wrap items-center gap-2">
                                         <button
@@ -645,15 +645,12 @@
                                             class="inline-flex items-center py-2.5 px-5 text-sm rounded-md bg-red-600 hover:bg-red-700 text-white font-medium disabled:opacity-50"
                                         >
                                             <i class="fa-solid fa-download mr-2"></i>
-                                            <span x-text="downloading ? (downloadStatus || 'Generating…') : 'Download PNG'"></span>
+                                            <span x-text="downloading ? (downloadStatus || 'Preparing…') : 'Download PNG'"></span>
                                         </button>
                                     </div>
                                 </div>
                                 <p x-show="downloadError" x-text="downloadError" class="mb-4 text-sm text-red-400"></p>
                                 <p x-show="downloading && downloadStatus" x-text="downloadStatus" class="mb-4 text-sm text-gray-400"></p>
-                                <p x-show="downloadLink" class="mb-4 text-sm">
-                                    <a :href="downloadLink" class="text-red-400 hover:text-red-300 underline" download>Poster ready — tap here if download did not start</a>
-                                </p>
 
                                 <div x-show="loading" class="text-center py-16">
                                     <div class="inline-block animate-spin rounded-full h-10 w-10 border-b-2 border-red-600"></div>
@@ -1520,6 +1517,7 @@
     @endpush
 
     @push('scripts')
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script>
         const CREATE_DRAFT_KEY = 'wasit.createAccount.draft.v1';
         const CREATE_IMAGES_DB = 'wasitCreateAccountImages';
@@ -2297,8 +2295,6 @@
                 downloading: false,
                 downloadError: '',
                 downloadStatus: '',
-                downloadLink: '',
-                posterExportUrl: @json(route('account.listing-poster.export')),
                 primaryImageUrl: '',
                 placeholderSkin: @json(asset('images/mlbb-primary-photo-example.png')),
                 featuredSkins: [],
@@ -2783,26 +2779,20 @@
                     });
                     await this.waitForImages(el, 12000);
                 },
-                isMobileExportDevice() {
-                    return window.matchMedia('(max-width: 767px)').matches
-                        || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
-                },
                 posterExportScale() {
-                    return this.isMobileExportDevice() ? 1 : POSTER_EXPORT_SCALE;
+                    return POSTER_EXPORT_SCALE;
                 },
                 posterExportFilename() {
-                    return this.isMobileExportDevice()
-                        ? 'wassitmarket-listing.jpg'
-                        : 'wassitmarket-listing-1080.png';
+                    return 'wassitmarket-listing-1080.png';
                 },
                 posterExportMime() {
-                    return this.isMobileExportDevice() ? 'image/jpeg' : 'image/png';
+                    return 'image/png';
                 },
                 posterExportQuality() {
-                    return this.isMobileExportDevice() ? 0.9 : 1;
+                    return 1;
                 },
                 posterImageMaxDimension() {
-                    return this.isMobileExportDevice() ? 640 : 2048;
+                    return 2048;
                 },
                 releaseCanvas(canvas) {
                     if (!canvas) return;
@@ -2813,7 +2803,7 @@
                     return new Promise((resolve) => window.setTimeout(resolve, ms));
                 },
                 exportTimeoutMs() {
-                    return this.isMobileExportDevice() ? 45000 : 60000;
+                    return 60000;
                 },
                 blobToDataUrl(blob) {
                     return new Promise((resolve, reject) => {
@@ -2843,9 +2833,7 @@
                         const ctx = canvas.getContext('2d');
                         if (!ctx) return null;
                         ctx.drawImage(img, 0, 0, width, height);
-                        const dataUrl = this.isMobileExportDevice()
-                            ? canvas.toDataURL('image/jpeg', 0.88)
-                            : canvas.toDataURL('image/png');
+                        const dataUrl = canvas.toDataURL('image/png');
                         this.releaseCanvas(canvas);
                         return dataUrl;
                     } catch {
@@ -3422,118 +3410,129 @@
                     this.previewEmotes = this.padCatalogItems(emotes, 6);
                     this.previewRecalls = this.padCatalogItems(recalls, 6);
                 },
-                csrfToken() {
-                    return document.querySelector('meta[name="csrf-token"]')?.content
-                        || document.querySelector('input[name="_token"]')?.value
-                        || '';
-                },
-                serializePosterSkin(skin) {
-                    return {
-                        name: skin?.name || '',
-                        hero: skin?.hero || '',
-                        image_url: this.proxiedUrl(skin?.image_url || skin?.thumbnail_url || ''),
-                        painted: !!skin?.painted,
-                        rarity: skin?.rarity || '',
-                        tags: (skin?.tags || []).map((tag) => ({
-                            name: tag?.name || '',
-                            image_url: this.proxiedUrl(tag?.image_url || ''),
-                        })),
-                    };
-                },
-                serializePosterItem(item) {
-                    return {
-                        name: item?.name || '',
-                        image_url: this.proxiedUrl(item?.image_url || ''),
-                    };
-                },
-                async blobUrlToDataUrl(url) {
-                    if (!url) {
-                        throw new Error('Primary screenshot is missing.');
+                async exportPosterBlob() {
+                    const el = document.getElementById('listingPoster');
+                    if (!el || typeof html2canvas !== 'function') {
+                        return null;
                     }
-                    if (url.startsWith('data:')) {
-                        return url;
+
+                    const started = Date.now();
+                    while (this.loading && Date.now() - started < 20000) {
+                        await new Promise((resolve) => setTimeout(resolve, 200));
                     }
-                    const response = await fetch(url);
-                    if (!response.ok) {
-                        throw new Error('Could not read the primary screenshot.');
-                    }
-                    const blob = await response.blob();
-                    return await new Promise((resolve, reject) => {
-                        const reader = new FileReader();
-                        reader.onload = () => resolve(reader.result);
-                        reader.onerror = reject;
-                        reader.readAsDataURL(blob);
-                    });
-                },
-                async buildPosterExportPayload() {
+
                     this.endFrameDrag();
                     this.dismissFrameHint();
                     await this.$nextTick();
 
-                    const primaryImage = await this.blobUrlToDataUrl(this.primaryImageUrl);
-
-                    return {
-                        layout: this.isPremiumLayout ? 'premium' : 'basic',
-                        price: this.formattedPrice,
-                        stats: { ...this.stats },
-                        primary_image: primaryImage,
-                        frames: { ...this.imageFrames },
-                        featured_skins: (this.featuredSkins || []).map((skin) => this.serializePosterSkin(skin)),
-                        gallery_skins: (this.bottomSkins || []).map((skin) => this.serializePosterSkin(skin)),
-                        gallery_layout: { ...(this.galleryLayout || {}) },
-                        emotes: (this.previewEmotes || []).map((item) => this.serializePosterItem(item)),
-                        recalls: (this.previewRecalls || []).map((item) => this.serializePosterItem(item)),
-                        collection_badge_url: this.collectionTierImageUrl
-                            ? this.proxiedUrl(this.collectionTierImageUrl)
-                            : '',
-                    };
-                },
-                async requestPosterFromServer() {
-                    const payload = await this.buildPosterExportPayload();
-                    const response = await fetch(this.posterExportUrl, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': this.csrfToken(),
-                            'X-Requested-With': 'XMLHttpRequest',
-                        },
-                        body: JSON.stringify(payload),
-                    });
-                    const data = await response.json().catch(() => ({}));
-                    if (!response.ok || !data.success) {
-                        throw new Error(data.message || 'Could not generate poster on the server.');
+                    if (document.fonts?.ready) {
+                        await Promise.race([
+                            document.fonts.ready,
+                            new Promise((resolve) => window.setTimeout(resolve, 4000)),
+                        ]);
                     }
-                    return data;
+
+                    this.downloadStatus = 'Loading poster images…';
+                    await this.ensurePosterImagesReady(el);
+                    this.stampPosterImageSources(el);
+                    this.downloadStatus = 'Preparing artwork…';
+                    const imageMap = await this.buildPosterImageDataMap(el);
+                    const rasterized = await this.bakePosterFrames(el, imageMap);
+
+                    if (rasterized.size === 0 && imageMap.size === 0) {
+                        throw new Error('Could not prepare poster images. Wait for the preview to finish loading, then try again.');
+                    }
+
+                    const restoreState = this.applyPosterFrameImages(el, rasterized);
+                    await this.waitForImages(el, 3000);
+                    await this.yieldToBrowser(50);
+
+                    this.downloadStatus = 'Rendering PNG…';
+                    const exportScale = this.posterExportScale();
+                    let canvas;
+                    try {
+                        canvas = await Promise.race([
+                            html2canvas(el, {
+                                backgroundColor: '#c80000',
+                                width: POSTER_WIDTH,
+                                height: POSTER_HEIGHT,
+                                scale: exportScale,
+                                useCORS: true,
+                                allowTaint: true,
+                                logging: false,
+                                foreignObjectRendering: false,
+                                scrollX: 0,
+                                scrollY: 0,
+                                imageTimeout: 15000,
+                                onclone: (clonedDoc) => {
+                                    this.preparePosterCloneForExport(
+                                        clonedDoc.getElementById('listingPoster'),
+                                        { imageMap, rasterized, live: el, framesAlreadyBaked: true }
+                                    );
+                                },
+                            }),
+                            new Promise((_, reject) => {
+                                window.setTimeout(
+                                    () => reject(new Error('Poster export timed out. Try again when images finish loading.')),
+                                    this.exportTimeoutMs()
+                                );
+                            }),
+                        ]);
+                    } finally {
+                        this.restorePosterImageState(restoreState);
+                        imageMap.clear();
+                        rasterized.clear();
+                    }
+
+                    const mime = this.posterExportMime();
+                    const quality = this.posterExportQuality();
+                    const blob = await new Promise((resolve, reject) => {
+                        canvas.toBlob(
+                            (file) => file ? resolve(file) : reject(new Error('Could not export image.')),
+                            mime,
+                            quality
+                        );
+                    });
+                    this.releaseCanvas(canvas);
+                    await this.yieldToBrowser(50);
+                    return blob;
                 },
                 async exportPosterFile() {
-                    const data = await this.requestPosterFromServer();
-                    const response = await fetch(data.download_url, {
-                        credentials: 'same-origin',
-                    });
-                    if (!response.ok) {
-                        throw new Error('Could not download the generated poster.');
-                    }
-                    const blob = await response.blob();
-                    return new File([blob], data.filename || 'listing-poster.png', { type: 'image/png' });
+                    const blob = await this.exportPosterBlob();
+                    if (!blob) return null;
+                    return new File([blob], 'listing-poster.png', { type: 'image/png' });
                 },
                 async downloadPoster() {
                     this.downloadError = '';
                     this.downloadStatus = '';
-                    this.downloadLink = '';
+                    if (typeof html2canvas !== 'function') {
+                        this.downloadError = 'Download library failed to load. Refresh and try again.';
+                        return;
+                    }
                     if (!document.getElementById('listingPoster')) {
                         this.downloadError = 'Poster is not ready yet.';
                         return;
                     }
                     this.downloading = true;
                     try {
-                        this.downloadStatus = 'Generating poster on server…';
-                        const data = await this.requestPosterFromServer();
-                        this.downloadLink = data.download_url;
-                        window.location.href = data.download_url;
+                        const blob = await this.exportPosterBlob();
+                        if (!blob) {
+                            this.downloadError = 'Poster is not ready yet.';
+                            return;
+                        }
+                        this.downloadStatus = 'Saving PNG…';
+                        const url = URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = this.posterExportFilename();
+                        link.style.display = 'none';
+                        document.body.appendChild(link);
+                        link.click();
+                        link.remove();
+                        window.setTimeout(() => URL.revokeObjectURL(url), 2000);
                     } catch (error) {
                         console.error(error);
-                        this.downloadError = error?.message || 'Could not generate poster. Wait for the preview to finish loading, then try again.';
+                        this.downloadError = error?.message || 'Could not generate PNG. Wait for skins to finish loading, then try again.';
                     } finally {
                         this.downloading = false;
                         this.downloadStatus = '';

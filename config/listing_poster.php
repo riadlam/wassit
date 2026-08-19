@@ -10,9 +10,6 @@ return [
         'riadlaamari@gmail.com',
     ],
 
-    /** Optional override, e.g. C:\Program Files\Google\Chrome\Application\chrome.exe */
-    'chrome_path' => env('BROWSERSHOT_CHROME_PATH'),
-
     'price' => [
         'premium' => [
             'left' => 178,

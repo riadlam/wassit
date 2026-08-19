@@ -4,7 +4,6 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GameController;
 use App\Http\Controllers\HomeController;
-use App\Http\Controllers\ListingPosterController;
 use App\Http\Controllers\PartnerController;
 use App\Http\Controllers\WithdrawalController;
 use Illuminate\Support\Facades\Broadcast;
@@ -65,16 +64,6 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middl
 Route::get('/auth/google', [AuthController::class, 'redirectToGoogle'])->name('auth.google');
 Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallback'])->name('auth.google.callback');
 
-Route::get('/internal/listing-poster/{token}', [ListingPosterController::class, 'renderPreview'])
-    ->withoutMiddleware([
-        \Illuminate\Cookie\Middleware\EncryptCookies::class,
-        \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
-        \Illuminate\Session\Middleware\StartSession::class,
-        \Illuminate\View\Middleware\ShareErrorsFromSession::class,
-        \App\Http\Middleware\VerifyCsrfToken::class,
-    ])
-    ->name('account.listing-poster.render');
-
 // Dashboard Routes (must come before catch-all route) - Auth Protected
 Route::prefix('account')->name('account.')->middleware('auth')->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('index');
@@ -106,8 +95,6 @@ Route::prefix('account')->name('account.')->middleware('auth')->group(function (
         Route::put('/listed-accounts/{id}', [DashboardController::class, 'updateAccount'])->name('listed-accounts.update');
         Route::patch('/listed-accounts/{id}/status', [DashboardController::class, 'updateAccountStatus'])->name('listed-accounts.update-status');
         Route::delete('/listed-accounts/{id}', [DashboardController::class, 'deleteAccount'])->name('listed-accounts.delete');
-        Route::post('/listing-poster/export', [ListingPosterController::class, 'export'])->name('listing-poster.export');
-        Route::get('/listing-poster/download/{path}', [ListingPosterController::class, 'download'])->name('listing-poster.download');
     });
 
     Route::get('/settings', [DashboardController::class, 'settings'])->name('settings');
