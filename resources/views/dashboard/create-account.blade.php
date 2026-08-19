@@ -3688,7 +3688,7 @@
                         node.style.fontFamily = '"Bebas Neue", "Montserrat", Impact, sans-serif';
                         node.style.fontSize = isBasic ? '36px' : '46px';
                         node.style.transformOrigin = 'center center';
-                        node.style.transform = 'rotate(-10deg) translateY(-2px)';
+                        node.style.transform = 'rotate(-10deg) translateY(-4px)';
                         node.style.opacity = '1';
                         node.style.visibility = 'visible';
                     });
