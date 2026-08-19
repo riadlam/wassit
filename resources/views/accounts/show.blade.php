@@ -315,10 +315,7 @@ if ($seller && !empty($seller->pfp)) {
                         <div class="flex items-center justify-between mb-0">
                             <div class="flex items-center gap-2">
                                 @php
-                                    $images = $account->images->where('is_cover', false)->values();
-                                    if ($images->isEmpty()) {
-                                        $images = $account->images;
-                                    }
+                                    $images = $account->displayImages();
                                     $imageCount = $images->count();
                                 @endphp
                                 <h3 class="text-lg font-semibold text-white">{{ __('messages.gallery') }}</h3>

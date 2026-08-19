@@ -20,7 +20,8 @@ class SuperDiscountOffersTable
                 ImageColumn::make('image_path')
                     ->label('Artwork')
                     ->disk('public')
-                    ->square(),
+                    ->square()
+                    ->defaultImageUrl(fn (SuperDiscountOffer $record): string => $record->accountCoverImageUrl()),
                 TextColumn::make('account.title')
                     ->label('Account')
                     ->searchable()

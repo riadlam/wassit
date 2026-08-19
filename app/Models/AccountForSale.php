@@ -98,4 +98,19 @@ class AccountForSale extends Model
 
         return (int) $this->price_dzd;
     }
+
+    public function coverImage(): ?AccountImage
+    {
+        return $this->images->firstWhere('is_cover', true) ?? $this->images->first();
+    }
+
+    /**
+     * Gallery images with the generated listing poster first when present.
+     *
+     * @return \Illuminate\Support\Collection<int, AccountImage>
+     */
+    public function displayImages()
+    {
+        return $this->images->values();
+    }
 }

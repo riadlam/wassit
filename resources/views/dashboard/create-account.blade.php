@@ -282,7 +282,7 @@
                                             <img
                                                 :src="selectedHero.avatar_url || placeholderAvatar"
                                                 :alt="selectedHero.name"
-                                                class="h-10 w-10 rounded-xl object-cover ring-1 ring-[#2d2c31]"
+                                                class="h-10 w-10 rounded-xl object-cover ring-1 ring-[#2d2c31] shrink-0"
                                                 @@error="$event.target.src = placeholderAvatar"
                                             >
                                             <div class="min-w-0">
@@ -304,18 +304,18 @@
                                 </div>
 
                                 <div x-show="!loadingList && !selectedHero" class="max-h-[560px] overflow-y-auto pr-1">
-                                    <div class="grid grid-cols-5 gap-3">
+                                    <div class="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 sm:gap-3">
                                         <template x-for="heroItem in filteredHeroes" :key="heroItem.id + '-' + heroItem.name">
                                             <button
                                                 type="button"
                                                 @click="selectHero(heroItem)"
-                                                class="flex flex-col items-center gap-2 rounded-xl p-3 text-center transition ring-1"
+                                                class="flex flex-col items-center gap-1.5 rounded-xl p-2 text-center transition ring-1 sm:gap-2 sm:p-3"
                                                 :class="heroHasSelection(heroItem.name) ? 'ring-red-500 bg-red-500/10' : 'ring-[#2d2c31] bg-[#1b1a1e] hover:ring-red-500/40'"
                                             >
                                                 <img
                                                     :src="heroItem.avatar_url || placeholderAvatar"
                                                     :alt="heroItem.name"
-                                                    class="h-14 w-14 rounded-xl object-cover ring-1 ring-white/10"
+                                                    class="w-full aspect-square rounded-xl object-cover ring-1 ring-white/10"
                                                     loading="lazy"
                                                     @@error="$event.target.src = placeholderAvatar"
                                                 >
@@ -332,7 +332,7 @@
                                 </div>
 
                                 <div x-show="selectedHero && !loadingDetail" class="max-h-[560px] overflow-y-auto pr-1">
-                                    <div class="grid grid-cols-4 gap-3">
+                                    <div class="grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-3">
                                         <template x-for="(skin, index) in heroSkins" :key="(selectedHero?.name || 'hero') + '-' + index + '-' + skin.name">
                                             <label
                                                 class="group relative flex cursor-pointer flex-col overflow-hidden rounded-xl ring-1 transition"
@@ -340,11 +340,11 @@
                                             >
                                                 <input
                                                     type="checkbox"
-                                                    class="absolute right-2 top-2 z-20 h-4 w-4 rounded border-gray-500 text-red-600 focus:ring-red-500"
+                                                    class="absolute right-1.5 top-1.5 z-20 h-4 w-4 rounded border-gray-500 text-red-600 focus:ring-red-500 sm:right-2 sm:top-2"
                                                     :checked="isSkinSelected(skin)"
                                                     @change="toggleSkin(skin)"
                                                 >
-                                                <div class="relative overflow-hidden">
+                                                <div class="relative bg-[#0e1015]">
                                                     <img
                                                         :src="skinImage(skin)"
                                                         :alt="skin.name"
@@ -368,8 +368,8 @@
                                                         ></span>
                                                     </div>
                                                 </div>
-                                                <div class="px-2.5 py-2">
-                                                    <p class="text-sm font-medium text-white leading-snug truncate" x-text="skin.name"></p>
+                                                <div class="px-1.5 py-1.5 sm:px-2.5 sm:py-2">
+                                                    <p class="text-xs font-medium text-white leading-snug truncate sm:text-sm" x-text="skin.name"></p>
                                                 </div>
                                             </label>
                                         </template>
@@ -645,11 +645,33 @@
                                             class="inline-flex items-center py-2.5 px-5 text-sm rounded-md bg-red-600 hover:bg-red-700 text-white font-medium disabled:opacity-50"
                                         >
                                             <i class="fa-solid fa-download mr-2"></i>
-                                            <span x-text="downloading ? 'Preparing…' : 'Download PNG'"></span>
+                                            <span x-text="downloading ? (downloadStatus || 'Preparing…') : 'Download PNG'"></span>
                                         </button>
                                     </div>
                                 </div>
                                 <p x-show="downloadError" x-text="downloadError" class="mb-4 text-sm text-red-400"></p>
+                                <p x-show="downloading && downloadStatus" x-text="downloadStatus" class="mb-4 text-sm text-gray-400"></p>
+
+                                <div
+                                    x-show="downloadPreviewUrl"
+                                    x-cloak
+                                    class="fixed inset-0 z-[120] flex items-center justify-center p-4"
+                                    style="background-color: rgba(8, 9, 14, 0.92);"
+                                    @click.self="closeDownloadPreview()"
+                                >
+                                    <div class="w-full max-w-md rounded-xl overflow-hidden" style="background-color: #0e1015; border: 1px solid #2d2c31;">
+                                        <div class="flex items-center justify-between px-4 py-3 border-b" style="border-color: #2d2c31;">
+                                            <p class="text-sm font-medium text-white">Save your poster</p>
+                                            <button type="button" @click="closeDownloadPreview()" class="text-gray-400 hover:text-white">
+                                                <i class="fa-solid fa-xmark"></i>
+                                            </button>
+                                        </div>
+                                        <div class="p-4">
+                                            <img :src="downloadPreviewUrl" alt="Listing poster" class="w-full h-auto rounded-lg">
+                                            <p class="mt-3 text-sm text-gray-400">Tap and hold the image, then choose <span class="text-white">Save Image</span>.</p>
+                                        </div>
+                                    </div>
+                                </div>
 
                                 <div x-show="loading" class="text-center py-16">
                                     <div class="inline-block animate-spin rounded-full h-10 w-10 border-b-2 border-red-600"></div>
@@ -1317,25 +1339,27 @@
         }
         .lp-price-slot {
             position: absolute;
-            left: 159px;
-            top: 868px;
-            width: 276px;
-            height: 52px;
+            left: 166px;
+            top: 866px;
+            width: 438px;
+            height: 46px;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 0;
             line-height: 1;
             pointer-events: none;
+            z-index: 10;
+            overflow: visible;
         }
         .lp-price-value {
             display: inline-block;
             font-family: "Bebas Neue", "Montserrat", Impact, sans-serif;
-            font-size: 50px;
+            font-size: 46px;
             font-weight: 400;
             letter-spacing: 0.04em;
-            line-height: 0.92;
-            transform: rotate(-10deg) translateY(-9px);
+            line-height: 1;
+            transform: rotate(-10deg) translateY(-2px);
             transform-origin: center center;
             background: linear-gradient(180deg, #ff8080 0%, #ef4444 28%, #dc2626 62%, #991b1b 100%);
             -webkit-background-clip: text;
@@ -1496,8 +1520,8 @@
         .listing-poster.is-basic .lp-price-value {
             font-size: 36px;
             letter-spacing: 0.03em;
-            line-height: 0.92;
-            transform: rotate(-10deg) translateY(-8px);
+            line-height: 1;
+            transform: rotate(-10deg) translateY(-2px);
         }
 
     </style>
@@ -2288,6 +2312,8 @@
                 building: false,
                 downloading: false,
                 downloadError: '',
+                downloadStatus: '',
+                downloadPreviewUrl: '',
                 primaryImageUrl: '',
                 placeholderSkin: @json(asset('images/mlbb-primary-photo-example.png')),
                 featuredSkins: [],
@@ -2742,15 +2768,50 @@
                     }
                     return list.slice(0, count);
                 },
-                waitForImages(el) {
+                waitForImages(el, timeoutMs = 12000) {
                     const images = [...el.querySelectorAll('img')];
                     return Promise.all(images.map((img) => {
-                        if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+                        if (img.complete && img.naturalWidth > 0) {
+                            return Promise.resolve();
+                        }
+                        if (img.complete) {
+                            return Promise.resolve();
+                        }
                         return new Promise((resolve) => {
-                            img.addEventListener('load', resolve, { once: true });
-                            img.addEventListener('error', resolve, { once: true });
+                            const finish = () => resolve();
+                            const timer = window.setTimeout(finish, timeoutMs);
+                            img.addEventListener('load', () => {
+                                window.clearTimeout(timer);
+                                finish();
+                            }, { once: true });
+                            img.addEventListener('error', () => {
+                                window.clearTimeout(timer);
+                                finish();
+                            }, { once: true });
                         });
                     }));
+                },
+                async ensurePosterImagesReady(el) {
+                    el.querySelectorAll('img').forEach((img) => {
+                        img.loading = 'eager';
+                        img.decoding = 'sync';
+                    });
+                    await this.waitForImages(el, 12000);
+                },
+                isMobileExportDevice() {
+                    return window.matchMedia('(max-width: 767px)').matches
+                        || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+                },
+                posterExportScale() {
+                    return this.isMobileExportDevice() ? 1 : POSTER_EXPORT_SCALE;
+                },
+                posterExportFilename() {
+                    return this.isMobileExportDevice()
+                        ? 'wassitmarket-listing.png'
+                        : 'wassitmarket-listing-1080.png';
+                },
+                exportTimeoutMs() {
+                    return this.isMobileExportDevice() ? 45000 : 60000;
                 },
                 blobToDataUrl(blob) {
                     return new Promise((resolve, reject) => {
@@ -2771,7 +2832,13 @@
                             return;
                         }
                         try {
-                            const response = await fetch(src, { credentials: 'same-origin' });
+                            const controller = new AbortController();
+                            const timer = window.setTimeout(() => controller.abort(), 8000);
+                            const response = await fetch(src, {
+                                credentials: 'same-origin',
+                                signal: controller.signal,
+                            });
+                            window.clearTimeout(timer);
                             if (!response.ok) {
                                 map.set(src, src);
                                 return;
@@ -3021,8 +3088,13 @@
 
                     clone.querySelectorAll('.lp-price-slot').forEach((node) => {
                         node.style.overflow = 'visible';
+                        node.style.zIndex = '10';
+                        node.style.display = 'flex';
+                        node.style.alignItems = 'center';
+                        node.style.justifyContent = 'center';
                     });
                     clone.querySelectorAll('.lp-price-value').forEach((node) => {
+                        const isBasic = node.closest('.listing-poster.is-basic');
                         node.style.background = 'none';
                         node.style.backgroundClip = 'border-box';
                         node.style.webkitBackgroundClip = 'border-box';
@@ -3030,11 +3102,13 @@
                         node.style.webkitTextFillColor = '#dc2626';
                         node.style.filter = 'none';
                         node.style.display = 'inline-block';
-                        node.style.lineHeight = '0.92';
+                        node.style.lineHeight = '1';
+                        node.style.fontFamily = '"Bebas Neue", "Montserrat", Impact, sans-serif';
+                        node.style.fontSize = isBasic ? '36px' : '46px';
                         node.style.transformOrigin = 'center center';
-                        node.style.transform = node.closest('.listing-poster.is-basic')
-                            ? 'rotate(-10deg) translateY(-8px)'
-                            : 'rotate(-10deg) translateY(-9px)';
+                        node.style.transform = 'rotate(-10deg) translateY(-2px)';
+                        node.style.opacity = '1';
+                        node.style.visibility = 'visible';
                     });
                 },
                 async fetchSampleSkins(count) {
@@ -3230,32 +3304,49 @@
 
                     await this.$nextTick();
                     if (document.fonts?.ready) {
-                        await document.fonts.ready;
+                        await Promise.race([
+                            document.fonts.ready,
+                            new Promise((resolve) => window.setTimeout(resolve, 4000)),
+                        ]);
                     }
-                    await this.waitForImages(el);
+
+                    this.downloadStatus = 'Loading poster images…';
+                    await this.ensurePosterImagesReady(el);
 
                     this.stampPosterImageSources(el);
+                    this.downloadStatus = 'Preparing artwork…';
                     const imageMap = await this.buildPosterImageDataMap(el);
                     const rasterized = await this.bakePosterFrames(el, imageMap);
 
-                    const canvas = await html2canvas(el, {
-                        backgroundColor: '#c80000',
-                        width: POSTER_WIDTH,
-                        height: POSTER_HEIGHT,
-                        scale: POSTER_EXPORT_SCALE,
-                        useCORS: true,
-                        allowTaint: false,
-                        logging: false,
-                        scrollX: 0,
-                        scrollY: 0,
-                        imageTimeout: 20000,
-                        onclone: (clonedDoc) => {
-                            this.preparePosterCloneForExport(
-                                clonedDoc.getElementById('listingPoster'),
-                                { imageMap, rasterized, live: el }
+                    this.downloadStatus = 'Rendering PNG…';
+                    const exportScale = this.posterExportScale();
+                    const canvas = await Promise.race([
+                        html2canvas(el, {
+                            backgroundColor: '#c80000',
+                            width: POSTER_WIDTH,
+                            height: POSTER_HEIGHT,
+                            scale: exportScale,
+                            useCORS: true,
+                            allowTaint: false,
+                            logging: false,
+                            foreignObjectRendering: false,
+                            scrollX: 0,
+                            scrollY: 0,
+                            imageTimeout: 12000,
+                            onclone: (clonedDoc) => {
+                                this.preparePosterCloneForExport(
+                                    clonedDoc.getElementById('listingPoster'),
+                                    { imageMap, rasterized, live: el }
+                                );
+                            },
+                        }),
+                        new Promise((_, reject) => {
+                            window.setTimeout(
+                                () => reject(new Error('Poster export timed out. Try again on Wi‑Fi or use a desktop browser.')),
+                                this.exportTimeoutMs()
                             );
-                        },
-                    });
+                        }),
+                    ]);
 
                     return await new Promise((resolve, reject) => {
                         canvas.toBlob((file) => file ? resolve(file) : reject(new Error('Could not export PNG.')), 'image/png', 1);
@@ -3266,8 +3357,50 @@
                     if (!blob) return null;
                     return new File([blob], 'listing-poster.png', { type: 'image/png' });
                 },
+                closeDownloadPreview() {
+                    if (this.downloadPreviewUrl) {
+                        URL.revokeObjectURL(this.downloadPreviewUrl);
+                        this.downloadPreviewUrl = '';
+                    }
+                },
+                async savePosterBlob(blob, filename) {
+                    const file = new File([blob], filename, { type: 'image/png' });
+                    const url = URL.createObjectURL(blob);
+
+                    if (navigator.canShare?.({ files: [file] })) {
+                        try {
+                            await navigator.share({
+                                files: [file],
+                                title: filename,
+                            });
+                            URL.revokeObjectURL(url);
+                            return;
+                        } catch (error) {
+                            if (error?.name === 'AbortError') {
+                                URL.revokeObjectURL(url);
+                                return;
+                            }
+                        }
+                    }
+
+                    if (this.isMobileExportDevice()) {
+                        this.downloadPreviewUrl = url;
+                        return;
+                    }
+
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = filename;
+                    link.style.display = 'none';
+                    document.body.appendChild(link);
+                    link.click();
+                    link.remove();
+                    window.setTimeout(() => URL.revokeObjectURL(url), 2000);
+                },
                 async downloadPoster() {
                     this.downloadError = '';
+                    this.downloadStatus = '';
+                    this.closeDownloadPreview();
                     if (typeof html2canvas !== 'function') {
                         this.downloadError = 'Download library failed to load. Refresh and try again.';
                         return;
@@ -3283,17 +3416,14 @@
                             this.downloadError = 'Poster is not ready yet.';
                             return;
                         }
-                        const url = URL.createObjectURL(blob);
-                        const link = document.createElement('a');
-                        link.href = url;
-                        link.download = 'wassitmarket-listing-1080.png';
-                        link.click();
-                        URL.revokeObjectURL(url);
+                        this.downloadStatus = 'Saving PNG…';
+                        await this.savePosterBlob(blob, this.posterExportFilename());
                     } catch (error) {
                         console.error(error);
-                        this.downloadError = 'Could not generate PNG. Wait for skins to finish loading, then try again.';
+                        this.downloadError = error?.message || 'Could not generate PNG. Wait for skins to finish loading, then try again.';
                     } finally {
                         this.downloading = false;
+                        this.downloadStatus = '';
                     }
                 },
             };

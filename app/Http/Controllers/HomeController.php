@@ -46,7 +46,7 @@ class HomeController extends Controller
 
         $superDiscountOffers = SuperDiscountOffer::query()
             ->forHomepage()
-            ->with(['account.game'])
+            ->with(['account.game', 'account.images'])
             ->get();
         
         // Dummy slider data

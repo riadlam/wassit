@@ -79,16 +79,15 @@ class SuperDiscountOfferForm
                     ->nullable()
                     ->afterOrEqual('starts_at'),
                 FileUpload::make('image_path')
-                    ->label('Homepage card image')
+                    ->label('Homepage card image (optional)')
                     ->disk('public')
                     ->directory('super-discounts')
                     ->visibility('public')
                     ->image()
                     ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
                     ->maxSize(5120)
-                    ->required()
                     ->columnSpanFull()
-                    ->helperText('This artwork is shown on the homepage Super Discount card, not the listing gallery.'),
+                    ->helperText('Optional. Leave empty to use the account listing poster (generated preview cover) on the homepage card.'),
             ]);
     }
 }

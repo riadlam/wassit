@@ -97,6 +97,27 @@ class SuperDiscountOffer extends Model
     {
         $path = ltrim(str_replace('\\', '/', (string) $this->image_path), '/');
 
-        return asset('storage/'.$path);
+        if ($path !== '') {
+            return asset('storage/'.$path);
+        }
+
+        return $this->accountCoverImageUrl();
+    }
+
+    public function hasCustomImage(): bool
+    {
+        return trim((string) $this->image_path) !== '';
+    }
+
+    public function accountCoverImageUrl(): string
+    {
+        $cover = $this->account?->images?->firstWhere('is_cover', true)
+            ?? $this->account?->images?->first();
+
+        if ($cover) {
+            return asset('storage/'.ltrim(str_replace('\\', '/', (string) $cover->url), '/'));
+        }
+
+        return asset('images/listing-poster-bg-basic.jpg');
     }
 }
