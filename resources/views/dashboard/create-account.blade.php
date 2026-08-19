@@ -3668,7 +3668,7 @@
 
                     this.hardenPosterTextForExport(clone);
 
-                    const priceExportLiftPx = Math.round(POSTER_HEIGHT * 0.03);
+                    const priceExportLiftPx = Math.round(POSTER_HEIGHT * 0.012);
                     clone.querySelectorAll('.lp-price-slot').forEach((node) => {
                         node.style.overflow = 'visible';
                         node.style.zIndex = '10';
