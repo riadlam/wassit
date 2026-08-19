@@ -20,6 +20,8 @@ return [
             'rotate' => -10,
             'translate_x' => 0,
             'translate_y' => 0,
+            /** Extra upward nudge for html2canvas export (preview uses translate_y only). */
+            'export_translate_y' => -22,
         ],
         'basic' => [
             'left' => 173,

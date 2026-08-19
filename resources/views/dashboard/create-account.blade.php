@@ -3678,6 +3678,12 @@
                         node.style.display = 'flex';
                         node.style.alignItems = 'center';
                         node.style.justifyContent = 'center';
+                        if (this.isPremiumLayout) {
+                            node.style.top = `${POSTER_PRICE_PREMIUM.top}px`;
+                            node.style.left = `${POSTER_PRICE_PREMIUM.left}px`;
+                            node.style.width = `${POSTER_PRICE_PREMIUM.width}px`;
+                            node.style.height = `${POSTER_PRICE_PREMIUM.height}px`;
+                        }
                     });
                     clone.querySelectorAll('.lp-price-value').forEach((node) => {
                         const cfg = this.isPremiumLayout ? POSTER_PRICE_PREMIUM : POSTER_PRICE_BASIC;
@@ -3697,8 +3703,9 @@
                         node.style.visibility = 'visible';
 
                         if (this.isPremiumLayout) {
+                            const exportY = Number(cfg.export_translate_y ?? cfg.translate_y ?? 0);
                             node.style.fontSize = `${cfg.font_size}px`;
-                            node.style.transform = `rotate(${cfg.rotate}deg) translate(${cfg.translate_x}px, ${cfg.translate_y}px)`;
+                            node.style.transform = `rotate(${cfg.rotate}deg) translate(${cfg.translate_x}px, ${exportY}px)`;
                             return;
                         }
 
