@@ -393,8 +393,9 @@ use Illuminate\Support\Facades\Storage;
                     </div>
                 </div>
 
-                <!-- Skins Filter (ID-based) -->
-                <div class="relative min-w-[140px] flex-grow md:flex-grow-0" x-data="{ 
+                @if($game->slug === 'mlbb')
+                <!-- Skins Filter (ID-based, text only) -->
+                <div class="relative min-w-[140px] flex-grow md:flex-grow-0" x-data="{
                     skinsOpen: false,
                     selectedSkinIds: [],
                     expandedRoles: {},
@@ -652,12 +653,10 @@ use Illuminate\Support\Facades\Storage;
                                                             <template x-for="(skinObj, skinIndex) in (hero.skins_with_ids || [])" :key="skinObj.id">
                                                                 <button
                                                                     @click="toggleSkinId(skinObj.id)"
-                                                                    class="px-3 py-1.5 text-xs rounded-md transition-all border"
+                                                                    class="px-3 py-1.5 text-xs rounded-md transition-all border text-left"
                                                                     :class="isSkinSelectedId(skinObj.id) ? 'bg-red-600 border-red-600 text-white' : 'bg-transparent border-gray-600 text-gray-300 hover:border-red-500 hover:text-white'"
-                                                                >
-                                                                    <i class="fa-solid" :class="isSkinSelectedId(skinObj.id) ? 'fa-check-circle' : 'fa-circle'"></i>
-                                                                    <span class="ml-1.5" x-text="skinObj.name"></span>
-                                                                </button>
+                                                                    x-text="skinObj.name"
+                                                                ></button>
                                                             </template>
                                                     </div>
                                                 </div>
@@ -675,6 +674,7 @@ use Illuminate\Support\Facades\Storage;
                         </div>
                     </div>
                 </div>
+                @endif
 
                 <!-- Additional Filters -->
                 <div class="relative min-w-[200px] flex-grow md:flex-grow-0" x-data="{ 

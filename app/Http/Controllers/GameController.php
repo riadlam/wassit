@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Game;
 use App\Models\AccountForSale;
+use App\Support\SkinsHelper;
 use Spatie\QueryBuilder\QueryBuilder;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\AllowedSort;
@@ -99,33 +100,8 @@ class GameController extends Controller
                             $query->where('price_dzd', '>=', $min);
                         }
                     }),
-                    // Skins filter using LIKE token matching on comma-separated IDs
                     AllowedFilter::callback('skins', function ($query, $value) {
-                        try {
-                            if ($value === null || $value === '') return;
-                            $vals = is_array($value) ? $value : explode(',', (string)$value);
-                            $ids = array_values(array_filter(array_map(function($v){ $v=trim((string)$v); return ctype_digit($v) ? (int)$v : null; }, $vals), function($v){ return $v !== null; }));
-                            if (empty($ids)) return;
-                            \Log::debug('Skins filter parsed IDs (api)', ['raw'=>$value,'ids'=>$ids]);
-                            $query->whereHas('attributes', function($attr) use ($ids) {
-                                $attr->where('attribute_key', 'highlighted_skins')
-                                     ->where(function($w) use ($ids) {
-                                         foreach ($ids as $id) {
-                                             $idStr = (string)$id;
-                                             $w->orWhereRaw("REPLACE(attribute_value,' ', '') = ?", [$idStr])
-                                               ->orWhereRaw("REPLACE(attribute_value,' ', '') LIKE ?", ["$idStr,%"]) 
-                                               ->orWhereRaw("REPLACE(attribute_value,' ', '') LIKE ?", ["%,$idStr"]) 
-                                               ->orWhereRaw("REPLACE(attribute_value,' ', '') LIKE ?", ["%,$idStr,%"]);
-                                         }
-                                     });
-                            });
-                        } catch (\Throwable $e) {
-                            \Log::error('Skins filter error (filterAccounts): '.$e->getMessage(), [
-                                'value' => $value,
-                                'trace' => $e->getTraceAsString(),
-                            ]);
-                            throw $e;
-                        }
+                        SkinsHelper::applyHighlightedSkinsFilter($query, $value);
                     }),
                     AllowedFilter::callback('win_rate', function ($query, $value) {
                         if ($value && strpos($value, '-') !== false) {
@@ -237,33 +213,8 @@ class GameController extends Controller
                         $query->where('price_dzd', '>=', $min);
                     }
                 }),
-                // Skins filter - LIKE-based token matching (view path)
                 AllowedFilter::callback('skins', function ($query, $value) {
-                    try {
-                        if ($value === null || $value === '') return;
-                        $vals = is_array($value) ? $value : explode(',', (string)$value);
-                        $ids = array_values(array_filter(array_map(function($v){ $v=trim((string)$v); return ctype_digit($v) ? (int)$v : null; }, $vals), function($v){ return $v !== null; }));
-                        if (empty($ids)) return;
-                        \Log::debug('Skins filter parsed IDs (show)', ['raw'=>$value,'ids'=>$ids]);
-                        $query->whereHas('attributes', function($attr) use ($ids) {
-                            $attr->where('attribute_key', 'highlighted_skins')
-                                 ->where(function($w) use ($ids) {
-                                     foreach ($ids as $id) {
-                                         $idStr = (string)$id;
-                                         $w->orWhereRaw("REPLACE(attribute_value,' ', '') = ?", [$idStr])
-                                           ->orWhereRaw("REPLACE(attribute_value,' ', '') LIKE ?", ["$idStr,%"]) 
-                                           ->orWhereRaw("REPLACE(attribute_value,' ', '') LIKE ?", ["%,$idStr"]) 
-                                           ->orWhereRaw("REPLACE(attribute_value,' ', '') LIKE ?", ["%,$idStr,%"]);
-                                     }
-                                 });
-                        });
-                    } catch (\Throwable $e) {
-                        \Log::error('Skins filter error (show): '.$e->getMessage(), [
-                            'value' => $value,
-                            'trace' => $e->getTraceAsString(),
-                        ]);
-                        throw $e;
-                    }
+                    SkinsHelper::applyHighlightedSkinsFilter($query, $value);
                 }),
                 // Win Rate filter - searches in account attributes
                 AllowedFilter::callback('win_rate', function ($query, $value) {

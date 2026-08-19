@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\MlbbSkin;
 use App\Models\MlbbSkinTag;
+use App\Support\SkinsHelper;
 use Illuminate\Support\Str;
 
 class MlbbSkinCatalogService
@@ -81,12 +82,21 @@ class MlbbSkinCatalogService
      */
     public function enrichHeroPayload(array $hero): array
     {
-        $hero['skins'] = array_map(function (array $skin) {
+        $heroName = trim((string) ($hero['name'] ?? ''));
+
+        $hero['skins'] = array_map(function (array $skin) use ($heroName) {
             $skin['tags'] = $this->resolveSkinTags(
                 $skin['tags'] ?? [],
                 $skin['rarity'] ?? null,
                 ! empty($skin['painted'])
             );
+
+            if (empty($skin['id']) && $heroName !== '' && ! empty($skin['name'])) {
+                $found = SkinsHelper::findByHeroSkin($heroName, (string) $skin['name']);
+                if ($found) {
+                    $skin['id'] = $found['id'];
+                }
+            }
 
             return $skin;
         }, $hero['skins'] ?? []);

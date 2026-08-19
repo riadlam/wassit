@@ -385,6 +385,7 @@
                                 </div>
 
                                 <input type="hidden" id="highlighted_skins_input" name="attributes[highlighted_skins]" value="{{ old('attributes.highlighted_skins') }}">
+                                <input type="hidden" id="highlighted_skins_lookup_input" name="highlighted_skins_lookup" value="">
                             </div>
 
                             {{-- Step 5: Recalls --}}
@@ -1934,6 +1935,15 @@
                     this.stepError = '';
 
                     try {
+                        const skinsRoot = document.querySelector('[x-data*="highlightedSkinsPicker"]');
+                        if (skinsRoot && typeof Alpine !== 'undefined') {
+                            const skinsPicker = Alpine.$data(skinsRoot);
+                            if (skinsPicker?.resolveAllSkinIds) {
+                                await skinsPicker.resolveAllSkinIds();
+                                skinsPicker.updateHiddenInputs?.();
+                            }
+                        }
+
                         const form = event.target;
                         const formData = new FormData(form);
                         formData.delete('images[]');
@@ -2246,7 +2256,7 @@
                     } else {
                         this.selectedSkins.push({
                             key,
-                            id: this.lookupSkinId(this.selectedHero.name, skin.name),
+                            id: skin.id ?? this.lookupSkinId(this.selectedHero.name, skin.name),
                             hero: this.selectedHero.name,
                             name: skin.name,
                             image_url: skin.image_url || skin.thumbnail_url,
@@ -2265,13 +2275,76 @@
                 getSelectedCount() {
                     return this.selectedSkins.length;
                 },
+                async resolveAllSkinIds() {
+                    if (!Object.keys(this.skinIdMap).length) {
+                        await this.loadSkinIdMap();
+                    }
+
+                    for (const item of this.selectedSkins) {
+                        if (item.id) {
+                            continue;
+                        }
+                        item.id = this.lookupSkinId(item.hero, item.name);
+                    }
+
+                    const heroesNeedingCatalog = [...new Set(
+                        this.selectedSkins
+                            .filter((item) => !item.id && item.hero)
+                            .map((item) => String(item.hero).trim())
+                            .filter(Boolean)
+                    )];
+
+                    for (const hero of heroesNeedingCatalog) {
+                        let catalog = this.skinsCache[hero];
+                        if (!catalog) {
+                            try {
+                                const response = await fetch(`/mlbb/playground/heroes/${encodeURIComponent(hero)}`);
+                                const payload = await response.json();
+                                catalog = payload.hero?.skins || [];
+                                this.skinsCache[hero] = catalog;
+                            } catch (error) {
+                                console.warn('Could not resolve skin ids for hero', hero, error);
+                                continue;
+                            }
+                        }
+
+                        for (const item of this.selectedSkins) {
+                            if (item.id || String(item.hero).trim() !== hero) {
+                                continue;
+                            }
+                            const match = (catalog || []).find((skin) => (
+                                this.skinKey(item.hero, skin.name) === this.skinKey(item.hero, item.name)
+                            ));
+                            if (match?.id) {
+                                item.id = Number(match.id);
+                                continue;
+                            }
+                            item.id = item.id ?? this.lookupSkinId(item.hero, item.name);
+                        }
+                    }
+                },
                 updateHiddenInputs() {
                     const input = document.getElementById('highlighted_skins_input');
+                    const lookupInput = document.getElementById('highlighted_skins_lookup_input');
                     if (!input) return;
-                    input.value = this.selectedSkins
-                        .map((item) => item.id)
-                        .filter((id) => id !== null && id !== undefined)
-                        .join(',');
+
+                    const ids = [];
+                    const legacy = [];
+
+                    for (const item of this.selectedSkins) {
+                        const id = item.id ?? this.lookupSkinId(item.hero, item.name);
+                        if (id) {
+                            ids.push(Number(id));
+                            item.id = Number(id);
+                        } else if (item.hero && item.name) {
+                            legacy.push(`${item.hero} - ${item.name}`);
+                        }
+                    }
+
+                    input.value = [...new Set(ids.filter((id) => id > 0))].join(',');
+                    if (lookupInput) {
+                        lookupInput.value = legacy.join('|');
+                    }
                 },
                 rarityBadgeClass(rarity) {
                     const name = String(rarity || '').toLowerCase();

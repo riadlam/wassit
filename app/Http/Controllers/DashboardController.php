@@ -262,39 +262,39 @@ class DashboardController extends Controller
                 // Create attributes if provided (using relationship)
                 // Get attributes as array (request->attributes is a ParameterBag object, not an array)
                 $attributes = $request->input('attributes', []);
+                $highlightedSkinsLookup = strip_tags(trim((string) $request->input('highlighted_skins_lookup', '')));
                 
                 if (!empty($attributes) && is_array($attributes)) {
                     $attributesToCreate = [];
                     
                     foreach ($attributes as $key => $value) {
-                        // Allow both string and numeric values (form data may convert strings to numbers)
-                        if (!empty($value) && is_string($key) && is_scalar($value)) {
-                            // Convert value to string (handles int, float, string)
-                            $valueString = (string)$value;
-                            
-                            // Validate and sanitize: strip HTML tags and limit length
-                            $sanitizedKey = substr(strip_tags(trim($key)), 0, 255);
-                            $maxLength = in_array($sanitizedKey, ['highlighted_recalls', 'highlighted_emotes'], true) ? 5000 : 255;
-                            $sanitizedValue = substr(strip_tags(trim($valueString)), 0, $maxLength);
+                        if (! is_string($key) || ! is_scalar($value)) {
+                            continue;
+                        }
 
-                            // Normalize highlighted_skins to numeric IDs (comma-separated)
-                            if ($sanitizedKey === 'highlighted_skins') {
-                                $normalized = SkinsHelper::normalizeHighlightedSkins($sanitizedValue);
-                                if ($normalized !== '') {
-                                    $sanitizedValue = $normalized;
-                                }
-                            }
-                            
-                            // Only add if both key and value are valid (not empty after sanitization)
-                            if (!empty($sanitizedKey) && $sanitizedValue !== '') {
-                                $attributesToCreate[] = [
-                                    'account_id' => $account->id,
-                                    'attribute_key' => $sanitizedKey,
-                                    'attribute_value' => $sanitizedValue,
-                                    'created_at' => now(),
-                                    'updated_at' => now(),
-                                ];
-                            }
+                        $valueString = (string) $value;
+                        $sanitizedKey = substr(strip_tags(trim($key)), 0, 255);
+                        if ($sanitizedKey === '') {
+                            continue;
+                        }
+
+                        $maxLength = in_array($sanitizedKey, ['highlighted_recalls', 'highlighted_emotes'], true) ? 5000 : 255;
+                        $sanitizedValue = substr(strip_tags(trim($valueString)), 0, $maxLength);
+
+                        if ($sanitizedKey === 'highlighted_skins') {
+                            $sanitizedValue = SkinsHelper::mergeHighlightedSkinIds($sanitizedValue, $highlightedSkinsLookup);
+                        } elseif ($sanitizedValue === '') {
+                            continue;
+                        }
+
+                        if ($sanitizedValue !== '') {
+                            $attributesToCreate[] = [
+                                'account_id' => $account->id,
+                                'attribute_key' => $sanitizedKey,
+                                'attribute_value' => $sanitizedValue,
+                                'created_at' => now(),
+                                'updated_at' => now(),
+                            ];
                         }
                     }
                     
@@ -487,6 +487,7 @@ class DashboardController extends Controller
 
                 // Handle attributes update
                 $attributes = $request->input('attributes', []);
+                $highlightedSkinsLookup = strip_tags(trim((string) $request->input('highlighted_skins_lookup', '')));
                 
                 // Delete existing attributes
                 $account->attributes()->delete();
@@ -496,29 +497,33 @@ class DashboardController extends Controller
                     $attributesToCreate = [];
                     
                     foreach ($attributes as $key => $value) {
-                        if (!empty($value) && is_string($key) && is_scalar($value)) {
-                            $valueString = (string)$value;
-                            $sanitizedKey = substr(strip_tags(trim($key)), 0, 255);
-                            $maxLength = in_array($sanitizedKey, ['highlighted_recalls', 'highlighted_emotes'], true) ? 5000 : 255;
-                            $sanitizedValue = substr(strip_tags(trim($valueString)), 0, $maxLength);
+                        if (! is_string($key) || ! is_scalar($value)) {
+                            continue;
+                        }
 
-                            // Normalize highlighted_skins to numeric IDs (comma-separated)
-                            if ($sanitizedKey === 'highlighted_skins') {
-                                $normalized = SkinsHelper::normalizeHighlightedSkins($sanitizedValue);
-                                if ($normalized !== '') {
-                                    $sanitizedValue = $normalized;
-                                }
-                            }
-                            
-                            if (!empty($sanitizedKey) && $sanitizedValue !== '') {
-                                $attributesToCreate[] = [
-                                    'account_id' => $account->id,
-                                    'attribute_key' => $sanitizedKey,
-                                    'attribute_value' => $sanitizedValue,
-                                    'created_at' => now(),
-                                    'updated_at' => now(),
-                                ];
-                            }
+                        $valueString = (string) $value;
+                        $sanitizedKey = substr(strip_tags(trim($key)), 0, 255);
+                        if ($sanitizedKey === '') {
+                            continue;
+                        }
+
+                        $maxLength = in_array($sanitizedKey, ['highlighted_recalls', 'highlighted_emotes'], true) ? 5000 : 255;
+                        $sanitizedValue = substr(strip_tags(trim($valueString)), 0, $maxLength);
+
+                        if ($sanitizedKey === 'highlighted_skins') {
+                            $sanitizedValue = SkinsHelper::mergeHighlightedSkinIds($sanitizedValue, $highlightedSkinsLookup);
+                        } elseif ($sanitizedValue === '') {
+                            continue;
+                        }
+
+                        if ($sanitizedValue !== '') {
+                            $attributesToCreate[] = [
+                                'account_id' => $account->id,
+                                'attribute_key' => $sanitizedKey,
+                                'attribute_value' => $sanitizedValue,
+                                'created_at' => now(),
+                                'updated_at' => now(),
+                            ];
                         }
                     }
                     
