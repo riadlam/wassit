@@ -188,6 +188,26 @@ class MlbbSkinCatalogService
         ];
     }
 
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    public function skinsByIds(array $ids): array
+    {
+        $ids = array_values(array_unique(array_filter(array_map('intval', $ids))));
+        if ($ids === []) {
+            return [];
+        }
+
+        return MlbbSkin::query()
+            ->whereIn('id', $ids)
+            ->orderBy('id')
+            ->get()
+            ->filter(fn (MlbbSkin $row) => $row->imageUrl() !== null)
+            ->map(fn (MlbbSkin $row) => $this->skinPayload($row))
+            ->values()
+            ->all();
+    }
+
     public function resolveTagImageUrl(string $tagName): ?string
     {
         $tagName = trim($tagName);

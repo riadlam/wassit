@@ -6,6 +6,7 @@ use App\Http\Controllers\MlbbSkinController;
 
 // Public endpoint to retrieve MLBB skins from DB
 Route::get('/mlbb/skins', [MlbbSkinController::class, 'index']);
+Route::get('/mlbb/skins/resolve', [MlbbSkinController::class, 'resolve']);
 Route::get('/mlbb/skins/sample', [App\Http\Controllers\MlbbPlaygroundController::class, 'sampleSkins']);
 Route::get('/mlbb/emotes', [App\Http\Controllers\MlbbCatalogController::class, 'emotes']);
 Route::get('/mlbb/emotes/sample', [App\Http\Controllers\MlbbCatalogController::class, 'sampleEmotes']);

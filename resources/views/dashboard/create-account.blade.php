@@ -1943,18 +1943,45 @@
                             if (!this.selectedSkins.length) {
                                 this.restoreSelections();
                             }
-                            this.enrichSelectedSkins();
-                            this.updateHiddenInputs();
+                            this.enrichSelectedSkins().then(() => {
+                                this.updateHiddenInputs();
+                            });
                         }
                     });
                     Promise.all([this.loadHeroes(), this.loadSkinIdMap()])
-                        .then(() => {
-                            this.enrichSelectedSkins();
-                            this.updateHiddenInputs();
-                        })
+                        .then(() => this.enrichSelectedSkins())
                         .finally(() => {
+                            this.updateHiddenInputs();
                             this.initialized = true;
                         });
+                },
+                async resolveSkinImages(ids) {
+                    const unique = [...new Set((ids || []).map((id) => Number(id)).filter((id) => id > 0))];
+                    if (!unique.length) return;
+
+                    try {
+                        const response = await fetch(`/api/mlbb/skins/resolve?ids=${unique.join(',')}`, {
+                            credentials: 'same-origin',
+                            headers: { Accept: 'application/json' },
+                        });
+                        if (!response.ok) return;
+                        const payload = await response.json();
+                        const byId = {};
+                        for (const skin of (payload.skins || [])) {
+                            byId[Number(skin.id)] = skin;
+                        }
+                        for (const item of this.selectedSkins) {
+                            const match = byId[Number(item.id)];
+                            if (!match) continue;
+                            item.image_url = match.image_url || match.thumbnail_url || item.image_url;
+                            item.thumbnail_url = match.thumbnail_url || item.thumbnail_url || null;
+                            item.rarity = item.rarity || match.rarity || 'Skin';
+                            item.tags = item.tags?.length ? item.tags : (match.tags || []);
+                            item.painted = item.painted ?? match.painted ?? false;
+                        }
+                    } catch (error) {
+                        console.error('Skin resolve failed', error);
+                    }
                 },
                 restoreSelections() {
                     const draft = readCreateDraft();
@@ -2035,7 +2062,7 @@
                         .filter(Boolean);
                     this.pendingSkinIds = [];
                 },
-                enrichSelectedSkins() {
+                async enrichSelectedSkins() {
                     if (this.pendingSkinIds.length && Object.keys(this.skinById).length) {
                         this.hydrateOldSelections();
                     }
@@ -2045,8 +2072,15 @@
                         id: item.id ?? this.lookupSkinId(item.hero, item.name),
                     }));
 
+                    const missingIds = this.selectedSkins
+                        .filter((item) => !item.image_url && !item.thumbnail_url && item.id)
+                        .map((item) => item.id);
+                    if (missingIds.length) {
+                        await this.resolveSkinImages(missingIds);
+                    }
+
                     for (const item of this.selectedSkins) {
-                        if (item.image_url || !item.hero || !item.name) {
+                        if (item.image_url || item.thumbnail_url || !item.hero || !item.name) {
                             continue;
                         }
                         const cached = this.skinsCache[item.hero];
@@ -3465,6 +3499,46 @@
                         return [];
                     }
                 },
+                async resolveSkinsForPreview(skins) {
+                    const list = [...(skins || [])];
+                    const missingIds = list
+                        .filter((skin) => !skin.image_url && !skin.thumbnail_url && skin.id)
+                        .map((skin) => Number(skin.id))
+                        .filter((id) => id > 0);
+                    if (!missingIds.length) {
+                        return list;
+                    }
+
+                    try {
+                        const payload = await this.fetchJson(
+                            `/api/mlbb/skins/resolve?ids=${[...new Set(missingIds)].join(',')}`,
+                            20000
+                        );
+                        const byId = {};
+                        for (const skin of (payload.skins || [])) {
+                            byId[Number(skin.id)] = skin;
+                        }
+                        return list.map((skin) => {
+                            const match = byId[Number(skin.id)];
+                            if (!match || skin.image_url || skin.thumbnail_url) {
+                                return skin;
+                            }
+                            return {
+                                ...skin,
+                                hero: skin.hero || match.hero,
+                                name: skin.name || match.name,
+                                image_url: match.image_url || match.thumbnail_url || skin.image_url,
+                                thumbnail_url: match.thumbnail_url || skin.thumbnail_url || null,
+                                rarity: skin.rarity || match.rarity || 'Skin',
+                                tags: skin.tags?.length ? skin.tags : (match.tags || []),
+                                painted: skin.painted ?? match.painted ?? false,
+                            };
+                        });
+                    } catch (error) {
+                        console.error('Preview skin resolve failed', error);
+                        return list;
+                    }
+                },
                 enrichSkinsFromPicker(skins, skinsData) {
                     if (!skinsData?.skinsCache) {
                         return skins;
@@ -3536,10 +3610,15 @@
                         const emotesData = this.pickerData('emotesPicker');
                         const recallsData = this.pickerData('recallsPicker');
 
-                        let skins = this.enrichSkinsFromPicker(
-                            (skinsData?.selectedSkins || []),
-                            skinsData
-                        )
+                        let rawSkins = skinsData?.selectedSkins || [];
+                        if (skinsData?.resolveSkinImages && rawSkins.some((skin) => !skin.image_url && !skin.thumbnail_url && skin.id)) {
+                            await skinsData.enrichSelectedSkins();
+                            rawSkins = skinsData.selectedSkins || rawSkins;
+                        }
+
+                        rawSkins = await this.resolveSkinsForPreview(rawSkins);
+
+                        let skins = this.enrichSkinsFromPicker(rawSkins, skinsData)
                             .filter((skin) => skin.image_url || skin.thumbnail_url)
                             .map((skin) => this.normalizeSkin(skin));
 

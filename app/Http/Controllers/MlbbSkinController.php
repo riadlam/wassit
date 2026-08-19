@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\MlbbSkin;
+use App\Services\MlbbSkinCatalogService;
 use Illuminate\Http\Request;
 
 class MlbbSkinController extends Controller
@@ -50,5 +51,15 @@ class MlbbSkinController extends Controller
         }
 
         return response()->json(['categories' => $categories]);
+    }
+
+    public function resolve(Request $request, MlbbSkinCatalogService $skinCatalog)
+    {
+        $raw = (string) $request->query('ids', '');
+        $ids = array_values(array_filter(array_map('intval', preg_split('/[\s,]+/', $raw, -1, PREG_SPLIT_NO_EMPTY))));
+
+        return response()->json([
+            'skins' => $skinCatalog->skinsByIds($ids),
+        ]);
     }
 }
