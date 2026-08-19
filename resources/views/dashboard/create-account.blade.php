@@ -3686,9 +3686,11 @@
                         node.style.display = 'inline-block';
                         node.style.lineHeight = '1';
                         node.style.fontFamily = '"Bebas Neue", "Montserrat", Impact, sans-serif';
-                        node.style.fontSize = isBasic ? '36px' : '46px';
+                        node.style.fontSize = isBasic ? '50px' : '64px';
+                        node.style.fontWeight = '700';
+                        node.style.letterSpacing = '0.02em';
                         node.style.transformOrigin = 'center center';
-                        node.style.transform = 'rotate(-10deg) translateY(-4px)';
+                        node.style.transform = 'rotate(-10deg) translateY(-9px)';
                         node.style.opacity = '1';
                         node.style.visibility = 'visible';
                     });
