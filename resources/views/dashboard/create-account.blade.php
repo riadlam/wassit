@@ -1349,8 +1349,9 @@
             display: inline-block;
             font-family: "Bebas Neue", "Montserrat", Impact, sans-serif;
             font-size: {{ $posterPricePremium['font_size'] }}px;
-            font-weight: 400;
-            letter-spacing: 0.04em;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            text-align: center;
             line-height: 1;
             transform: rotate({{ $posterPricePremium['rotate'] }}deg) translate({{ $posterPricePremium['translate_x'] }}px, {{ $posterPricePremium['translate_y'] }}px);
             transform-origin: center center;
@@ -1529,6 +1530,8 @@
         const POSTER_HEIGHT = 1024;
         const POSTER_EXPORT_WIDTH = 1080;
         const POSTER_EXPORT_SCALE = POSTER_EXPORT_WIDTH / POSTER_WIDTH;
+        const POSTER_PRICE_PREMIUM = @json($posterPricePremium);
+        const POSTER_PRICE_BASIC = @json($posterPriceBasic);
         const heroSkinsCatalogCache = new Map();
 
         function normalizeSkinLookup(value) {
@@ -3677,13 +3680,7 @@
                         node.style.justifyContent = 'center';
                     });
                     clone.querySelectorAll('.lp-price-value').forEach((node) => {
-                        const isBasic = !this.isPremiumLayout;
-                        let exportFontSize = isBasic ? 50 : 64;
-                        let exportTranslateX = 0;
-                        if (this.isPremiumLayout) {
-                            exportFontSize = Math.round(exportFontSize * 0.95);
-                            exportTranslateX = -15;
-                        }
+                        const cfg = this.isPremiumLayout ? POSTER_PRICE_PREMIUM : POSTER_PRICE_BASIC;
                         node.style.background = 'none';
                         node.style.backgroundClip = 'border-box';
                         node.style.webkitBackgroundClip = 'border-box';
@@ -3693,13 +3690,20 @@
                         node.style.display = 'inline-block';
                         node.style.lineHeight = '1';
                         node.style.fontFamily = '"Bebas Neue", "Montserrat", Impact, sans-serif';
-                        node.style.fontSize = `${exportFontSize}px`;
                         node.style.fontWeight = '700';
-                        node.style.letterSpacing = '0.02em';
+                        node.style.letterSpacing = this.isPremiumLayout ? '0.02em' : '0.03em';
                         node.style.transformOrigin = 'center center';
-                        node.style.transform = `rotate(-10deg) translate(${exportTranslateX}px, -${9 + priceExportLiftPx}px)`;
                         node.style.opacity = '1';
                         node.style.visibility = 'visible';
+
+                        if (this.isPremiumLayout) {
+                            node.style.fontSize = `${cfg.font_size}px`;
+                            node.style.transform = `rotate(${cfg.rotate}deg) translate(${cfg.translate_x}px, ${cfg.translate_y}px)`;
+                            return;
+                        }
+
+                        node.style.fontSize = '50px';
+                        node.style.transform = `rotate(${cfg.rotate}deg) translate(${cfg.translate_x}px, -${9 + priceExportLiftPx}px)`;
                     });
                 },
                 async fetchSampleSkins(count) {

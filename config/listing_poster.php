@@ -12,13 +12,13 @@ return [
 
     'price' => [
         'premium' => [
-            'left' => 178,
-            'top' => 868,
-            'width' => 414,
-            'height' => 44,
-            'font_size' => 44,
+            'left' => 168,
+            'top' => 870,
+            'width' => 218,
+            'height' => 46,
+            'font_size' => 42,
             'rotate' => -10,
-            'translate_x' => 4,
+            'translate_x' => 0,
             'translate_y' => 0,
         ],
         'basic' => [
