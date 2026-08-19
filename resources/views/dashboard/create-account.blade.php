@@ -2903,8 +2903,7 @@
 
                     await this.$nextTick();
                     await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-                    this.refitPosterFrames();
-                    await new Promise((resolve) => window.setTimeout(resolve, 150));
+                    await new Promise((resolve) => window.setTimeout(resolve, 100));
 
                     try {
                         return await run();
@@ -3020,17 +3019,9 @@
                         image.src = src;
                     });
                 },
-                readFrameState(key, img) {
+                readFrameState(key) {
                     const stored = this.imageFrames?.[key] || {};
-                    const transform = String(img?.style?.transform || '').trim();
-                    const match = transform.match(/translate\(\s*([-\d.]+)px\s*,\s*([-\d.]+)px\s*\)\s*scale\(\s*([-\d.]+)\s*\)/);
-                    if (match) {
-                        return {
-                            x: parseFloat(match[1]) || 0,
-                            y: parseFloat(match[2]) || 0,
-                            scale: parseFloat(match[3]) || 1,
-                        };
-                    }
+
                     return {
                         x: Number(stored.x) || 0,
                         y: Number(stored.y) || 0,
@@ -3115,7 +3106,7 @@
 
                             const { vw, vh } = this.getFrameViewportSize(viewport);
                             const background = this.frameViewportBackground(viewport);
-                            const frame = this.readFrameState(key, img);
+                            const frame = this.readFrameState(key);
                             const dataUrl = this.rasterizeFrameImage(decoded, vw, vh, frame, background);
                             if (dataUrl) {
                                 rasterized.set(key, dataUrl);
@@ -3128,11 +3119,48 @@
                 },
                 applyPosterImageDataMap(posterEl, imageMap) {
                     posterEl.querySelectorAll('img').forEach((img) => {
+                        if (img.closest('[data-frame-key]')) return;
                         const original = img.dataset.posterSrc || img.getAttribute('src') || '';
                         const inlined = imageMap.get(original);
                         if (inlined?.startsWith('data:')) {
                             img.src = inlined;
                         }
+                    });
+                },
+                applyRasterizedFrames(posterEl, rasterized, imageMap) {
+                    rasterized.forEach((dataUrl, key) => {
+                        const viewport = posterEl.querySelector(`[data-frame-key="${key}"]`);
+                        const img = viewport?.querySelector('img');
+                        if (!img) return;
+                        img.src = dataUrl;
+                        this.flattenCloneFrameImage(img);
+                    });
+
+                    posterEl.querySelectorAll('[data-frame-key]').forEach((viewport) => {
+                        const key = viewport.getAttribute('data-frame-key');
+                        if (!key || rasterized.has(key)) return;
+                        const img = viewport.querySelector('img');
+                        if (!img) return;
+                        const original = img.dataset.posterSrc || img.getAttribute('src') || '';
+                        const inlined = imageMap.get(original);
+                        if (inlined?.startsWith('data:')) {
+                            img.src = inlined;
+                            this.flattenCloneFrameImage(img);
+                        }
+                    });
+                },
+                syncPosterFrameImagesFromLive(live, clone) {
+                    if (!live || !clone) return;
+
+                    live.querySelectorAll('[data-frame-key]').forEach((liveViewport) => {
+                        const key = liveViewport.getAttribute('data-frame-key');
+                        if (!key) return;
+                        const cloneViewport = clone.querySelector(`[data-frame-key="${key}"]`);
+                        const liveImg = liveViewport.querySelector('img');
+                        const cloneImg = cloneViewport?.querySelector('img');
+                        if (!liveImg || !cloneImg) return;
+                        cloneImg.src = liveImg.currentSrc || liveImg.src || '';
+                        cloneImg.style.cssText = liveImg.style.cssText;
                     });
                 },
                 syncPosterCloneFromLive(live, clone) {
@@ -3223,29 +3251,12 @@
                     clone.classList.remove('is-showing-hint');
                     clone.querySelectorAll('.lp-move-hint,[data-html2canvas-ignore]').forEach((node) => node.remove());
 
-                    if (!framesAlreadyBaked) {
-                        this.applyPosterImageDataMap(clone, imageMap);
-                        rasterized.forEach((dataUrl, key) => {
-                            const viewport = clone.querySelector(`[data-frame-key="${key}"]`);
-                            const img = viewport?.querySelector('img');
-                            if (!img) return;
-                            img.src = dataUrl;
-                            this.flattenCloneFrameImage(img);
-                        });
-                        clone.querySelectorAll('[data-frame-key]').forEach((viewport) => {
-                            const key = viewport.getAttribute('data-frame-key');
-                            if (!key || rasterized.has(key)) return;
-                            const img = viewport.querySelector('img');
-                            if (!img) return;
-                            const original = img.dataset.posterSrc || img.getAttribute('src') || '';
-                            const inlined = imageMap.get(original);
-                            if (inlined?.startsWith('data:')) {
-                                img.src = inlined;
-                                this.flattenCloneFrameImage(img);
-                            }
-                        });
+                    this.applyPosterImageDataMap(clone, imageMap);
+
+                    if (live && framesAlreadyBaked) {
+                        this.syncPosterFrameImagesFromLive(live, clone);
                     } else {
-                        this.applyPosterImageDataMap(clone, imageMap);
+                        this.applyRasterizedFrames(clone, rasterized, imageMap);
                     }
 
                     if (live) {
