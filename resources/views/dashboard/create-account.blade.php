@@ -1541,8 +1541,8 @@
         function writeCreateDraft(data) {
             try {
                 sessionStorage.setItem(CREATE_DRAFT_KEY, JSON.stringify(data));
-            } catch {
-                // ignore quota
+            } catch (error) {
+                console.warn('Could not save listing draft', error);
             }
         }
 
@@ -1621,6 +1621,7 @@
                 submitting: false,
                 hasServerOld: @json($errors->any()),
                 _draftTimer: null,
+                _draftRestoring: false,
                 steps: [
                     { id: 1, label: 'Game' },
                     { id: 2, label: 'Details' },
@@ -1638,19 +1639,27 @@
                     return this.selectedGameId && this.mlbbId && String(this.selectedGameId) !== String(this.mlbbId);
                 },
                 init() {
+                    this._draftRestoring = true;
                     if (!this.hasServerOld) {
                         this.restoreDraft();
                     }
                     this.bindDraftPersistence();
+                    this._draftRestoring = false;
                 },
                 bindDraftPersistence() {
                     const form = document.getElementById('createAccountForm');
                     const save = () => this.queueDraftSave();
+                    const flush = () => {
+                        clearTimeout(this._draftTimer);
+                        this.saveDraft();
+                    };
                     form?.addEventListener('input', save);
                     form?.addEventListener('change', save);
                     this.$watch('currentStep', save);
                     this.$watch('selectedGameId', save);
                     window.addEventListener('wasit-create-draft-changed', save);
+                    window.addEventListener('pagehide', flush);
+                    window.addEventListener('beforeunload', flush);
                     document.addEventListener('click', (event) => {
                         const link = event.target.closest('a[href]');
                         if (!link || event.defaultPrevented || event.button !== 0) return;
@@ -1667,10 +1676,20 @@
                     });
                 },
                 queueDraftSave() {
+                    if (this._draftRestoring) return;
                     clearTimeout(this._draftTimer);
                     this._draftTimer = setTimeout(() => this.saveDraft(), 250);
                 },
+                compactDraftSkins(skins) {
+                    return (skins || []).map(({ key, id, hero, name }) => ({
+                        key,
+                        id,
+                        hero,
+                        name,
+                    }));
+                },
                 saveDraft() {
+                    if (this._draftRestoring) return;
                     const form = document.getElementById('createAccountForm');
                     if (!form) return;
                     const fields = {};
@@ -1681,26 +1700,44 @@
                     const skinsData = this.safePicker('accountSkinsPicker');
                     const recallsData = this.safePicker('accountRecallsPicker');
                     const emotesData = this.safePicker('accountEmotesPicker');
+                    const preview = this.getListingPreview();
                     const existingDraft = readCreateDraft();
+
                     let selectedSkins = existingDraft?.selectedSkins || [];
                     if (skinsData?.initialized) {
                         selectedSkins = skinsData.selectedSkins || [];
                     } else if (skinsData?.selectedSkins?.length) {
                         selectedSkins = skinsData.selectedSkins;
                     }
+
+                    let selectedRecalls = existingDraft?.selectedRecalls || [];
+                    let selectedRecallKeys = existingDraft?.selectedRecallKeys || [];
+                    if (recallsData?.selectedItems?.length) {
+                        selectedRecalls = recallsData.selectedItems;
+                        selectedRecallKeys = recallsData.selected || [];
+                    }
+
+                    let selectedEmotes = existingDraft?.selectedEmotes || [];
+                    let selectedEmoteKeys = existingDraft?.selectedEmoteKeys || [];
+                    if (emotesData?.selectedItems?.length) {
+                        selectedEmotes = emotesData.selectedItems;
+                        selectedEmoteKeys = emotesData.selected || [];
+                    }
+
                     writeCreateDraft({
                         step: this.currentStep,
                         selectedGameId: this.selectedGameId,
                         fields,
-                        selectedSkins,
+                        selectedSkins: this.compactDraftSkins(selectedSkins),
                         selectedSkinKeys: selectedSkins.map((item) => item.key).filter(Boolean),
-                        selectedRecalls: recallsData?.selectedItems || [],
-                        selectedEmotes: emotesData?.selectedItems || [],
-                        selectedRecallKeys: recallsData?.selected || [],
-                        selectedEmoteKeys: emotesData?.selected || [],
+                        selectedRecalls,
+                        selectedRecallKeys,
+                        selectedEmotes,
+                        selectedEmoteKeys,
+                        imageFrames: preview?.imageFrames || existingDraft?.imageFrames || {},
                     });
                     const imagesData = this.getImagesPicker();
-                    if (imagesData?.selectedFiles) {
+                    if (imagesData?.initialized) {
                         saveCreateDraftImages(imagesData.selectedFiles).catch(() => {});
                     }
                 },
@@ -2326,6 +2363,10 @@
                 collectionTierImageUrl: '',
                 accountCode: '',
                 init() {
+                    const draft = readCreateDraft();
+                    if (draft?.imageFrames && Object.keys(draft.imageFrames).length) {
+                        this.imageFrames = { ...draft.imageFrames };
+                    }
                     this.initImageFrames();
                     this.featuredSkins = this.isPremiumLayout ? this.padSkins([], 2) : [];
                     this.bottomSkins = this.isPremiumLayout ? this.padSkins([], 6) : [];
@@ -2590,6 +2631,7 @@
                     const frame = this.imageFrames[key];
                     const scale = frame.coverScale || 1;
                     this.imageFrames[key] = { ...frame, x: 0, y: 0, scale, adjusted: false };
+                    notifyCreateDraftChanged();
                 },
                 resetAllFrames() {
                     Object.keys(this.imageFrames).forEach((key) => this.resetFrame(key));
@@ -2648,6 +2690,7 @@
                         document.removeEventListener('mouseup', this._onFrameDragEnd);
                         document.removeEventListener('touchend', this._onFrameDragEnd);
                     }
+                    notifyCreateDraftChanged();
                 },
                 zoomFrame(key, event) {
                     if (!this.imageFrames[key]) return;
@@ -2656,6 +2699,7 @@
                     const next = event.deltaY > 0 ? frame.scale * 0.9 : frame.scale * 1.14;
                     const scale = Math.min(20, Math.max(0.4, next));
                     this.imageFrames[key] = { ...frame, scale, adjusted: true };
+                    notifyCreateDraftChanged();
                 },
                 proxiedUrl(url) {
                     if (!url) return '';
@@ -3614,13 +3658,16 @@
                 maxImages: 10,
                 selectedFiles: [],
                 showPrimaryHelp: false,
+                initialized: false,
                 async init() {
                     const stored = await loadCreateDraftImages();
                     if (stored.length) {
-                        this.addFiles(stored);
+                        this.addFiles(stored, { silent: true });
                     }
+                    this.initialized = true;
+                    notifyCreateDraftChanged();
                 },
-                addFiles(files) {
+                addFiles(files, options = {}) {
                     const allowed = this.maxImages - this.imageCount;
                     const next = files.filter((f) => {
                         if (f.type && f.type.startsWith('image/')) return true;
@@ -3637,7 +3684,9 @@
                         this.selectedFiles.forEach((file) => transfer.items.add(file));
                         native.files = transfer.files;
                     }
-                    notifyCreateDraftChanged();
+                    if (!options.silent) {
+                        notifyCreateDraftChanged();
+                    }
                 },
                 setPrimary(index) {
                     if (index <= 0) return;
