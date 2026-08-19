@@ -668,7 +668,10 @@
                                         </div>
                                         <div class="p-4">
                                             <img :src="downloadPreviewUrl" alt="Listing poster" class="w-full h-auto rounded-lg">
-                                            <p class="mt-3 text-sm text-gray-400">Tap and hold the image, then choose <span class="text-white">Save Image</span>.</p>
+                                            <p class="mt-3 text-sm text-gray-400">Tap and hold the image, then choose <span class="text-white">Save Image</span>. Close this when done.</p>
+                                            <button type="button" @click="closeDownloadPreview()" class="mt-4 w-full py-2.5 text-sm rounded-md bg-red-600 hover:bg-red-700 text-white font-medium">
+                                                Done
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -2807,8 +2810,25 @@
                 },
                 posterExportFilename() {
                     return this.isMobileExportDevice()
-                        ? 'wassitmarket-listing.png'
+                        ? 'wassitmarket-listing.jpg'
                         : 'wassitmarket-listing-1080.png';
+                },
+                posterExportMime() {
+                    return this.isMobileExportDevice() ? 'image/jpeg' : 'image/png';
+                },
+                posterExportQuality() {
+                    return this.isMobileExportDevice() ? 0.9 : 1;
+                },
+                posterImageMaxDimension() {
+                    return this.isMobileExportDevice() ? 640 : 2048;
+                },
+                releaseCanvas(canvas) {
+                    if (!canvas) return;
+                    canvas.width = 0;
+                    canvas.height = 0;
+                },
+                yieldToBrowser(ms = 0) {
+                    return new Promise((resolve) => window.setTimeout(resolve, ms));
                 },
                 exportTimeoutMs() {
                     return this.isMobileExportDevice() ? 45000 : 60000;
@@ -2826,13 +2846,26 @@
                         return null;
                     }
                     try {
+                        const maxDim = this.posterImageMaxDimension();
+                        let width = img.naturalWidth;
+                        let height = img.naturalHeight;
+                        if (width > maxDim || height > maxDim) {
+                            const scale = maxDim / Math.max(width, height);
+                            width = Math.max(1, Math.round(width * scale));
+                            height = Math.max(1, Math.round(height * scale));
+                        }
+
                         const canvas = document.createElement('canvas');
-                        canvas.width = img.naturalWidth;
-                        canvas.height = img.naturalHeight;
+                        canvas.width = width;
+                        canvas.height = height;
                         const ctx = canvas.getContext('2d');
                         if (!ctx) return null;
-                        ctx.drawImage(img, 0, 0);
-                        return canvas.toDataURL('image/png');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        const dataUrl = this.isMobileExportDevice()
+                            ? canvas.toDataURL('image/jpeg', 0.88)
+                            : canvas.toDataURL('image/png');
+                        this.releaseCanvas(canvas);
+                        return dataUrl;
                     } catch {
                         return null;
                     }
@@ -2861,15 +2894,18 @@
                 },
                 async buildPosterImageDataMap(posterEl) {
                     const map = new Map();
-                    const images = [...posterEl.querySelectorAll('img')];
-                    await Promise.all(images.map(async (img) => {
+                    const images = [...posterEl.querySelectorAll('img')].filter((img) => !img.closest('[data-frame-key]'));
+
+                    for (const img of images) {
                         const key = img.dataset.posterSrc || img.currentSrc || img.src || '';
-                        if (!key || map.has(key)) return;
+                        if (!key || map.has(key)) continue;
                         const dataUrl = await this.resolvePosterImageDataUrl(img, key);
                         if (dataUrl) {
                             map.set(key, dataUrl);
                         }
-                    }));
+                        await this.yieldToBrowser(0);
+                    }
+
                     return map;
                 },
                 getFrameViewportSize(viewport) {
@@ -2890,10 +2926,10 @@
                         vh: Math.max(1, vh),
                     };
                 },
-                applyPosterInlineImages(posterEl, imageMap, rasterized) {
+                applyPosterFrameImages(posterEl, rasterized) {
                     const states = [];
 
-                    posterEl.querySelectorAll('img').forEach((img) => {
+                    posterEl.querySelectorAll('[data-frame-key] img').forEach((img) => {
                         states.push({
                             img,
                             src: img.getAttribute('src') || '',
@@ -2918,27 +2954,10 @@
                         if (!key || !img) return;
 
                         const baked = rasterized.get(key);
-                        if (baked) {
-                            img.src = baked;
-                            this.flattenCloneFrameImage(img);
-                            return;
-                        }
+                        if (!baked) return;
 
-                        const original = img.dataset.posterSrc || img.currentSrc || img.src || '';
-                        const inlined = imageMap.get(original);
-                        if (inlined?.startsWith('data:')) {
-                            img.src = inlined;
-                            this.flattenCloneFrameImage(img);
-                        }
-                    });
-
-                    posterEl.querySelectorAll('img').forEach((img) => {
-                        if (img.closest('[data-frame-key]')) return;
-                        const original = img.dataset.posterSrc || img.currentSrc || img.src || '';
-                        const inlined = imageMap.get(original);
-                        if (inlined?.startsWith('data:')) {
-                            img.src = inlined;
-                        }
+                        img.src = baked;
+                        this.flattenCloneFrameImage(img);
                     });
 
                     return states;
@@ -3041,7 +3060,11 @@
                     ctx.drawImage(sourceImg, dx, dy, dw, dh);
                     ctx.restore();
 
-                    return canvas.toDataURL('image/png');
+                    const dataUrl = this.isMobileExportDevice()
+                        ? canvas.toDataURL('image/jpeg', 0.88)
+                        : canvas.toDataURL('image/png');
+                    this.releaseCanvas(canvas);
+                    return dataUrl;
                 },
                 flattenCloneFrameImage(img) {
                     img.style.transform = 'none';
@@ -3176,7 +3199,7 @@
                         node.style.zIndex = '6';
                     });
                 },
-                preparePosterCloneForExport(clone, { imageMap, rasterized, live }) {
+                preparePosterCloneForExport(clone, { imageMap, rasterized, live, framesAlreadyBaked = false }) {
                     if (!clone) return;
                     clone.style.transform = 'none';
                     clone.style.width = `${POSTER_WIDTH}px`;
@@ -3184,26 +3207,30 @@
                     clone.classList.remove('is-showing-hint');
                     clone.querySelectorAll('.lp-move-hint,[data-html2canvas-ignore]').forEach((node) => node.remove());
 
-                    this.applyPosterImageDataMap(clone, imageMap);
-                    rasterized.forEach((dataUrl, key) => {
-                        const viewport = clone.querySelector(`[data-frame-key="${key}"]`);
-                        const img = viewport?.querySelector('img');
-                        if (!img) return;
-                        img.src = dataUrl;
-                        this.flattenCloneFrameImage(img);
-                    });
-                    clone.querySelectorAll('[data-frame-key]').forEach((viewport) => {
-                        const key = viewport.getAttribute('data-frame-key');
-                        if (!key || rasterized.has(key)) return;
-                        const img = viewport.querySelector('img');
-                        if (!img) return;
-                        const original = img.dataset.posterSrc || img.getAttribute('src') || '';
-                        const inlined = imageMap.get(original);
-                        if (inlined?.startsWith('data:')) {
-                            img.src = inlined;
+                    if (!framesAlreadyBaked) {
+                        this.applyPosterImageDataMap(clone, imageMap);
+                        rasterized.forEach((dataUrl, key) => {
+                            const viewport = clone.querySelector(`[data-frame-key="${key}"]`);
+                            const img = viewport?.querySelector('img');
+                            if (!img) return;
+                            img.src = dataUrl;
                             this.flattenCloneFrameImage(img);
-                        }
-                    });
+                        });
+                        clone.querySelectorAll('[data-frame-key]').forEach((viewport) => {
+                            const key = viewport.getAttribute('data-frame-key');
+                            if (!key || rasterized.has(key)) return;
+                            const img = viewport.querySelector('img');
+                            if (!img) return;
+                            const original = img.dataset.posterSrc || img.getAttribute('src') || '';
+                            const inlined = imageMap.get(original);
+                            if (inlined?.startsWith('data:')) {
+                                img.src = inlined;
+                                this.flattenCloneFrameImage(img);
+                            }
+                        });
+                    } else {
+                        this.applyPosterImageDataMap(clone, imageMap);
+                    }
 
                     if (live) {
                         this.syncPosterCloneFromLive(live, clone);
@@ -3446,8 +3473,9 @@
                         throw new Error('Could not prepare poster images. Wait for the preview to finish loading, then try again.');
                     }
 
-                    const restoreState = this.applyPosterInlineImages(el, imageMap, rasterized);
-                    await this.waitForImages(el, 5000);
+                    const restoreState = this.applyPosterFrameImages(el, rasterized);
+                    await this.waitForImages(el, 3000);
+                    await this.yieldToBrowser(50);
 
                     this.downloadStatus = 'Rendering PNG…';
                     const exportScale = this.posterExportScale();
@@ -3469,7 +3497,7 @@
                                 onclone: (clonedDoc) => {
                                     this.preparePosterCloneForExport(
                                         clonedDoc.getElementById('listingPoster'),
-                                        { imageMap, rasterized, live: el }
+                                        { imageMap, rasterized, live: el, framesAlreadyBaked: true }
                                     );
                                 },
                             }),
@@ -3482,16 +3510,29 @@
                         ]);
                     } finally {
                         this.restorePosterImageState(restoreState);
+                        imageMap.clear();
+                        rasterized.clear();
                     }
 
-                    return await new Promise((resolve, reject) => {
-                        canvas.toBlob((file) => file ? resolve(file) : reject(new Error('Could not export PNG.')), 'image/png', 1);
+                    const mime = this.posterExportMime();
+                    const quality = this.posterExportQuality();
+                    const blob = await new Promise((resolve, reject) => {
+                        canvas.toBlob(
+                            (file) => file ? resolve(file) : reject(new Error('Could not export image.')),
+                            mime,
+                            quality
+                        );
                     });
+                    this.releaseCanvas(canvas);
+                    await this.yieldToBrowser(50);
+                    return blob;
                 },
                 async exportPosterFile() {
                     const blob = await this.exportPosterBlob();
                     if (!blob) return null;
-                    return new File([blob], 'listing-poster.png', { type: 'image/png' });
+                    const mime = this.posterExportMime();
+                    const ext = mime === 'image/jpeg' ? 'jpg' : 'png';
+                    return new File([blob], `listing-poster.${ext}`, { type: mime });
                 },
                 closeDownloadPreview() {
                     if (this.downloadPreviewUrl) {
@@ -3500,30 +3541,13 @@
                     }
                 },
                 async savePosterBlob(blob, filename) {
-                    const file = new File([blob], filename, { type: 'image/png' });
-                    const url = URL.createObjectURL(blob);
-
-                    if (navigator.canShare?.({ files: [file] })) {
-                        try {
-                            await navigator.share({
-                                files: [file],
-                                title: filename,
-                            });
-                            URL.revokeObjectURL(url);
-                            return;
-                        } catch (error) {
-                            if (error?.name === 'AbortError') {
-                                URL.revokeObjectURL(url);
-                                return;
-                            }
-                        }
-                    }
-
                     if (this.isMobileExportDevice()) {
-                        this.downloadPreviewUrl = url;
+                        this.closeDownloadPreview();
+                        this.downloadPreviewUrl = URL.createObjectURL(blob);
                         return;
                     }
 
+                    const url = URL.createObjectURL(blob);
                     const link = document.createElement('a');
                     link.href = url;
                     link.download = filename;
