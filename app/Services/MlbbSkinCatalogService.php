@@ -198,14 +198,64 @@ class MlbbSkinCatalogService
             return [];
         }
 
-        return MlbbSkin::query()
-            ->whereIn('id', $ids)
-            ->orderBy('id')
-            ->get()
-            ->filter(fn (MlbbSkin $row) => $row->imageUrl() !== null)
-            ->map(fn (MlbbSkin $row) => $this->skinPayload($row))
-            ->values()
-            ->all();
+        $results = [];
+
+        foreach (MlbbSkin::query()->whereIn('id', $ids)->orderBy('id')->get() as $row) {
+            if ($row->imageUrl() !== null) {
+                $results[] = $this->skinPayload($row);
+                continue;
+            }
+
+            $payload = $this->skinPayload($row);
+            $heroPayload = $this->heroPayload($row->hero);
+            $target = mb_strtolower(trim($row->skin));
+            $match = null;
+
+            foreach (($heroPayload['skins'] ?? []) as $skin) {
+                if (mb_strtolower(trim((string) ($skin['name'] ?? ''))) === $target) {
+                    $match = $skin;
+                    break;
+                }
+            }
+
+            if (! $match) {
+                $match = $this->findFandomSkinMatch($row->hero, $row->skin);
+            }
+
+            if ($match) {
+                $payload['image_url'] = $match['image_url'] ?? $match['thumbnail_url'] ?? null;
+                $payload['thumbnail_url'] = $match['thumbnail_url'] ?? $payload['image_url'];
+                $payload['rarity'] = $payload['rarity'] ?: ($match['rarity'] ?? 'Skin');
+                $payload['tags'] = $payload['tags'] ?: ($match['tags'] ?? []);
+                $payload['painted'] = $payload['painted'] || ! empty($match['painted']);
+            }
+
+            if (! empty($payload['image_url']) || ! empty($payload['thumbnail_url'])) {
+                $results[] = $payload;
+            }
+        }
+
+        return $results;
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function findFandomSkinMatch(string $hero, string $skinName): ?array
+    {
+        try {
+            $heroPayload = app(MlbbFandomService::class)->getHeroSkins($hero);
+            $target = mb_strtolower(trim($skinName));
+            foreach (($heroPayload['skins'] ?? []) as $skin) {
+                if (mb_strtolower(trim((string) ($skin['name'] ?? ''))) === $target) {
+                    return $skin;
+                }
+            }
+        } catch (\Throwable) {
+            // ignore and fall back to client-side hero catalog fetch
+        }
+
+        return null;
     }
 
     public function resolveTagImageUrl(string $tagName): ?string
