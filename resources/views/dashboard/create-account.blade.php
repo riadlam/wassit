@@ -1188,7 +1188,7 @@
             border-right: 1px solid #3f3f46;
             padding: 0 3px;
             overflow: hidden;
-            gap: 0;
+            gap: 3px;
         }
         .lp-stat:last-child,
         .lp-stat.lp-stat-rank { border-right: 0; }
@@ -1531,31 +1531,31 @@
         }
         .listing-poster.is-basic .lp-stats {
             left: 10px;
-            top: 278px;
+            top: 276px;
             width: 661px;
-            height: 64px;
+            height: 74px;
             overflow: hidden;
-            padding: 0 4px;
+            padding: 4px 6px;
             box-sizing: border-box;
-            grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.95fr) minmax(0, 0.95fr) minmax(0, 0.95fr) minmax(0, 1.55fr);
+            grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr) minmax(0, 0.95fr) minmax(0, 0.95fr) minmax(0, 1.65fr);
             align-items: center;
         }
         .listing-poster.is-basic .lp-stat {
             min-width: 0;
             width: 100%;
-            height: 52px;
+            height: 60px;
             overflow: hidden;
-            padding: 0 4px;
-            gap: 0;
+            padding: 0 5px;
+            gap: 5px;
         }
         .listing-poster.is-basic .lp-stat-val {
-            height: 24px;
-            font-size: 16px;
-            line-height: 24px;
+            height: 26px;
+            font-size: 17px;
+            line-height: 26px;
         }
         .listing-poster.is-basic .lp-stat-val-rank {
-            font-size: 13px;
-            letter-spacing: 0;
+            font-size: 14px;
+            letter-spacing: 0.02em;
             text-transform: uppercase;
         }
         .listing-poster.is-basic .lp-stat-val-sm {
@@ -1564,8 +1564,8 @@
         .listing-poster.is-basic .lp-stat-lbl {
             height: 16px;
             flex: 0 0 16px;
-            font-size: 7.5px;
-            letter-spacing: 0.04em;
+            font-size: 8px;
+            letter-spacing: 0.05em;
             line-height: 16px;
             white-space: nowrap;
             overflow: hidden;
@@ -1579,15 +1579,15 @@
             margin: 0;
         }
         .listing-poster.is-basic .lp-stat-line {
-            height: 24px;
-            line-height: 24px;
-            gap: 5px;
+            height: 26px;
+            line-height: 26px;
+            gap: 6px;
         }
         .listing-poster.is-basic .lp-gallery {
             left: 10px;
-            top: 350px;
+            top: 358px;
             width: 661px;
-            height: 560px;
+            height: 552px;
             display: flex;
             flex-wrap: wrap;
             align-content: stretch;
@@ -2829,7 +2829,7 @@
                     }
 
                     const areaW = 661;
-                    const areaH = 560;
+                    const areaH = 552;
                     const gap = n > 48 ? 2 : 4;
                     const maxCols = Math.min(14, n);
                     const maxRows = 14;
