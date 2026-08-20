@@ -787,16 +787,20 @@
                                             <span class="lp-stat-lbl">WIN RATE</span>
                                         </div>
                                         <div class="lp-stat">
-                                            <i class="fa-solid fa-user lp-stat-ico"></i>
-                                            <span class="lp-stat-val" x-text="stats.heroes_count"></span>
+                                            <span class="lp-stat-line">
+                                                <i class="fa-solid fa-user lp-stat-ico"></i>
+                                                <span class="lp-stat-val" x-text="stats.heroes_count"></span>
+                                            </span>
                                         </div>
                                         <div class="lp-stat">
                                             <span class="lp-stat-val" x-text="stats.level"></span>
                                             <span class="lp-stat-lbl">LEVEL</span>
                                         </div>
                                         <div class="lp-stat">
-                                            <i class="fa-solid fa-shirt lp-stat-ico"></i>
-                                            <span class="lp-stat-val" x-text="stats.skins_count"></span>
+                                            <span class="lp-stat-line">
+                                                <i class="fa-solid fa-shirt lp-stat-ico"></i>
+                                                <span class="lp-stat-val" x-text="stats.skins_count"></span>
+                                            </span>
                                         </div>
                                         <div class="lp-stat">
                                             <span class="lp-stat-val lp-stat-val-rank" x-text="stats.rank"></span>
@@ -1166,11 +1170,12 @@
             border: 2px solid #fff;
             border-radius: 10px;
             color: #fff;
-            padding: 3px 4px;
+            padding: 4px 4px;
             overflow: hidden;
         }
         .lp-stat {
             min-width: 0;
+            height: 100%;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -1179,18 +1184,31 @@
             border-right: 1px solid #3f3f46;
             padding: 0 2px;
             overflow: hidden;
-            gap: 1px;
+            gap: 2px;
         }
         .lp-stat:last-child { border-right: 0; }
+        .lp-stat-line {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            max-width: 100%;
+            min-width: 0;
+        }
         .lp-stat-val {
             display: block;
             font-weight: 900;
             font-size: 15px;
-            line-height: 1;
+            line-height: 1.15;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
             max-width: 100%;
+        }
+        .lp-stat-line .lp-stat-val {
+            display: inline;
+            overflow: visible;
+            text-overflow: clip;
         }
         .lp-stat-val-sm { font-size: 8px; letter-spacing: 0.04em; }
         .lp-stat-lbl {
@@ -1200,17 +1218,18 @@
             letter-spacing: 0.04em;
             color: #d4d4d8;
             margin-top: 0;
-            line-height: 1.1;
+            line-height: 1.15;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
             max-width: 100%;
+            flex-shrink: 0;
         }
         .lp-stat-ico {
-            display: block;
-            font-size: 13px;
+            display: inline-block;
+            font-size: 12px;
             color: #e5e7eb;
-            margin: 0 auto 1px;
+            margin: 0;
             line-height: 1;
             flex-shrink: 0;
         }
@@ -1490,48 +1509,51 @@
         }
         .listing-poster.is-basic .lp-stats {
             left: 10px;
-            top: 278px;
+            top: 276px;
             width: 661px;
-            height: 58px;
+            height: 72px;
             overflow: hidden;
-            padding: 2px 6px;
+            padding: 6px 8px;
             box-sizing: border-box;
         }
         .listing-poster.is-basic .lp-stat {
             min-width: 0;
             overflow: hidden;
-            padding: 0 4px;
-            gap: 2px;
+            padding: 0 6px;
+            gap: 3px;
         }
         .listing-poster.is-basic .lp-stat-val {
-            font-size: 14px;
-            line-height: 1;
+            font-size: 16px;
+            line-height: 1.1;
         }
         .listing-poster.is-basic .lp-stat-val-rank {
-            font-size: 11px;
-            letter-spacing: 0.01em;
+            font-size: 13px;
+            letter-spacing: 0.02em;
             text-transform: uppercase;
         }
         .listing-poster.is-basic .lp-stat-val-sm {
-            font-size: 7px;
+            font-size: 8px;
         }
         .listing-poster.is-basic .lp-stat-lbl {
-            font-size: 6.5px;
-            letter-spacing: 0.03em;
+            font-size: 8px;
+            letter-spacing: 0.06em;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            line-height: 1;
+            line-height: 1.15;
         }
         .listing-poster.is-basic .lp-stat-ico {
-            font-size: 11px;
+            font-size: 13px;
             margin: 0;
+        }
+        .listing-poster.is-basic .lp-stat-line {
+            gap: 5px;
         }
         .listing-poster.is-basic .lp-gallery {
             left: 10px;
-            top: 342px;
+            top: 356px;
             width: 661px;
-            height: 568px;
+            height: 554px;
             display: flex;
             flex-wrap: wrap;
             align-content: stretch;
@@ -2773,7 +2795,7 @@
                     }
 
                     const areaW = 661;
-                    const areaH = 568;
+                    const areaH = 554;
                     const gap = n > 48 ? 2 : 4;
                     const maxCols = Math.min(14, n);
                     const maxRows = 14;
