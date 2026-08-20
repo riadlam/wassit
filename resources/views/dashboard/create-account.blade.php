@@ -37,6 +37,9 @@
     $initialGameId = $isEditMode
         ? (string) ($account->game_id ?: ($mlbbId ?? ''))
         : (string) old('game_id', $mlbbId ?? '');
+
+    $hasExistingCover = $isEditMode
+        && $account->images->contains(fn ($img) => (bool) $img->is_cover);
 @endphp
 
 @section('content')
@@ -97,14 +100,7 @@
                             action="{{ $isEditMode ? route('account.listed-accounts.update', $account->id) : route('account.listed-accounts.store') }}"
                             enctype="multipart/form-data"
                             id="createAccountForm"
-                            x-data="createAccountWizard({
-                                mlbbId: {{ $mlbbId ?? 'null' }},
-                                initialStep: {{ $initialStep }},
-                                initialGameId: '{{ $initialGameId }}',
-                                isEditMode: {{ $isEditMode ? 'true' : 'false' }},
-                                existingImages: @json($existingGalleryImages),
-                                hasExistingCover: {{ $isEditMode && $account->images->contains(fn ($img) => $img->is_cover) ? 'true' : 'false' }},
-                            })"
+                            x-data="createAccountWizard(window.__listingWizardBoot || {})"
                             @submit="handleSubmit($event)"
                         >
                             @csrf
@@ -1569,6 +1565,16 @@
     @endpush
 
     @push('scripts')
+    <script>
+        window.__listingWizardBoot = {
+            mlbbId: @json($mlbbId),
+            initialStep: {{ (int) $initialStep }},
+            initialGameId: @json((string) $initialGameId),
+            isEditMode: @json((bool) $isEditMode),
+            existingImages: @json($existingGalleryImages),
+            hasExistingCover: @json((bool) $hasExistingCover),
+        };
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script>
         const CREATE_DRAFT_KEY = 'wasit.createAccount.draft.v1';
