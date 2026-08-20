@@ -1163,7 +1163,7 @@
             left: 272px;
             top: 494px;
             width: 395px;
-            height: 64px;
+            height: 70px;
             box-sizing: border-box;
             display: grid;
             grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.9fr) minmax(0, 0.9fr) minmax(0, 0.9fr) minmax(0, 1.4fr);
@@ -1172,23 +1172,22 @@
             border: 2px solid #fff;
             border-radius: 10px;
             color: #fff;
-            padding: 0 2px;
+            padding: 8px 4px;
             overflow: hidden;
         }
         .lp-stat {
             min-width: 0;
             width: 100%;
             max-width: 100%;
-            height: 52px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             text-align: center;
             border-right: 1px solid #3f3f46;
-            padding: 0 3px;
+            padding: 2px 4px;
             overflow: hidden;
-            gap: 3px;
+            gap: 4px;
         }
         .lp-stat:last-child,
         .lp-stat.lp-stat-rank { border-right: 0; }
@@ -1196,20 +1195,18 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 4px;
+            gap: 5px;
             max-width: 100%;
             min-width: 0;
-            height: 22px;
-            line-height: 22px;
+            line-height: 1.2;
         }
         .lp-stat-val {
             display: block;
             box-sizing: border-box;
             width: 100%;
-            height: 22px;
             font-weight: 900;
             font-size: 15px;
-            line-height: 22px;
+            line-height: 1.25;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -1224,35 +1221,31 @@
         .lp-stat-val-sm { font-size: 8px; letter-spacing: 0.04em; }
         .lp-stat-val-rank {
             font-size: 12px;
-            letter-spacing: 0;
+            letter-spacing: 0.01em;
             text-transform: uppercase;
         }
         .lp-stat-lbl {
             display: block;
             box-sizing: border-box;
             width: 100%;
-            height: 14px;
             font-size: 7px;
             font-weight: 800;
-            letter-spacing: 0.03em;
+            letter-spacing: 0.04em;
             color: #d4d4d8;
             margin: 0;
             padding: 0;
-            line-height: 14px;
+            line-height: 1.2;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
             max-width: 100%;
-            flex: 0 0 14px;
         }
         .lp-stat-ico {
             display: inline-block;
-            width: 14px;
-            height: 14px;
             font-size: 12px;
             color: #e5e7eb;
             margin: 0;
-            line-height: 14px;
+            line-height: 1;
             flex: 0 0 auto;
         }
         .lp-recalls {
@@ -1531,63 +1524,67 @@
         }
         .listing-poster.is-basic .lp-stats {
             left: 10px;
-            top: 276px;
+            top: 272px;
             width: 661px;
-            height: 74px;
+            height: 84px;
             overflow: hidden;
-            padding: 4px 6px;
+            padding: 12px 10px;
             box-sizing: border-box;
-            grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr) minmax(0, 0.95fr) minmax(0, 0.95fr) minmax(0, 1.65fr);
+            grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.7fr);
             align-items: center;
         }
         .listing-poster.is-basic .lp-stat {
             min-width: 0;
             width: 100%;
-            height: 60px;
+            height: auto;
             overflow: hidden;
-            padding: 0 5px;
-            gap: 5px;
+            padding: 4px 6px;
+            gap: 6px;
         }
         .listing-poster.is-basic .lp-stat-val {
-            height: 26px;
-            font-size: 17px;
-            line-height: 26px;
+            height: auto;
+            font-size: 18px;
+            line-height: 1.3;
+            overflow: visible;
+            text-overflow: clip;
         }
         .listing-poster.is-basic .lp-stat-val-rank {
-            font-size: 14px;
+            font-size: 13px;
             letter-spacing: 0.02em;
             text-transform: uppercase;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         .listing-poster.is-basic .lp-stat-val-sm {
             font-size: 8px;
         }
         .listing-poster.is-basic .lp-stat-lbl {
-            height: 16px;
-            flex: 0 0 16px;
+            height: auto;
+            flex: none;
             font-size: 8px;
-            letter-spacing: 0.05em;
-            line-height: 16px;
+            letter-spacing: 0.06em;
+            line-height: 1.25;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
         .listing-poster.is-basic .lp-stat-ico {
-            width: 14px;
-            height: 14px;
-            font-size: 13px;
-            line-height: 14px;
+            width: auto;
+            height: auto;
+            font-size: 14px;
+            line-height: 1;
             margin: 0;
         }
         .listing-poster.is-basic .lp-stat-line {
-            height: 26px;
-            line-height: 26px;
+            height: auto;
+            line-height: 1.3;
             gap: 6px;
         }
         .listing-poster.is-basic .lp-gallery {
             left: 10px;
-            top: 358px;
+            top: 364px;
             width: 661px;
-            height: 552px;
+            height: 546px;
             display: flex;
             flex-wrap: wrap;
             align-content: stretch;
@@ -2829,7 +2826,7 @@
                     }
 
                     const areaW = 661;
-                    const areaH = 552;
+                    const areaH = 546;
                     const gap = n > 48 ? 2 : 4;
                     const maxCols = Math.min(14, n);
                     const maxRows = 14;
