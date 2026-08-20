@@ -27,14 +27,31 @@ class MlbbFandomService
     {
         $heroName = trim($heroName);
         $wikiPageName = $this->resolveWikiPageName($heroName);
-        $cacheKey = 'mlbb.fandom.skins.v11.'.md5(mb_strtolower($wikiPageName));
+        $cacheKey = 'mlbb.fandom.skins.v12.'.md5(mb_strtolower($wikiPageName));
 
         return Cache::remember($cacheKey, now()->addHour(), function () use ($heroName, $wikiPageName) {
             $sectionIndex = $this->findSectionIndex(
                 $wikiPageName,
-                ['Splash_art', 'Splash_arts'],
-                ['Splash art', 'Splash arts']
+                ['Splash_art', 'Splash_arts', 'Artwork', 'Artworks'],
+                ['Splash art', 'Splash arts', 'Artwork', 'Artworks']
             );
+
+            if ($sectionIndex === null) {
+                // Some heroes moved splash arts to Hero/Cosmetics.
+                $cosmeticsPage = $wikiPageName.'/Cosmetics';
+                try {
+                    $sectionIndex = $this->findSectionIndex(
+                        $cosmeticsPage,
+                        ['Splash_art', 'Splash_arts', 'Artwork', 'Artworks', 'Skins'],
+                        ['Splash art', 'Splash arts', 'Artwork', 'Artworks', 'Skins']
+                    );
+                    if ($sectionIndex !== null) {
+                        $wikiPageName = $cosmeticsPage;
+                    }
+                } catch (\Throwable) {
+                    // Keep original page name / null index.
+                }
+            }
 
             if ($sectionIndex === null) {
                 throw new RuntimeException("No splash art section found for {$heroName} on the Fandom wiki.", 404);
