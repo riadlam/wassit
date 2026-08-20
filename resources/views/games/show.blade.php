@@ -1096,7 +1096,7 @@ use Illuminate\Support\Facades\Storage;
         </div>
 
         <!-- Accounts Grid -->
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4" style="gap: 15px;" data-accounts-grid>
+        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4" style="gap: 15px;" data-accounts-grid>
             @forelse($accounts as $account)
                 @include('components.account-card', ['account' => $account])
             @empty
@@ -1189,12 +1189,21 @@ use Illuminate\Support\Facades\Storage;
         inset: 0;
         width: 100%;
         height: 100%;
-        object-fit: contain;
-        object-position: center center;
+        object-fit: cover;
+        object-position: center top;
     }
     @media (max-width: 639px) {
         [data-accounts-grid] {
-            gap: 10px !important;
+            grid-template-columns: 1fr !important;
+            gap: 14px !important;
+        }
+        .account-card-image {
+            aspect-ratio: 681 / 1024;
+            max-height: none;
+        }
+        .account-card-image > img {
+            object-fit: cover;
+            object-position: center top;
         }
         .account-card .account-card-body {
             padding: 0.75rem 0.7rem 0.85rem !important;

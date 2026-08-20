@@ -48,8 +48,8 @@
         inset: 0;
         width: 100%;
         height: 100%;
-        object-fit: contain;
-        object-position: center center;
+        object-fit: cover;
+        object-position: center top;
     }
     .account-card-image-empty {
         position: absolute;
@@ -61,6 +61,10 @@
         font-size: 0.875rem;
     }
     @media (max-width: 639px) {
+        .account-card-image > img {
+            object-fit: cover;
+            object-position: center top;
+        }
         .account-card .account-card-body {
             padding: 0.75rem 0.7rem 0.85rem !important;
             gap: 0.65rem !important;
