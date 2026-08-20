@@ -919,13 +919,28 @@ class DashboardController extends Controller
             return null;
         }
 
-        $extension = $image->getClientOriginalExtension() ?: 'png';
-        $filename = time() . '_' . uniqid() . '.' . $extension;
-        $image->move(public_path('storage/account_images'), $filename);
+        try {
+            /** @var \App\Services\WebpImageService $webp */
+            $webp = app(\App\Services\WebpImageService::class);
+            $relativePath = $webp->storeUploadedAsWebp(
+                $image,
+                'account_images',
+                $isCover ? 1600 : 1600
+            );
+        } catch (\Throwable $e) {
+            \Log::warning('WebP conversion failed, storing original image', [
+                'error' => $e->getMessage(),
+            ]);
+
+            $extension = $image->getClientOriginalExtension() ?: 'jpg';
+            $filename = time() . '_' . uniqid() . '.' . strtolower($extension);
+            $image->move(public_path('storage/account_images'), $filename);
+            $relativePath = 'account_images/' . $filename;
+        }
 
         return [
             'account_id' => $accountId,
-            'url' => 'account_images/' . $filename,
+            'url' => $relativePath,
             'is_cover' => $isCover ? 1 : 0,
             'created_at' => now(),
             'updated_at' => now(),

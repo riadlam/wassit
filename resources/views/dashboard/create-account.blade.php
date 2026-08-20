@@ -623,7 +623,7 @@
                                     <div class="text-center">
                                         <i class="fa-solid fa-cloud-arrow-up text-4xl text-gray-500 mb-3"></i>
                                         <p class="text-sm text-gray-400"><span class="text-red-500">Click to upload</span> or drag and drop</p>
-                                        <p class="text-xs text-gray-500 mt-1">PNG, JPG, WEBP up to 10MB each</p>
+                                        <p class="text-xs text-gray-500 mt-1">PNG, JPG, WEBP up to 10MB — saved compressed as WebP</p>
                                         <p class="text-xs mt-3" :class="totalImageCount > 0 ? 'text-green-400' : 'text-gray-500'">
                                             <span x-text="totalImageCount"></span> / <span x-text="maxImages"></span> selected
                                         </p>
@@ -680,7 +680,7 @@
                                             <i class="fa-solid fa-eye text-red-600"></i>
                                             View Listing
                                         </h2>
-                                        <p class="text-sm text-gray-400">This poster is saved as the store cover on desktop. Gallery photos stay on the account page. PNG download is desktop only (1080px for social posts).</p>
+                                        <p class="text-sm text-gray-400">This poster is saved as the store cover on desktop. Gallery photos stay on the account page. WebP download is desktop only (1080px for social posts).</p>
                                     </div>
                                     <div class="flex flex-wrap items-center gap-2" x-show="canDownloadPoster()">
                                         <button
@@ -690,13 +690,13 @@
                                             class="inline-flex items-center py-2.5 px-5 text-sm rounded-md bg-red-600 hover:bg-red-700 text-white font-medium disabled:opacity-50"
                                         >
                                             <i class="fa-solid fa-download mr-2"></i>
-                                            <span x-text="downloading ? (downloadStatus || 'Preparing…') : 'Download PNG'"></span>
+                                            <span x-text="downloading ? (downloadStatus || 'Preparing…') : 'Download WebP'"></span>
                                         </button>
                                     </div>
                                 </div>
                                 <p x-show="!canDownloadPoster()" class="mb-4 text-sm text-amber-200/90 rounded-lg px-3 py-2" style="background: rgba(251, 191, 36, 0.08); border: 1px solid rgba(251, 191, 36, 0.2);">
                                     <i class="fa-solid fa-desktop mr-1.5"></i>
-                                    PNG download needs a desktop browser. You can still preview here and save the listing — your primary screenshot is used as the store cover on mobile.
+                                    WebP download needs a desktop browser. You can still preview here and save the listing — your primary screenshot is used as the store cover on mobile.
                                 </p>
                                 <p x-show="downloadError" x-text="downloadError" class="mb-4 text-sm text-red-400"></p>
                                 <p x-show="downloading && downloadStatus" x-text="downloadStatus" class="mb-4 text-sm text-gray-400"></p>
@@ -2061,7 +2061,7 @@
                             try {
                                 const cover = await preview.exportPosterFile(true);
                                 if (cover) {
-                                    formData.append('listing_cover', cover, 'listing-poster.png');
+                                    formData.append('listing_cover', cover, cover.name || 'listing-poster.webp');
                                 }
                             } catch (error) {
                                 console.error(error);
@@ -3128,16 +3128,57 @@
                     return POSTER_EXPORT_SCALE;
                 },
                 posterExportFilename() {
-                    return 'wassitmarket-listing-1080.png';
+                    return 'wassitmarket-listing-1080.webp';
                 },
                 posterExportMime() {
-                    return 'image/png';
+                    return 'image/webp';
                 },
                 posterExportQuality() {
-                    return 1;
+                    return 0.82;
+                },
+                posterExportFallbackMime() {
+                    return 'image/png';
                 },
                 posterImageMaxDimension() {
                     return 2048;
+                },
+                canvasSupportsWebp() {
+                    try {
+                        const probe = document.createElement('canvas');
+                        probe.width = 2;
+                        probe.height = 2;
+                        return probe.toDataURL('image/webp').startsWith('data:image/webp');
+                    } catch {
+                        return false;
+                    }
+                },
+                async canvasToExportBlob(canvas) {
+                    const preferredMime = this.canvasSupportsWebp()
+                        ? this.posterExportMime()
+                        : this.posterExportFallbackMime();
+                    const quality = preferredMime === 'image/webp'
+                        ? this.posterExportQuality()
+                        : 0.92;
+
+                    const blob = await new Promise((resolve) => {
+                        canvas.toBlob((file) => resolve(file || null), preferredMime, quality);
+                    });
+                    if (blob) {
+                        return { blob, mime: preferredMime };
+                    }
+
+                    const fallbackMime = this.posterExportFallbackMime();
+                    const fallback = await new Promise((resolve, reject) => {
+                        canvas.toBlob(
+                            (file) => file ? resolve(file) : reject(new Error('Could not export image.')),
+                            fallbackMime,
+                            0.92
+                        );
+                    });
+                    return { blob: fallback, mime: fallbackMime };
+                },
+                posterExtensionForMime(mime) {
+                    return mime === 'image/webp' ? 'webp' : 'png';
                 },
                 releaseCanvas(canvas) {
                     if (!canvas) return;
@@ -4157,7 +4198,7 @@
                     }
                     await this.yieldToBrowser(50);
 
-                    this.downloadStatus = 'Rendering PNG…';
+                    this.downloadStatus = 'Rendering WebP…';
                     const exportScale = this.posterExportScale();
                     const canvas = await Promise.race([
                         html2canvas(el, {
@@ -4190,17 +4231,10 @@
                     imageMap.clear();
                     rasterized.clear();
 
-                    const mime = this.posterExportMime();
-                    const quality = this.posterExportQuality();
-                    const blob = await new Promise((resolve, reject) => {
-                        canvas.toBlob(
-                            (file) => file ? resolve(file) : reject(new Error('Could not export image.')),
-                            mime,
-                            quality
-                        );
-                    });
+                    const { blob, mime } = await this.canvasToExportBlob(canvas);
                     this.releaseCanvas(canvas);
                     await this.yieldToBrowser(50);
+                    blob.__exportMime = mime;
                     return blob;
                     });
                 },
@@ -4210,13 +4244,15 @@
                     }
                     const blob = await this.exportPosterBlob();
                     if (!blob) return null;
-                    return new File([blob], 'listing-poster.png', { type: 'image/png' });
+                    const mime = blob.__exportMime || blob.type || this.posterExportMime();
+                    const ext = this.posterExtensionForMime(mime);
+                    return new File([blob], `listing-poster.${ext}`, { type: mime });
                 },
                 async downloadPoster() {
                     this.downloadError = '';
                     this.downloadStatus = '';
                     if (!this.canDownloadPoster()) {
-                        this.downloadError = 'PNG download is available on desktop only. Open this page on a computer to export.';
+                        this.downloadError = 'WebP download is available on desktop only. Open this page on a computer to export.';
                         return;
                     }
                     if (typeof html2canvas !== 'function') {
@@ -4234,11 +4270,13 @@
                             this.downloadError = 'Poster is not ready yet.';
                             return;
                         }
-                        this.downloadStatus = 'Saving PNG…';
+                        this.downloadStatus = 'Saving WebP…';
+                        const mime = blob.__exportMime || blob.type || this.posterExportMime();
+                        const ext = this.posterExtensionForMime(mime);
                         const url = URL.createObjectURL(blob);
                         const link = document.createElement('a');
                         link.href = url;
-                        link.download = this.posterExportFilename();
+                        link.download = `wassitmarket-listing-1080.${ext}`;
                         link.style.display = 'none';
                         document.body.appendChild(link);
                         link.click();
@@ -4246,13 +4284,77 @@
                         window.setTimeout(() => URL.revokeObjectURL(url), 2000);
                     } catch (error) {
                         console.error(error);
-                        this.downloadError = error?.message || 'Could not generate PNG. Wait for skins to finish loading, then try again.';
+                        this.downloadError = error?.message || 'Could not generate WebP. Wait for skins to finish loading, then try again.';
                     } finally {
                         this.downloading = false;
                         this.downloadStatus = '';
                     }
                 },
             };
+        }
+
+        async function compressImageToWebp(file, maxDimension = 1600, quality = 0.82) {
+            if (!(file instanceof Blob)) {
+                return file;
+            }
+            if (file.type === 'image/webp' && file.size < 400 * 1024) {
+                return file;
+            }
+
+            const supportsWebp = (() => {
+                try {
+                    const probe = document.createElement('canvas');
+                    probe.width = 2;
+                    probe.height = 2;
+                    return probe.toDataURL('image/webp').startsWith('data:image/webp');
+                } catch {
+                    return false;
+                }
+            })();
+            if (!supportsWebp) {
+                return file;
+            }
+
+            const objectUrl = URL.createObjectURL(file);
+            try {
+                const img = await new Promise((resolve, reject) => {
+                    const el = new Image();
+                    el.onload = () => resolve(el);
+                    el.onerror = () => reject(new Error('Could not read image'));
+                    el.src = objectUrl;
+                });
+
+                const longest = Math.max(img.naturalWidth || img.width, img.naturalHeight || img.height);
+                const scale = longest > maxDimension ? maxDimension / longest : 1;
+                const width = Math.max(1, Math.round((img.naturalWidth || img.width) * scale));
+                const height = Math.max(1, Math.round((img.naturalHeight || img.height) * scale));
+
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) {
+                    return file;
+                }
+                ctx.drawImage(img, 0, 0, width, height);
+
+                const blob = await new Promise((resolve) => {
+                    canvas.toBlob((result) => resolve(result || null), 'image/webp', quality);
+                });
+                if (!blob) {
+                    return file;
+                }
+
+                const baseName = String(file.name || 'image').replace(/\.[^.]+$/, '') || 'image';
+                return new File([blob], `${baseName}.webp`, {
+                    type: 'image/webp',
+                    lastModified: Date.now(),
+                });
+            } catch {
+                return file;
+            } finally {
+                URL.revokeObjectURL(objectUrl);
+            }
         }
 
         function accountImagesPicker(seedExisting = []) {
@@ -4288,17 +4390,27 @@
                     if (files.length > allowed) {
                         alert(`Maximum ${this.maxImages} images allowed.`);
                     }
-                    this.selectedFiles = [...this.selectedFiles, ...next];
-                    this.imageCount = this.selectedFiles.length;
-                    const native = document.getElementById('images');
-                    if (native && this.selectedFiles.length) {
-                        const transfer = new DataTransfer();
-                        this.selectedFiles.forEach((file) => transfer.items.add(file));
-                        native.files = transfer.files;
-                    }
-                    if (!options.silent && !this.isEditMode) {
-                        notifyCreateDraftChanged();
-                    }
+                    if (!next.length) return;
+                    // Compress to WebP in the browser when possible (smaller uploads + SEO-friendly).
+                    Promise.all(next.map((file) => compressImageToWebp(file))).then((converted) => {
+                        this.selectedFiles = [...this.selectedFiles, ...converted];
+                        this.imageCount = this.selectedFiles.length;
+                        const native = document.getElementById('images');
+                        if (native && this.selectedFiles.length) {
+                            const transfer = new DataTransfer();
+                            this.selectedFiles.forEach((file) => transfer.items.add(file));
+                            native.files = transfer.files;
+                        }
+                        if (!options.silent && !this.isEditMode) {
+                            notifyCreateDraftChanged();
+                        }
+                    }).catch(() => {
+                        this.selectedFiles = [...this.selectedFiles, ...next];
+                        this.imageCount = this.selectedFiles.length;
+                        if (!options.silent && !this.isEditMode) {
+                            notifyCreateDraftChanged();
+                        }
+                    });
                 },
                 setPrimary(index) {
                     if (index <= 0) return;
