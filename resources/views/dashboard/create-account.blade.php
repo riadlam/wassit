@@ -761,7 +761,7 @@
                                             <img :src="primaryImageUrl" alt="Primary account screenshot" :style="frameStyle('primary')" @@load="fitFrameToCover('primary', $event)" draggable="false">
                                         </div>
                                         <span class="lp-primary-watermark" aria-hidden="true">Wassitmarket</span>
-                                        <div class="lp-collection-badge" x-show="collectionTierImageUrl" x-cloak>
+                                        <div class="lp-collection-badge" x-show="isPremiumLayout && collectionTierImageUrl" x-cloak>
                                             <img
                                                 class="lp-collection-badge-icon"
                                                 :src="collectionTierImageUrl"
@@ -783,7 +783,7 @@
 
                                     <div class="lp-stats">
                                         <div class="lp-stat">
-                                            <span class="lp-stat-val" x-text="stats.win_rate === '—' ? '—' : stats.win_rate + '%'"></span>
+                                            <span class="lp-stat-val" x-text="stats.win_rate === '—' ? '—' : String(stats.win_rate).replace(/%/g, '') + '%'"></span>
                                             <span class="lp-stat-lbl">WIN RATE</span>
                                         </div>
                                         <div class="lp-stat">
@@ -799,8 +799,7 @@
                                             <span class="lp-stat-val" x-text="stats.skins_count"></span>
                                         </div>
                                         <div class="lp-stat">
-                                            <i class="fa-solid fa-medal lp-stat-ico"></i>
-                                            <span class="lp-stat-val" x-text="stats.rank"></span>
+                                            <span class="lp-stat-val lp-stat-val-rank" x-text="stats.rank"></span>
                                             <span class="lp-stat-lbl">HIGHEST RANK</span>
                                         </div>
                                     </div>
@@ -1159,26 +1158,39 @@
             top: 494px;
             width: 395px;
             height: 64px;
+            box-sizing: border-box;
             display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            align-items: center;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            align-items: stretch;
             background: rgba(18,18,18,0.92);
             border: 2px solid #fff;
             border-radius: 10px;
             color: #fff;
-            padding: 4px;
+            padding: 3px 4px;
+            overflow: hidden;
         }
         .lp-stat {
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
             text-align: center;
             border-right: 1px solid #3f3f46;
             padding: 0 2px;
+            overflow: hidden;
+            gap: 1px;
         }
         .lp-stat:last-child { border-right: 0; }
         .lp-stat-val {
             display: block;
             font-weight: 900;
             font-size: 15px;
-            line-height: 1.1;
+            line-height: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
         }
         .lp-stat-val-sm { font-size: 8px; letter-spacing: 0.04em; }
         .lp-stat-lbl {
@@ -1187,13 +1199,20 @@
             font-weight: 800;
             letter-spacing: 0.04em;
             color: #d4d4d8;
-            margin-top: 2px;
+            margin-top: 0;
+            line-height: 1.1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
         }
         .lp-stat-ico {
             display: block;
             font-size: 13px;
             color: #e5e7eb;
-            margin: 0 auto 2px;
+            margin: 0 auto 1px;
+            line-height: 1;
+            flex-shrink: 0;
         }
         .lp-recalls {
             position: absolute;
@@ -1412,14 +1431,7 @@
             display: none;
         }
         .listing-poster.is-basic .lp-collection-badge {
-            right: 10px;
-            top: 10px;
-            width: 64px;
-            height: 64px;
-        }
-        .listing-poster.is-basic .lp-collection-badge-icon {
-            width: 60px;
-            height: 60px;
+            display: none !important;
         }
         .listing-poster.is-basic .lp-effects {
             left: 10px;
@@ -1478,33 +1490,42 @@
         }
         .listing-poster.is-basic .lp-stats {
             left: 10px;
-            top: 280px;
+            top: 278px;
             width: 661px;
-            height: 54px;
+            height: 58px;
             overflow: hidden;
-            padding: 4px 6px;
+            padding: 2px 6px;
+            box-sizing: border-box;
         }
         .listing-poster.is-basic .lp-stat {
             min-width: 0;
             overflow: hidden;
-            padding: 0 3px;
+            padding: 0 4px;
+            gap: 2px;
         }
         .listing-poster.is-basic .lp-stat-val {
-            font-size: 13px;
+            font-size: 14px;
+            line-height: 1;
+        }
+        .listing-poster.is-basic .lp-stat-val-rank {
+            font-size: 11px;
+            letter-spacing: 0.01em;
+            text-transform: uppercase;
         }
         .listing-poster.is-basic .lp-stat-val-sm {
             font-size: 7px;
         }
         .listing-poster.is-basic .lp-stat-lbl {
-            font-size: 6px;
-            letter-spacing: 0;
+            font-size: 6.5px;
+            letter-spacing: 0.03em;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            line-height: 1;
         }
         .listing-poster.is-basic .lp-stat-ico {
             font-size: 11px;
-            margin-bottom: 1px;
+            margin: 0;
         }
         .listing-poster.is-basic .lp-gallery {
             left: 10px;
@@ -2709,9 +2730,16 @@
                 applyCollectionTierFromForm() {
                     const tier = this.field('collection_tier', '');
                     this.collectionTier = tier === '—' ? '' : tier;
-                    this.collectionTierImageUrl = this.collectionTierImageUrlFor(this.collectionTier);
+                    this.collectionTierImageUrl = this.isPremiumLayout
+                        ? this.collectionTierImageUrlFor(this.collectionTier)
+                        : '';
                 },
                 applyDummyCollectionBadge() {
+                    if (!this.isPremiumLayout) {
+                        this.collectionTier = '';
+                        this.collectionTierImageUrl = '';
+                        return;
+                    }
                     this.collectionTier = 'World Collector';
                     this.collectionTierImageUrl = this.collectionBadges['World Collector'] || '';
                 },
