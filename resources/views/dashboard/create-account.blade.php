@@ -787,9 +787,8 @@
                                             <span class="lp-stat-lbl">WIN RATE</span>
                                         </div>
                                         <div class="lp-stat">
-                                            <span class="lp-stat-line">
-                                                <i class="fa-solid fa-user lp-stat-ico" aria-hidden="true"></i>
-                                                <span class="lp-stat-val" x-text="stats.heroes_count"></span>
+                                            <span class="lp-stat-val">
+                                                <i class="fa-solid fa-user lp-stat-ico" aria-hidden="true"></i><span x-text="stats.heroes_count"></span>
                                             </span>
                                             <span class="lp-stat-lbl">HEROES</span>
                                         </div>
@@ -798,9 +797,8 @@
                                             <span class="lp-stat-lbl">LEVEL</span>
                                         </div>
                                         <div class="lp-stat">
-                                            <span class="lp-stat-line">
-                                                <i class="fa-solid fa-shirt lp-stat-ico" aria-hidden="true"></i>
-                                                <span class="lp-stat-val" x-text="stats.skins_count"></span>
+                                            <span class="lp-stat-val">
+                                                <i class="fa-solid fa-shirt lp-stat-ico" aria-hidden="true"></i><span x-text="stats.skins_count"></span>
                                             </span>
                                             <span class="lp-stat-lbl">SKINS</span>
                                         </div>
@@ -1163,90 +1161,50 @@
             left: 272px;
             top: 494px;
             width: 395px;
-            height: 70px;
+            height: 64px;
             box-sizing: border-box;
             display: grid;
-            grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.9fr) minmax(0, 0.9fr) minmax(0, 0.9fr) minmax(0, 1.4fr);
+            grid-template-columns: repeat(5, 1fr);
             align-items: center;
             background: rgba(18,18,18,0.92);
             border: 2px solid #fff;
             border-radius: 10px;
             color: #fff;
-            padding: 8px 4px;
-            overflow: hidden;
+            padding: 6px 4px;
         }
         .lp-stat {
-            min-width: 0;
-            width: 100%;
-            max-width: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
             text-align: center;
             border-right: 1px solid #3f3f46;
-            padding: 2px 4px;
-            overflow: hidden;
-            gap: 4px;
+            padding: 0 3px;
         }
         .lp-stat:last-child,
         .lp-stat.lp-stat-rank { border-right: 0; }
-        .lp-stat-line {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 5px;
-            max-width: 100%;
-            min-width: 0;
-            line-height: 1.2;
-        }
         .lp-stat-val {
             display: block;
-            box-sizing: border-box;
-            width: 100%;
             font-weight: 900;
             font-size: 15px;
-            line-height: 1.25;
+            line-height: 1.15;
             white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 100%;
-        }
-        .lp-stat-line .lp-stat-val {
-            display: inline-block;
-            width: auto;
-            max-width: calc(100% - 18px);
-            vertical-align: middle;
         }
         .lp-stat-val-sm { font-size: 8px; letter-spacing: 0.04em; }
         .lp-stat-val-rank {
-            font-size: 12px;
-            letter-spacing: 0.01em;
+            font-size: 11px;
+            letter-spacing: 0;
             text-transform: uppercase;
         }
         .lp-stat-lbl {
             display: block;
-            box-sizing: border-box;
-            width: 100%;
             font-size: 7px;
             font-weight: 800;
-            letter-spacing: 0.04em;
+            letter-spacing: 0.05em;
             color: #d4d4d8;
-            margin: 0;
-            padding: 0;
-            line-height: 1.2;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 100%;
+            margin-top: 3px;
+            line-height: 1;
         }
         .lp-stat-ico {
-            display: inline-block;
-            font-size: 12px;
-            color: #e5e7eb;
-            margin: 0;
-            line-height: 1;
-            flex: 0 0 auto;
+            font-size: 11px;
+            margin-right: 3px;
+            vertical-align: middle;
         }
         .lp-recalls {
             position: absolute;
@@ -1524,67 +1482,38 @@
         }
         .listing-poster.is-basic .lp-stats {
             left: 10px;
-            top: 272px;
+            top: 280px;
             width: 661px;
-            height: 84px;
-            overflow: hidden;
-            padding: 12px 10px;
+            height: 62px;
+            padding: 8px 10px;
             box-sizing: border-box;
-            grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.7fr);
-            align-items: center;
+            grid-template-columns: 1.05fr 0.95fr 0.95fr 0.95fr 1.35fr;
         }
         .listing-poster.is-basic .lp-stat {
-            min-width: 0;
-            width: 100%;
-            height: auto;
-            overflow: hidden;
-            padding: 4px 6px;
-            gap: 6px;
+            padding: 0 5px;
         }
         .listing-poster.is-basic .lp-stat-val {
-            height: auto;
-            font-size: 18px;
-            line-height: 1.3;
-            overflow: visible;
-            text-overflow: clip;
+            font-size: 17px;
+            line-height: 1.15;
         }
         .listing-poster.is-basic .lp-stat-val-rank {
-            font-size: 13px;
-            letter-spacing: 0.02em;
-            text-transform: uppercase;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .listing-poster.is-basic .lp-stat-val-sm {
-            font-size: 8px;
+            font-size: 12px;
+            letter-spacing: 0.01em;
         }
         .listing-poster.is-basic .lp-stat-lbl {
-            height: auto;
-            flex: none;
-            font-size: 8px;
+            font-size: 7.5px;
             letter-spacing: 0.06em;
-            line-height: 1.25;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            margin-top: 4px;
         }
         .listing-poster.is-basic .lp-stat-ico {
-            width: auto;
-            height: auto;
-            font-size: 14px;
-            line-height: 1;
-            margin: 0;
-        }
-        .listing-poster.is-basic .lp-stat-line {
-            height: auto;
-            line-height: 1.3;
-            gap: 6px;
+            font-size: 12px;
+            margin-right: 4px;
         }
         .listing-poster.is-basic .lp-gallery {
             left: 10px;
-            top: 364px;
+            top: 348px;
             width: 661px;
-            height: 546px;
+            height: 562px;
             display: flex;
             flex-wrap: wrap;
             align-content: stretch;
@@ -2826,7 +2755,7 @@
                     }
 
                     const areaW = 661;
-                    const areaH = 546;
+                    const areaH = 562;
                     const gap = n > 48 ? 2 : 4;
                     const maxCols = Math.min(14, n);
                     const maxRows = 14;
