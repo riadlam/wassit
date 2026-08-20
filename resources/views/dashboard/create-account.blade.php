@@ -1,8 +1,17 @@
 @extends('layouts.app')
 
 @php
-    $initialStep = 1;
-    if (old('game_id')) {
+    $isEditMode = isset($account) && $account;
+    $attributesMap = $attributesMap ?? [];
+    $existingGalleryImages = $isEditMode
+        ? $account->images->where('is_cover', false)->values()->map(fn ($img) => [
+            'id' => $img->id,
+            'url' => asset('storage/' . $img->url),
+        ])->all()
+        : [];
+
+    $initialStep = $isEditMode ? 2 : 1;
+    if (! $isEditMode && old('game_id')) {
         $initialStep = 2;
     }
     if ($errors->hasAny(['title', 'description', 'price_dzd', 'status'])) {
@@ -19,8 +28,15 @@
 
     $oldHighlightedSkinIds = array_values(array_filter(array_map(
         'intval',
-        explode(',', (string) old('attributes.highlighted_skins', ''))
+        explode(',', (string) old(
+            'attributes.highlighted_skins',
+            $isEditMode ? ($attributesMap['highlighted_skins'] ?? '') : ''
+        ))
     )));
+
+    $initialGameId = $isEditMode
+        ? (string) ($account->game_id ?: ($mlbbId ?? ''))
+        : (string) old('game_id', $mlbbId ?? '');
 @endphp
 
 @section('content')
@@ -37,11 +53,11 @@
                 <div class="flex flex-wrap gap-4 justify-between items-center mb-8">
                     <div class="flex gap-x-3 items-center">
                         <div class="hidden md:flex justify-center items-center p-3 w-16 h-16 rounded-full border shrink-0" style="background-color: #1b1a1e; border-color: #2d2c31; color: #9ca3af;">
-                            <i class="fa-lg fa-solid fa-plus"></i>
+                            <i class="fa-lg fa-solid {{ $isEditMode ? 'fa-pencil' : 'fa-plus' }}"></i>
                         </div>
                         <div>
-                            <h1 class="text-lg font-semibold tracking-tight sm:text-2xl text-white">List New Account</h1>
-                            <p class="text-sm text-gray-400">Step-by-step listing wizard</p>
+                            <h1 class="text-lg font-semibold tracking-tight sm:text-2xl text-white">{{ $isEditMode ? 'Edit Account' : 'List New Account' }}</h1>
+                            <p class="text-sm text-gray-400">{{ $isEditMode ? 'Update your listing step by step' : 'Step-by-step listing wizard' }}</p>
                         </div>
                     </div>
                     <a href="{{ route('account.listed-accounts') }}" class="inline-flex items-center py-2.5 px-4 text-sm rounded-md text-gray-300 hover:text-white ring-1" style="background-color: rgba(14, 16, 21, 0.5); border-color: #2d2c31;">
@@ -69,20 +85,37 @@
                             </div>
                         @endif
 
+                        @if(session('success'))
+                            <div class="mb-6 p-4 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400 text-sm">
+                                <i class="fa-solid fa-check-circle mr-2"></i>
+                                {{ session('success') }}
+                            </div>
+                        @endif
+
                         <form
                             method="POST"
-                            action="{{ route('account.listed-accounts.store') }}"
+                            action="{{ $isEditMode ? route('account.listed-accounts.update', $account->id) : route('account.listed-accounts.store') }}"
                             enctype="multipart/form-data"
                             id="createAccountForm"
-                            x-data="createAccountWizard({ mlbbId: {{ $mlbbId ?? 'null' }}, initialStep: {{ $initialStep }}, initialGameId: '{{ (string) old('game_id', $mlbbId ?? '') }}' })"
+                            x-data="createAccountWizard({
+                                mlbbId: {{ $mlbbId ?? 'null' }},
+                                initialStep: {{ $initialStep }},
+                                initialGameId: '{{ $initialGameId }}',
+                                isEditMode: {{ $isEditMode ? 'true' : 'false' }},
+                                existingImages: @json($existingGalleryImages),
+                                hasExistingCover: {{ $isEditMode && $account->images->contains(fn ($img) => $img->is_cover) ? 'true' : 'false' }},
+                            })"
                             @submit="handleSubmit($event)"
                         >
                             @csrf
+                            @if($isEditMode)
+                                @method('PUT')
+                            @endif
 
                             {{-- Stepper --}}
                             <div class="mb-8">
                                 <div class="hidden sm:flex items-center justify-between gap-2">
-                                    <template x-for="(step, index) in steps" :key="step.id">
+                                    <template x-for="(step, index) in visibleSteps" :key="step.id">
                                         <div class="flex items-center flex-1 min-w-0">
                                             <button
                                                 type="button"
@@ -94,29 +127,29 @@
                                                     class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold transition-colors"
                                                     :class="currentStep === step.id ? 'bg-red-600 text-white' : (currentStep > step.id ? 'bg-red-600/20 text-red-400 ring-1 ring-red-500/40' : 'bg-[#1b1a1e] ring-1 ring-[#2d2c31]')"
                                                 >
-                                                    <span x-show="currentStep <= step.id" x-text="step.id"></span>
+                                                    <span x-show="currentStep <= step.id" x-text="index + 1"></span>
                                                     <i x-show="currentStep > step.id" x-cloak class="fa-solid fa-check text-xs"></i>
                                                 </span>
                                                 <span class="truncate text-sm font-medium" x-text="step.label"></span>
                                             </button>
-                                            <div x-show="index < steps.length - 1" class="mx-2 h-px flex-1" :class="currentStep > step.id ? 'bg-red-500/50' : 'bg-[#2d2c31]'"></div>
+                                            <div x-show="index < visibleSteps.length - 1" class="mx-2 h-px flex-1" :class="currentStep > step.id ? 'bg-red-500/50' : 'bg-[#2d2c31]'"></div>
                                         </div>
                                     </template>
                                 </div>
 
                                 <div class="sm:hidden">
                                     <div class="flex items-center justify-between text-sm mb-2">
-                                        <span class="text-gray-400">Step <span x-text="currentStep"></span> of <span x-text="steps.length"></span></span>
-                                        <span class="font-medium text-white" x-text="steps[currentStep - 1]?.label"></span>
+                                        <span class="text-gray-400">Step <span x-text="mobileStepIndex"></span> of <span x-text="visibleSteps.length"></span></span>
+                                        <span class="font-medium text-white" x-text="steps.find(s => s.id === currentStep)?.label"></span>
                                     </div>
                                     <div class="h-2 rounded-full overflow-hidden" style="background-color: #1b1a1e;">
-                                        <div class="h-full bg-red-600 transition-all duration-300" :style="`width: ${(currentStep / steps.length) * 100}%`"></div>
+                                        <div class="h-full bg-red-600 transition-all duration-300" :style="`width: ${(mobileStepIndex / visibleSteps.length) * 100}%`"></div>
                                     </div>
                                 </div>
                             </div>
 
                             {{-- Step 1: Game --}}
-                            <div x-show="currentStep === 1" x-cloak x-transition.opacity.duration.200ms>
+                            <div x-show="currentStep === 1 && !isEditMode" x-cloak x-transition.opacity.duration.200ms>
                                 <h2 class="text-xl font-semibold text-white mb-2 flex items-center">
                                     <i class="fa-solid fa-gamepad mr-3 text-red-600"></i>
                                     Select Game
@@ -125,7 +158,7 @@
 
                                 <input type="hidden" name="game_id" x-model="selectedGameId">
 
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4" x-show="!isEditMode">
                                     @foreach($games as $game)
                                         @php
                                             $artworkPath = config('game_artwork.' . $game->slug);
@@ -181,12 +214,12 @@
                                 <div class="space-y-6">
                                     <div>
                                         <label for="title" class="block text-sm font-medium text-gray-300 mb-2">Account Title <span class="text-red-500">*</span></label>
-                                        <input type="text" id="title" name="title" required value="{{ old('title') }}" class="wizard-input" placeholder="Epic Rank Account - 150+ Skins">
+                                        <input type="text" id="title" name="title" required value="{{ old('title', $isEditMode ? $account->title : '') }}" class="wizard-input" placeholder="Epic Rank Account - 150+ Skins">
                                     </div>
 
                                     <div>
                                         <label for="description" class="block text-sm font-medium text-gray-300 mb-2">Description <span class="text-red-500">*</span></label>
-                                        <textarea id="description" name="description" rows="5" required class="wizard-input resize-none" placeholder="Describe your account in detail...">{{ old('description') }}</textarea>
+                                        <textarea id="description" name="description" rows="5" required class="wizard-input resize-none" placeholder="Describe your account in detail...">{{ old('description', $isEditMode ? $account->description : '') }}</textarea>
                                     </div>
 
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -194,14 +227,20 @@
                                             <label for="price_dzd" class="block text-sm font-medium text-gray-300 mb-2">Price (DA) <span class="text-red-500">*</span></label>
                                             <div class="relative">
                                                 <span class="wizard-field-addon">DA</span>
-                                                <input type="number" id="price_dzd" name="price_dzd" step="0.01" required value="{{ old('price_dzd') }}" class="wizard-input wizard-input--prefix" placeholder="16228">
+                                                <input type="number" id="price_dzd" name="price_dzd" step="0.01" required value="{{ old('price_dzd', $isEditMode ? ($account->price_dzd ?? 0) : '') }}" class="wizard-input wizard-input--prefix" placeholder="16228">
                                             </div>
                                         </div>
                                         <div>
                                             <label for="status" class="block text-sm font-medium text-gray-300 mb-2">Status <span class="text-red-500">*</span></label>
+                                            @php $statusValue = old('status', $isEditMode ? ($account->status ?? 'available') : 'available'); @endphp
                                             <select id="status" name="status" required class="wizard-input">
-                                                <option value="available" {{ old('status', 'available') === 'available' ? 'selected' : '' }}>Available</option>
-                                                <option value="disabled" {{ old('status') === 'disabled' ? 'selected' : '' }}>Disabled</option>
+                                                <option value="available" {{ $statusValue === 'available' ? 'selected' : '' }}>Available</option>
+                                                <option value="disabled" {{ $statusValue === 'disabled' ? 'selected' : '' }}>Disabled</option>
+                                                @if($isEditMode)
+                                                    <option value="pending" {{ $statusValue === 'pending' ? 'selected' : '' }}>Pending</option>
+                                                    <option value="sold" {{ $statusValue === 'sold' ? 'selected' : '' }}>Sold</option>
+                                                    <option value="cancelled" {{ $statusValue === 'cancelled' ? 'selected' : '' }}>Cancelled</option>
+                                                @endif
                                             </select>
                                         </div>
                                     </div>
@@ -235,7 +274,7 @@
                                                 id="{{ $key }}"
                                                 name="attributes[{{ $key }}]"
                                                 @if($key === 'win_rate') step="0.01" @endif
-                                                value="{{ old('attributes.'.$key) }}"
+                                                value="{{ old('attributes.'.$key, $isEditMode ? ($attributesMap[$key] ?? '') : '') }}"
                                                 class="wizard-input"
                                                 placeholder="{{ $placeholder }}"
                                             >
@@ -247,7 +286,7 @@
                                         <select id="collection_tier" name="attributes[collection_tier]" class="wizard-input">
                                             <option value="">-- Select Collection Tier --</option>
                                             @foreach(['Expert Collector', 'Renowned Collector', 'Exalted Collector', 'Mega Collector', 'World Collector'] as $tier)
-                                                <option value="{{ $tier }}" {{ old('attributes.collection_tier') === $tier ? 'selected' : '' }}>{{ $tier }}</option>
+                                                <option value="{{ $tier }}" {{ old('attributes.collection_tier', $isEditMode ? ($attributesMap['collection_tier'] ?? '') : '') === $tier ? 'selected' : '' }}>{{ $tier }}</option>
                                             @endforeach
                                         </select>
                                     </div>
@@ -384,7 +423,7 @@
                                     </div>
                                 </div>
 
-                                <input type="hidden" id="highlighted_skins_input" name="attributes[highlighted_skins]" value="{{ old('attributes.highlighted_skins') }}">
+                                <input type="hidden" id="highlighted_skins_input" name="attributes[highlighted_skins]" value="{{ old('attributes.highlighted_skins', $isEditMode ? ($attributesMap['highlighted_skins'] ?? '') : '') }}">
                                 <input type="hidden" id="highlighted_skins_lookup_input" name="highlighted_skins_lookup" value="">
                             </div>
 
@@ -462,7 +501,7 @@
                                     </div>
                                 </div>
 
-                                <input type="hidden" id="highlighted_recalls_input" name="attributes[highlighted_recalls]" value="{{ old('attributes.highlighted_recalls') }}">
+                                <input type="hidden" id="highlighted_recalls_input" name="attributes[highlighted_recalls]" value="{{ old('attributes.highlighted_recalls', $isEditMode ? ($attributesMap['highlighted_recalls'] ?? '') : '') }}">
                             </div>
 
                             {{-- Step 6: Emotes --}}
@@ -539,11 +578,11 @@
                                     </div>
                                 </div>
 
-                                <input type="hidden" id="highlighted_emotes_input" name="attributes[highlighted_emotes]" value="{{ old('attributes.highlighted_emotes') }}">
+                                <input type="hidden" id="highlighted_emotes_input" name="attributes[highlighted_emotes]" value="{{ old('attributes.highlighted_emotes', $isEditMode ? ($attributesMap['highlighted_emotes'] ?? '') : '') }}">
                             </div>
 
                             {{-- Step 7: Images --}}
-                            <div id="accountImagesPicker" x-show="currentStep === 7 && isMLBB" x-cloak x-transition.opacity.duration.200ms x-data="accountImagesPicker()" x-ref="imagesPicker">
+                            <div id="accountImagesPicker" x-show="currentStep === 7 && isMLBB" x-cloak x-transition.opacity.duration.200ms x-data="accountImagesPicker(existingImages || [])" x-ref="imagesPicker">
                                 <h2 class="text-xl font-semibold text-white mb-2 flex items-center gap-2">
                                     <i class="fa-solid fa-images text-red-600"></i>
                                     Account Photos
@@ -573,7 +612,10 @@
                                         </div>
                                     </span>
                                 </h2>
-                                <p class="text-sm text-gray-400 mb-6">Upload screenshots. The first photo is the <span class="text-white">primary</span> listing image. At least one image is required.</p>
+                                <p class="text-sm text-gray-400 mb-6">
+                                    <span x-show="!isEditMode">Upload screenshots. The first photo is the <span class="text-white">primary</span> listing image. At least one image is required.</span>
+                                    <span x-show="isEditMode" x-cloak>Keep, remove, or add gallery photos (max 10). The listing poster is saved separately as cover on Preview.</span>
+                                </p>
 
                                 <div
                                     class="flex items-center justify-center w-full border-2 border-dashed rounded-lg p-8 cursor-pointer hover:border-red-600 transition-colors"
@@ -586,29 +628,41 @@
                                         <i class="fa-solid fa-cloud-arrow-up text-4xl text-gray-500 mb-3"></i>
                                         <p class="text-sm text-gray-400"><span class="text-red-500">Click to upload</span> or drag and drop</p>
                                         <p class="text-xs text-gray-500 mt-1">PNG, JPG, WEBP up to 10MB each</p>
-                                        <p class="text-xs mt-3" :class="imageCount > 0 ? 'text-green-400' : 'text-gray-500'">
-                                            <span x-text="imageCount"></span> / <span x-text="maxImages"></span> selected
+                                        <p class="text-xs mt-3" :class="totalImageCount > 0 ? 'text-green-400' : 'text-gray-500'">
+                                            <span x-text="totalImageCount"></span> / <span x-text="maxImages"></span> selected
                                         </p>
                                     </div>
                                     <input type="file" id="images" name="images[]" multiple accept="image/jpeg,image/png,image/jpg,image/webp" class="hidden" x-ref="fileInput" @change="addFiles(Array.from($event.target.files))">
                                 </div>
 
-                                <div x-show="selectedFiles.length > 0" x-cloak class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
-                                    <template x-for="(file, index) in selectedFiles" :key="index">
+                                <div x-show="existingImages.length > 0 || selectedFiles.length > 0" x-cloak class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    <template x-for="(image, index) in existingImages" :key="'exist-' + image.id">
+                                        <div class="relative group">
+                                            <div class="aspect-video rounded-lg overflow-hidden ring-2 ring-[#2d2c31]">
+                                                <img :src="image.url" :alt="'Existing photo ' + (index + 1)" class="w-full h-full object-cover">
+                                            </div>
+                                            <span class="absolute left-2 top-2 rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-black/70 text-gray-200">Saved</span>
+                                            <button type="button" @click="removeExisting(index)" class="absolute top-2 right-2 w-6 h-6 rounded-full bg-red-600 text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <i class="fa-solid fa-xmark"></i>
+                                            </button>
+                                            <input type="hidden" name="keep_images[]" :value="image.id">
+                                        </div>
+                                    </template>
+                                    <template x-for="(file, index) in selectedFiles" :key="'new-' + index">
                                         <div class="relative group">
                                             <div
                                                 class="aspect-video rounded-lg overflow-hidden ring-2 transition"
-                                                :class="index === 0 ? 'ring-red-500' : 'ring-[#2d2c31]'"
+                                                :class="existingImages.length === 0 && index === 0 ? 'ring-red-500' : 'ring-[#2d2c31]'"
                                             >
                                                 <img :src="URL.createObjectURL(file)" :alt="file.name" class="w-full h-full object-cover">
                                             </div>
                                             <span
-                                                x-show="index === 0"
+                                                x-show="existingImages.length === 0 && index === 0"
                                                 class="absolute left-2 top-2 rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-red-600 text-white"
                                             >Primary</span>
                                             <button
                                                 type="button"
-                                                x-show="index !== 0"
+                                                x-show="!(existingImages.length === 0 && index === 0)"
                                                 @click="setPrimary(index)"
                                                 class="absolute left-2 top-2 rounded-md px-2 py-0.5 text-[10px] font-medium bg-black/70 text-gray-200 opacity-0 group-hover:opacity-100 transition-opacity"
                                             >Set primary</button>
@@ -646,7 +700,7 @@
                                 </div>
                                 <p x-show="!canDownloadPoster()" class="mb-4 text-sm text-amber-200/90 rounded-lg px-3 py-2" style="background: rgba(251, 191, 36, 0.08); border: 1px solid rgba(251, 191, 36, 0.2);">
                                     <i class="fa-solid fa-desktop mr-1.5"></i>
-                                    PNG download needs a desktop browser. You can still preview here and create the listing — your primary screenshot is used as the store cover on mobile.
+                                    PNG download needs a desktop browser. You can still preview here and save the listing — your primary screenshot is used as the store cover on mobile.
                                 </p>
                                 <p x-show="downloadError" x-text="downloadError" class="mb-4 text-sm text-red-400"></p>
                                 <p x-show="downloading && downloadStatus" x-text="downloadStatus" class="mb-4 text-sm text-gray-400"></p>
@@ -803,14 +857,14 @@
                             <div class="flex items-center justify-between gap-4 pt-8 mt-8 border-t" style="border-color: #2d2c31;" x-show="isMLBB || currentStep === 1" x-cloak>
                                 <button
                                     type="button"
-                                    x-show="currentStep > 1"
+                                    x-show="currentStep > minStep"
                                     @click="prevStep()"
                                     class="inline-flex items-center py-2.5 px-5 text-sm rounded-md text-gray-300 hover:text-white ring-1 ring-[#2d2c31]"
                                 >
                                     <i class="fa-solid fa-arrow-left mr-2"></i>
                                     Back
                                 </button>
-                                <div x-show="currentStep === 1"></div>
+                                <div x-show="currentStep === minStep"></div>
 
                                 <div class="flex items-center gap-3 ml-auto">
                                     <a href="{{ route('account.listed-accounts') }}" class="py-2.5 px-5 text-sm rounded-md text-gray-400 hover:text-white">Cancel</a>
@@ -831,7 +885,7 @@
                                         :disabled="submitting"
                                         class="inline-flex items-center py-2.5 px-8 text-sm rounded-md bg-red-600 hover:bg-red-700 text-white font-medium disabled:opacity-50"
                                     >
-                                        <span x-show="!submitting">Create Listing</span>
+                                        <span x-show="!submitting" x-text="isEditMode ? 'Save Changes' : 'Create Listing'"></span>
                                         <span x-show="submitting" x-cloak><i class="fa-solid fa-spinner fa-spin mr-2"></i> Saving listing...</span>
                                     </button>
                                 </div>
@@ -1685,11 +1739,14 @@
         function notifyCreateDraftChanged() {
             window.dispatchEvent(new CustomEvent('wasit-create-draft-changed'));
         }
-        function createAccountWizard({ mlbbId, initialStep, initialGameId }) {
+        function createAccountWizard({ mlbbId, initialStep, initialGameId, isEditMode = false, existingImages = [], hasExistingCover = false }) {
             return {
                 currentStep: initialStep || 1,
                 selectedGameId: initialGameId || '',
                 mlbbId,
+                isEditMode: !!isEditMode,
+                existingImages: existingImages || [],
+                hasExistingCover: !!hasExistingCover,
                 stepError: '',
                 submitting: false,
                 hasServerOld: @json($errors->any()),
@@ -1705,13 +1762,32 @@
                     { id: 7, label: 'Photos' },
                     { id: 8, label: 'Preview' },
                 ],
+                get minStep() {
+                    return this.isEditMode ? 2 : 1;
+                },
+                get visibleSteps() {
+                    return this.isEditMode ? this.steps.filter((step) => step.id >= 2) : this.steps;
+                },
+                get mobileStepIndex() {
+                    const idx = this.visibleSteps.findIndex((step) => step.id === this.currentStep);
+                    return idx >= 0 ? idx + 1 : 1;
+                },
                 get isMLBB() {
+                    if (this.isEditMode) return true;
                     return this.selectedGameId && this.mlbbId && String(this.selectedGameId) === String(this.mlbbId);
                 },
                 get isOtherGame() {
+                    if (this.isEditMode) return false;
                     return this.selectedGameId && this.mlbbId && String(this.selectedGameId) !== String(this.mlbbId);
                 },
                 init() {
+                    if (this.isEditMode) {
+                        if (!this.selectedGameId && this.mlbbId) {
+                            this.selectedGameId = String(this.mlbbId);
+                        }
+                        if (this.currentStep < 2) this.currentStep = 2;
+                        return;
+                    }
                     this._draftRestoring = true;
                     if (!this.hasServerOld) {
                         this.restoreDraft();
@@ -1863,8 +1939,10 @@
                 },
                 getImageCount() {
                     const picker = this.getImagesPicker();
-                    if (picker?.selectedFiles?.length) {
-                        return picker.selectedFiles.length;
+                    if (picker) {
+                        const existing = picker.existingImages?.length || 0;
+                        const selected = picker.selectedFiles?.length || 0;
+                        if (existing + selected > 0) return existing + selected;
                     }
                     const native = document.getElementById('images');
                     return native?.files?.length ?? 0;
@@ -1874,6 +1952,14 @@
                     this.stepError = '';
                 },
                 goToStep(step) {
+                    step = Number(step);
+                    if (this.isEditMode) {
+                        if (step < this.minStep || step > this.steps.length) return;
+                        this.currentStep = step;
+                        this.stepError = '';
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                        return;
+                    }
                     if (step < this.currentStep) {
                         this.currentStep = step;
                         this.stepError = '';
@@ -1887,7 +1973,7 @@
                 },
                 validateStep(step) {
                     this.stepError = '';
-                    if (step === 1) {
+                    if (step === 1 && !this.isEditMode) {
                         if (!this.selectedGameId) {
                             this.stepError = 'Please select a game.';
                             return false;
@@ -1907,7 +1993,7 @@
                         }
                     }
                     if (step === 7) {
-                        if (this.getImageCount() < 1) {
+                        if (this.getImageCount() < 1 && !(this.isEditMode && this.hasExistingCover)) {
                             this.stepError = 'Please upload at least one image.';
                             return false;
                         }
@@ -1923,7 +2009,7 @@
                     }
                 },
                 prevStep() {
-                    if (this.currentStep > 1) {
+                    if (this.currentStep > this.minStep) {
                         this.currentStep--;
                         this.stepError = '';
                     }
@@ -1939,7 +2025,9 @@
                     }
 
                     const pickerData = this.getImagesPicker();
-                    if (!pickerData?.selectedFiles?.length) {
+                    const hasNewFiles = !!pickerData?.selectedFiles?.length;
+                    const hasExisting = !!(pickerData?.existingImages?.length);
+                    if (!hasNewFiles && !hasExisting && !(this.isEditMode && this.hasExistingCover)) {
                         return;
                     }
 
@@ -1974,7 +2062,7 @@
                             }
                         }
 
-                        pickerData.selectedFiles.forEach(file => formData.append('images[]', file));
+                        (pickerData?.selectedFiles || []).forEach(file => formData.append('images[]', file));
 
                         const response = await fetch(form.action, {
                             method: 'POST',
@@ -1986,16 +2074,18 @@
                         });
                         const data = await response.json();
                         if (data.success) {
-                            clearCreateAccountDraft();
+                            if (!this.isEditMode) {
+                                clearCreateAccountDraft();
+                            }
                             window.location.href = @json(route('account.listed-accounts'));
                             return;
                         }
                         this.submitting = false;
-                        this.stepError = data.message || 'Failed to create listing.';
+                        this.stepError = data.message || (this.isEditMode ? 'Failed to update listing.' : 'Failed to create listing.');
                         if (data.errors) console.error(data.errors);
                     } catch {
                         this.submitting = false;
-                        this.stepError = 'Failed to create listing. Please try again.';
+                        this.stepError = this.isEditMode ? 'Failed to update listing. Please try again.' : 'Failed to create listing. Please try again.';
                     }
                 },
             };
@@ -2069,13 +2159,15 @@
                     }
                 },
                 restoreSelections() {
-                    const draft = readCreateDraft();
-                    const draftSkins = draft?.selectedSkins?.length
-                        ? draft.selectedSkins
-                        : null;
-                    if (draftSkins) {
-                        this.selectedSkins = draftSkins.map((item) => ({ ...item }));
-                        return;
+                    if (!this.isEditMode) {
+                        const draft = readCreateDraft();
+                        const draftSkins = draft?.selectedSkins?.length
+                            ? draft.selectedSkins
+                            : null;
+                        if (draftSkins) {
+                            this.selectedSkins = draftSkins.map((item) => ({ ...item }));
+                            return;
+                        }
                     }
 
                     const raw = String(document.getElementById('highlighted_skins_input')?.value || '').trim();
@@ -2392,7 +2484,7 @@
                 loaded: false,
                 error: '',
                 init() {
-                    const draft = readCreateDraft();
+                    const draft = this.isEditMode ? null : readCreateDraft();
                     const draftItems = this.itemsKey === 'recalls'
                         ? draft?.selectedRecalls
                         : this.itemsKey === 'emotes'
@@ -4157,27 +4249,36 @@
             };
         }
 
-        function accountImagesPicker() {
+        function accountImagesPicker(seedExisting = []) {
             return {
                 imageCount: 0,
                 maxImages: 10,
                 selectedFiles: [],
+                existingImages: Array.isArray(seedExisting) ? seedExisting.map((img) => ({ ...img })) : [],
                 showPrimaryHelp: false,
                 initialized: false,
+                get totalImageCount() {
+                    return this.existingImages.length + this.selectedFiles.length;
+                },
                 async init() {
-                    const stored = await loadCreateDraftImages();
-                    if (stored.length) {
-                        this.addFiles(stored, { silent: true });
+                    if (!this.isEditMode) {
+                        const stored = await loadCreateDraftImages();
+                        if (stored.length) {
+                            this.addFiles(stored, { silent: true });
+                        }
                     }
+                    this.imageCount = this.selectedFiles.length;
                     this.initialized = true;
-                    notifyCreateDraftChanged();
+                    if (!this.isEditMode) {
+                        notifyCreateDraftChanged();
+                    }
                 },
                 addFiles(files, options = {}) {
-                    const allowed = this.maxImages - this.imageCount;
+                    const allowed = this.maxImages - this.totalImageCount;
                     const next = files.filter((f) => {
                         if (f.type && f.type.startsWith('image/')) return true;
                         return /\.(jpe?g|png|webp|gif)$/i.test(f.name || '');
-                    }).slice(0, allowed);
+                    }).slice(0, Math.max(0, allowed));
                     if (files.length > allowed) {
                         alert(`Maximum ${this.maxImages} images allowed.`);
                     }
@@ -4189,7 +4290,7 @@
                         this.selectedFiles.forEach((file) => transfer.items.add(file));
                         native.files = transfer.files;
                     }
-                    if (!options.silent) {
+                    if (!options.silent && !this.isEditMode) {
                         notifyCreateDraftChanged();
                     }
                 },
@@ -4197,12 +4298,21 @@
                     if (index <= 0) return;
                     const [file] = this.selectedFiles.splice(index, 1);
                     this.selectedFiles.unshift(file);
-                    notifyCreateDraftChanged();
+                    if (!this.isEditMode) notifyCreateDraftChanged();
                 },
                 removeFile(index) {
                     this.selectedFiles.splice(index, 1);
                     this.imageCount = this.selectedFiles.length;
-                    notifyCreateDraftChanged();
+                    const native = document.getElementById('images');
+                    if (native) {
+                        const transfer = new DataTransfer();
+                        this.selectedFiles.forEach((file) => transfer.items.add(file));
+                        native.files = transfer.files;
+                    }
+                    if (!this.isEditMode) notifyCreateDraftChanged();
+                },
+                removeExisting(index) {
+                    this.existingImages.splice(index, 1);
                 },
             };
         }

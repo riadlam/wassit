@@ -402,19 +402,22 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
         $seller = $user->ensureSellerProfile();
-        
-        // Fetch the account with all relationships
+
         $account = AccountForSale::with(['game', 'attributes', 'images'])
             ->where('id', $id)
-            ->where('seller_id', $seller->id) // Ensure seller owns this account
+            ->where('seller_id', $seller->id)
             ->firstOrFail();
-        
-        // Build attributes map for blade convenience
+
         $attributesMap = [];
         foreach ($account->attributes as $attr) {
             $attributesMap[$attr->attribute_key] = $attr->attribute_value;
         }
-        return view('dashboard.edit-account', compact('account', 'attributesMap'));
+
+        $games = \App\Models\Game::query()->active()->get();
+        $mlbbGame = \App\Models\Game::query()->active()->where('slug', 'mlbb')->first();
+        $mlbbId = $mlbbGame ? $mlbbGame->id : null;
+
+        return view('dashboard.create-account', compact('account', 'attributesMap', 'games', 'mlbbId'));
     }
     
     public function updateAccount(Request $request, $id)
@@ -434,6 +437,7 @@ class DashboardController extends Controller
             'attributes.*' => 'nullable|string|max:255',
             'images' => 'nullable|array|max:10',
             'images.*' => 'image|mimes:jpeg,png,jpg,webp|max:10240', // 10MB max per file
+            'listing_cover' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:10240',
             'delete_images' => 'nullable|array',
             'delete_images.*' => 'integer|exists:account_images,id',
         ], [
@@ -441,6 +445,9 @@ class DashboardController extends Controller
             'images.*.image' => 'Each file must be an image.',
             'images.*.mimes' => 'Only JPEG, PNG, JPG, and WEBP images are allowed.',
             'images.*.max' => 'Each image must not exceed 10MB.',
+            'listing_cover.image' => 'The listing poster must be an image.',
+            'listing_cover.mimes' => 'The listing poster must be JPEG, PNG, JPG, or WEBP.',
+            'listing_cover.max' => 'The listing poster must not exceed 10MB.',
         ]);
 
         if ($validator->fails()) {
@@ -598,6 +605,21 @@ class DashboardController extends Controller
 
                     if (!empty($imagesToCreate)) {
                         AccountImage::insert($imagesToCreate);
+                    }
+                }
+
+                if ($request->hasFile('listing_cover')) {
+                    $oldCovers = $account->images()->where('is_cover', true)->get();
+                    foreach ($oldCovers as $oldCover) {
+                        if (Storage::disk('public')->exists($oldCover->url)) {
+                            Storage::disk('public')->delete($oldCover->url);
+                        }
+                        $oldCover->delete();
+                    }
+
+                    $coverRow = $this->prepareAccountImageRow($request->file('listing_cover'), $account->id, true);
+                    if ($coverRow) {
+                        AccountImage::insert([$coverRow]);
                     }
                 }
                 
