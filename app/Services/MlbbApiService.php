@@ -18,8 +18,36 @@ class MlbbApiService
     {
         $response = $this->getJson(self::HERO_LIST_ENDPOINT);
 
-        return collect($response->data ?? [])
+        $heroes = collect($response->data ?? [])
             ->map(fn ($hero) => $this->normalizeListHero($hero))
+            ->filter(fn (array $hero) => $hero['name'] !== '')
+            ->values();
+
+        $known = $heroes
+            ->mapWithKeys(fn (array $hero) => [mb_strtolower($hero['name']) => true])
+            ->all();
+
+        foreach (config('mlbb.supplemental_heroes', []) as $extra) {
+            $name = trim((string) ($extra['name'] ?? ''));
+            if ($name === '') {
+                continue;
+            }
+
+            $key = mb_strtolower($name);
+            if (isset($known[$key])) {
+                continue;
+            }
+
+            $heroes->push([
+                'id' => (int) ($extra['id'] ?? 0),
+                'name' => $name,
+                'avatar_url' => $this->normalizeUrl($extra['avatar_url'] ?? null),
+            ]);
+            $known[$key] = true;
+        }
+
+        return $heroes
+            ->sortBy(fn (array $hero) => mb_strtolower($hero['name']), SORT_NATURAL)
             ->values()
             ->all();
     }

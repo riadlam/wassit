@@ -19,5 +19,11 @@ class DatabaseSeeder extends Seeder
             GameStaticAttributeSeeder::class,
             UserSeeder::class,
         ]);
+
+        // Missing heroes (Suyou, Lukas, Kalea, Zhuxin) are not in Moonton's list API.
+        // After deploy, run once (downloads skin images):
+        //   php artisan db:seed --class=MlbbMissingHeroesSkinSeeder
+        // Or:
+        //   php artisan mlbb:sync-skins --heroes=Suyou --force
     }
 }

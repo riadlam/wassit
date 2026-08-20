@@ -63,6 +63,13 @@ class MlbbSkinSyncService
             }
         }
 
+        foreach (config('mlbb.supplemental_heroes', []) as $extra) {
+            $name = trim((string) ($extra['name'] ?? ''));
+            if ($name !== '') {
+                $officialNames[Str::slug($name)] = $name;
+            }
+        }
+
         $heroes = $this->heroNames($officialNames, $onlyHeroes);
         $syncedHeroes = 0;
         $syncedSkins = 0;
