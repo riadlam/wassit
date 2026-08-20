@@ -300,16 +300,24 @@
                                         <span x-text="getSelectedCount()"></span> selected
                                     </span>
                                 </h2>
-                                <p class="text-sm text-gray-400 mb-4">Pick a hero, then check the skins you want to feature.</p>
+                                <p class="text-sm text-gray-400 mb-4">Search a hero to open their skins instantly — no need to go back each time.</p>
 
-                                <div x-show="!selectedHero" class="mb-4 relative">
+                                <div class="mb-4 relative">
                                     <i class="fa-solid fa-search wizard-field-icon"></i>
-                                    <input type="text" x-model="searchQuery" placeholder="Search heroes..." class="wizard-input wizard-input--icon">
+                                    <input
+                                        type="text"
+                                        x-model="searchQuery"
+                                        @input="onHeroSearchInput()"
+                                        @keydown.enter.prevent="jumpToBestHeroMatch()"
+                                        placeholder="Search heroes (type to jump to skins)..."
+                                        class="wizard-input wizard-input--icon"
+                                        autocomplete="off"
+                                    >
                                 </div>
 
                                 <template x-if="selectedHero">
                                     <div class="mb-4 flex items-center gap-3">
-                                        <button type="button" @click="clearHero()" class="inline-flex items-center py-2 px-3 text-sm rounded-md text-gray-300 hover:text-white ring-1 ring-[#2d2c31]">
+                                        <button type="button" @click="clearHero({ keepSearch: true })" class="inline-flex items-center py-2 px-3 text-sm rounded-md text-gray-300 hover:text-white ring-1 ring-[#2d2c31]">
                                             <i class="fa-solid fa-arrow-left mr-2"></i>
                                             Heroes
                                         </button>
@@ -323,7 +331,7 @@
                                             <div class="min-w-0">
                                                 <p class="font-semibold text-white truncate" x-text="selectedHero.name"></p>
                                                 <p class="text-xs text-gray-400">
-                                                    <span x-text="heroSkins.length"></span> skin(s)
+                                                    <span x-text="heroSkins.length"></span> skin(s) · keep typing to switch hero
                                                 </p>
                                             </div>
                                         </div>
@@ -772,7 +780,7 @@
 
                                     <div class="lp-effects">
                                         <p class="lp-effects-title" x-text="isPremiumLayout ? 'BATTLE EFFECTS' : 'EMOTES'"></p>
-                                        <div class="lp-effects-grid">
+                                        <div class="lp-effects-grid" :style="catalogGridStyle(previewEmotes.length)">
                                             <template x-for="(item, idx) in previewEmotes" :key="'fx-' + idx">
                                                 <div class="lp-effect">
                                                     <img :src="item.image_url" :alt="item.name" @@error="$event.target.src = placeholderSkin">
@@ -810,7 +818,7 @@
 
                                     <div class="lp-recalls">
                                         <p class="lp-recalls-title">RECALLS</p>
-                                        <div class="lp-recalls-row">
+                                        <div class="lp-recalls-row" :style="recallsLayoutStyle(previewRecalls.length)">
                                             <template x-for="(recall, idx) in previewRecalls" :key="'rc-' + idx">
                                                 <div class="lp-recall">
                                                     <img :src="recall.image_url" :alt="recall.name" @@error="$event.target.src = placeholderSkin">
@@ -1140,15 +1148,22 @@
         }
         .lp-effects-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            grid-template-rows: repeat(2, 1fr);
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            grid-template-rows: repeat(2, minmax(0, 1fr));
             gap: 4px;
             height: calc(100% - 20px);
+            min-height: 0;
         }
         .lp-effect {
+            min-width: 0;
+            min-height: 0;
+            height: 100%;
             background: #0f0f0f;
             border-radius: 6px;
             overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         .lp-effect img {
             width: 100%;
@@ -1453,8 +1468,8 @@
         }
         .listing-poster.is-basic .lp-recalls-row {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            grid-template-rows: repeat(2, 1fr);
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            grid-template-rows: repeat(2, minmax(0, 1fr));
             gap: 4px;
             height: calc(100% - 20px);
             min-height: 0;
@@ -1466,6 +1481,9 @@
             background: #0f0f0f;
             border-radius: 6px;
             overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         .listing-poster.is-basic .lp-recall img {
             width: 100%;
@@ -2117,6 +2135,7 @@
                 listError: '',
                 detailError: '',
                 detailRequestId: 0,
+                searchTimer: null,
                 oldSelectedIds: @json($oldHighlightedSkinIds),
                 placeholderAvatar: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96"><rect width="96" height="96" fill="%231b1a1e"/><text x="48" y="54" text-anchor="middle" fill="%2371717a" font-size="14">MLBB</text></svg>',
                 init() {
@@ -2138,6 +2157,52 @@
                             this.updateHiddenInputs();
                             this.initialized = true;
                         });
+                },
+                onHeroSearchInput() {
+                    clearTimeout(this.searchTimer);
+                    this.searchTimer = setTimeout(() => this.applyHeroSearch(), 180);
+                },
+                jumpToBestHeroMatch() {
+                    clearTimeout(this.searchTimer);
+                    this.applyHeroSearch({ forceBest: true });
+                },
+                applyHeroSearch(options = {}) {
+                    const needle = this.searchQuery.trim().toLowerCase();
+                    if (!needle) {
+                        this.clearHero({ keepSearch: true });
+                        return;
+                    }
+
+                    const matches = this.filteredHeroes;
+                    if (!matches.length) {
+                        return;
+                    }
+
+                    const exact = matches.find((hero) => String(hero.name || '').toLowerCase() === needle);
+                    const startsWith = matches.filter((hero) => String(hero.name || '').toLowerCase().startsWith(needle));
+                    let target = exact || null;
+
+                    if (!target && startsWith.length === 1) {
+                        target = startsWith[0];
+                    }
+                    if (!target && matches.length === 1) {
+                        target = matches[0];
+                    }
+                    if (!target && options.forceBest) {
+                        target = exact || startsWith[0] || matches[0];
+                    }
+
+                    if (target) {
+                        if (!this.selectedHero || this.selectedHero.name !== target.name) {
+                            this.selectHero(target);
+                        }
+                        return;
+                    }
+
+                    // Multiple partial matches: show the hero grid so they can pick.
+                    if (this.selectedHero) {
+                        this.clearHero({ keepSearch: true });
+                    }
                 },
                 async resolveSkinImages(ids) {
                     const unique = [...new Set((ids || []).map((id) => Number(id)).filter((id) => id > 0))];
@@ -2316,6 +2381,10 @@
                 async selectHero(heroItem) {
                     this.selectedHero = heroItem;
                     this.detailError = '';
+                    // Keep search in sync so the next hero is one quick edit away.
+                    if (!this.searchQuery.trim() || !String(heroItem.name || '').toLowerCase().includes(this.searchQuery.trim().toLowerCase())) {
+                        this.searchQuery = heroItem.name || '';
+                    }
                     const cached = this.skinsCache[heroItem.name];
                     if (cached) {
                         this.heroSkins = cached;
@@ -2347,10 +2416,13 @@
                         }
                     }
                 },
-                clearHero() {
+                clearHero(options = {}) {
                     this.selectedHero = null;
                     this.heroSkins = [];
                     this.detailError = '';
+                    if (!options.keepSearch) {
+                        this.searchQuery = '';
+                    }
                 },
                 isSkinSelected(skin) {
                     if (!this.selectedHero) return false;
@@ -4027,7 +4099,7 @@
                     };
                 },
                 padCatalogItems(items, count) {
-                    const list = items.map((item) => this.normalizeCatalogItem(item));
+                    const list = (items || []).map((item) => this.normalizeCatalogItem(item));
                     while (list.length < count) {
                         list.push({
                             id: null,
@@ -4036,6 +4108,54 @@
                         });
                     }
                     return list.slice(0, count);
+                },
+                limitCatalogItems(items, max = 6) {
+                    return (items || [])
+                        .map((item) => this.normalizeCatalogItem(item))
+                        .filter((item) => item.image_url)
+                        .slice(0, max);
+                },
+                catalogGridStyle(count) {
+                    const n = Math.max(0, Math.min(6, Number(count) || 0));
+                    let cols = 3;
+                    let rows = 2;
+                    if (n <= 1) {
+                        cols = 1;
+                        rows = 1;
+                    } else if (n === 2) {
+                        cols = 2;
+                        rows = 1;
+                    } else if (n === 3) {
+                        cols = 3;
+                        rows = 1;
+                    } else if (n === 4) {
+                        cols = 2;
+                        rows = 2;
+                    } else {
+                        cols = 3;
+                        rows = 2;
+                    }
+
+                    return {
+                        display: 'grid',
+                        gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
+                        gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,
+                        gap: '4px',
+                        height: 'calc(100% - 20px)',
+                        minHeight: '0',
+                    };
+                },
+                recallsLayoutStyle(count) {
+                    if (this.isPremiumLayout) {
+                        return {
+                            display: 'flex',
+                            alignItems: 'stretch',
+                            justifyContent: 'space-between',
+                            gap: '4px',
+                            height: '100%',
+                        };
+                    }
+                    return this.catalogGridStyle(count);
                 },
                 async fetchRandomCatalog(endpoint, itemsKey, count) {
                     try {
@@ -4085,10 +4205,12 @@
                         const extraPromise = this.isPremiumLayout && skins.length < 8
                             ? this.fetchSampleSkins(8 - skins.length)
                             : Promise.resolve([]);
-                        const emotesPromise = emotesData?.selectedItems?.length
+                        const hasSelectedEmotes = !!emotesData?.selectedItems?.length;
+                        const hasSelectedRecalls = !!recallsData?.selectedItems?.length;
+                        const emotesPromise = hasSelectedEmotes
                             ? Promise.resolve(emotesData.selectedItems)
                             : this.fetchRandomCatalog('/api/mlbb/emotes/sample', 'emotes', 6);
-                        const recallsPromise = recallsData?.selectedItems?.length
+                        const recallsPromise = hasSelectedRecalls
                             ? Promise.resolve(recallsData.selectedItems)
                             : this.fetchRandomCatalog('/api/mlbb/recalls/sample', 'recalls', 6);
 
@@ -4103,8 +4225,12 @@
                         }
 
                         this.applyPosterSkins(skins);
-                        this.previewEmotes = this.padCatalogItems(emotes, 6);
-                        this.previewRecalls = this.padCatalogItems(recalls, 6);
+                        this.previewEmotes = hasSelectedEmotes
+                            ? this.limitCatalogItems(emotes, 6)
+                            : this.padCatalogItems(emotes, 6);
+                        this.previewRecalls = hasSelectedRecalls
+                            ? this.limitCatalogItems(recalls, 6)
+                            : this.padCatalogItems(recalls, 6);
                     } catch (error) {
                         console.error(error);
                     } finally {

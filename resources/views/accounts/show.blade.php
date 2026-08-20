@@ -322,7 +322,7 @@ if ($seller && !empty($seller->pfp)) {
                                 <span class="inline-block px-2 py-0.5 rounded text-xs whitespace-nowrap" style="color: rgba(255, 255, 255, 0.7); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 6px; background-color: rgba(27, 26, 30, 0.5);">{{ $imageCount }}</span>
                             </div>
                             <!-- Navigation arrows on top right -->
-                            @if($imageCount > 2)
+                            @if($imageCount > 1)
                             <div class="flex items-center gap-2">
                                 <div class="swiper-button-prev-custom swiper-button-prev"></div>
                                 <div class="swiper-button-next-custom swiper-button-next"></div>
@@ -333,37 +333,28 @@ if ($seller && !empty($seller->pfp)) {
                             <div class="mt-4 rounded-lg border border-dashed px-4 py-12 text-center text-sm text-gray-400" style="border-color: #2d2c31;">
                                 {{ __('messages.no_image') ?? 'No images uploaded yet.' }}
                             </div>
-                        @elseif($imageCount <= 2)
-                            <div class="mt-4 grid grid-cols-1 gap-4 {{ $imageCount === 2 ? 'sm:grid-cols-2' : '' }}">
-                                @foreach($images as $image)
-                                    <a href="{{ asset('storage/' . $image->url) }}" class="glightbox block" data-gallery="account-gallery">
-                                        <div class="relative overflow-hidden rounded-lg ring-1 hover:ring-2 cursor-zoom-in transition-all duration-300 account-gallery-frame" style="border-color: #2d2c31; background-color: rgba(27, 26, 30, 0.5);">
-                                            <img src="{{ asset('storage/' . $image->url) }}" alt="{{ $image->is_cover ? 'Listing poster' : 'Account photo' }}" class="account-gallery-img transition-transform duration-300 hover:scale-105" loading="lazy">
-                                            <span class="absolute left-2 top-2 rounded-md px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-white backdrop-blur-md" style="background-color: rgba(27, 26, 30, 0.85); border: 1px solid rgba(255, 255, 255, 0.12);">
-                                                {{ $image->is_cover ? 'Listing Poster' : 'Account Photo' }}
-                                            </span>
-                                        </div>
-                                    </a>
-                                @endforeach
-                            </div>
                         @else
                             <div class="swiper account-gallery-swiper mt-4" style="--swiper-navigation-color: #ffffff; --swiper-pagination-color: #ef4444;">
-                            <div class="swiper-wrapper">
-                                @foreach($images as $index => $image)
-                                    <div class="swiper-slide">
-                                        <a href="{{ asset('storage/' . $image->url) }}" class="glightbox" data-gallery="account-gallery">
-                                            <div class="relative overflow-hidden rounded-lg ring-1 hover:ring-2 cursor-zoom-in transition-all duration-300 account-gallery-frame" style="border-color: #2d2c31; background-color: rgba(27, 26, 30, 0.5);">
-                                                <button class="w-full h-full" type="button">
-                                                    <span class="sr-only">View Images</span>
-                                                    <img src="{{ asset('storage/' . $image->url) }}" alt="Account Image" class="account-gallery-img transition-transform duration-300 hover:scale-105" loading="lazy">
-                                                </button>
-                                            </div>
-                                        </a>
-                                    </div>
-                                @endforeach
+                                <div class="swiper-wrapper">
+                                    @foreach($images as $index => $image)
+                                        <div class="swiper-slide">
+                                            <a href="{{ asset('storage/' . $image->url) }}" class="glightbox block" data-gallery="account-gallery">
+                                                <div class="relative overflow-hidden rounded-lg ring-1 hover:ring-2 cursor-zoom-in transition-all duration-300 account-gallery-frame" style="border-color: #2d2c31; background-color: rgba(27, 26, 30, 0.5);">
+                                                    <img src="{{ asset('storage/' . $image->url) }}" alt="{{ $image->is_cover ? 'Listing poster' : 'Account photo' }}" class="account-gallery-img transition-transform duration-300 hover:scale-105" loading="lazy">
+                                                    @if($image->is_cover)
+                                                        <span class="absolute left-2 top-2 rounded-md px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-white backdrop-blur-md" style="background-color: rgba(27, 26, 30, 0.85); border: 1px solid rgba(255, 255, 255, 0.12);">
+                                                            Listing Poster
+                                                        </span>
+                                                    @endif
+                                                </div>
+                                            </a>
+                                        </div>
+                                    @endforeach
+                                </div>
+                                @if($imageCount > 1)
+                                    <div class="account-gallery-pagination swiper-pagination !relative mt-4"></div>
+                                @endif
                             </div>
-                            <div class="account-gallery-pagination swiper-pagination !relative mt-4"></div>
-                        </div>
                         @endif
                     </div>
                     
@@ -1079,36 +1070,28 @@ if ($seller && !empty($seller->pfp)) {
         }
         .account-gallery-swiper {
             width: 100%;
-            height: 100%;
-            padding-bottom: 5px;
             position: relative;
-            overflow: visible;
+            overflow: hidden;
+            padding-bottom: 4px;
         }
         .account-gallery-swiper .swiper-wrapper {
-            position: relative;
+            align-items: stretch;
         }
         .account-gallery-swiper .swiper-slide {
-            text-align: center;
-            font-size: 18px;
+            height: auto;
             display: flex;
             justify-content: center;
-            align-items: center;
+            align-items: stretch;
+        }
+        .account-gallery-swiper .swiper-slide > a {
+            display: block;
+            width: 100%;
         }
         .account-gallery-frame {
             position: relative;
             width: 100%;
-            aspect-ratio: 681 / 1024;
-            max-height: min(80vh, 720px);
-        }
-        .account-gallery-frame button {
-            position: absolute;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-            display: block;
-            padding: 0;
-            border: 0;
-            background: transparent;
+            aspect-ratio: 16 / 10;
+            background-color: rgba(27, 26, 30, 0.5);
         }
         .account-gallery-img {
             position: absolute;
@@ -1120,7 +1103,7 @@ if ($seller && !empty($seller->pfp)) {
         }
         @media (max-width: 639px) {
             .account-gallery-frame {
-                max-height: 70vh;
+                aspect-ratio: 4 / 5;
             }
         }
         .swiper-button-prev-custom,
@@ -1154,11 +1137,12 @@ if ($seller && !empty($seller->pfp)) {
             display: none;
         }
         .account-gallery-swiper .swiper-pagination {
-            position: absolute !important;
-            bottom: 10px !important;
-            left: 50% !important;
-            transform: translateX(-50%) !important;
-            width: auto !important;
+            position: relative !important;
+            bottom: auto !important;
+            left: auto !important;
+            transform: none !important;
+            width: 100% !important;
+            margin-top: 14px;
             z-index: 10;
             display: flex;
             gap: 8px;
@@ -1379,26 +1363,29 @@ if ($seller && !empty($seller->pfp)) {
             const gallerySwiperEl = document.querySelector('.account-gallery-swiper');
             if (gallerySwiperEl) {
                 const slideCount = gallerySwiperEl.querySelectorAll('.swiper-slide').length;
+                const paginationEl = gallerySwiperEl.querySelector('.account-gallery-pagination');
                 new Swiper(gallerySwiperEl, {
                     slidesPerView: 1,
-                    spaceBetween: 20,
-                    loop: slideCount > 3,
-                    pagination: {
-                        el: gallerySwiperEl.querySelector('.account-gallery-pagination'),
+                    spaceBetween: 16,
+                    loop: slideCount > 2,
+                    watchOverflow: true,
+                    grabCursor: slideCount > 1,
+                    pagination: paginationEl ? {
+                        el: paginationEl,
                         clickable: true,
-                    },
-                    navigation: {
+                    } : undefined,
+                    navigation: slideCount > 1 ? {
                         nextEl: '.swiper-button-next-custom',
                         prevEl: '.swiper-button-prev-custom',
-                    },
+                    } : undefined,
                     breakpoints: {
                         640: {
                             slidesPerView: Math.min(2, slideCount),
-                            spaceBetween: 20,
+                            spaceBetween: 18,
                         },
                         1024: {
-                            slidesPerView: Math.min(2.5, slideCount),
-                            spaceBetween: 30,
+                            slidesPerView: Math.min(2, slideCount),
+                            spaceBetween: 22,
                         },
                     },
                 });
