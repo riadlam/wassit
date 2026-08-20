@@ -788,9 +788,10 @@
                                         </div>
                                         <div class="lp-stat">
                                             <span class="lp-stat-line">
-                                                <i class="fa-solid fa-user lp-stat-ico"></i>
+                                                <i class="fa-solid fa-user lp-stat-ico" aria-hidden="true"></i>
                                                 <span class="lp-stat-val" x-text="stats.heroes_count"></span>
                                             </span>
+                                            <span class="lp-stat-lbl">HEROES</span>
                                         </div>
                                         <div class="lp-stat">
                                             <span class="lp-stat-val" x-text="stats.level"></span>
@@ -798,11 +799,12 @@
                                         </div>
                                         <div class="lp-stat">
                                             <span class="lp-stat-line">
-                                                <i class="fa-solid fa-shirt lp-stat-ico"></i>
+                                                <i class="fa-solid fa-shirt lp-stat-ico" aria-hidden="true"></i>
                                                 <span class="lp-stat-val" x-text="stats.skins_count"></span>
                                             </span>
+                                            <span class="lp-stat-lbl">SKINS</span>
                                         </div>
-                                        <div class="lp-stat">
+                                        <div class="lp-stat lp-stat-rank">
                                             <span class="lp-stat-val lp-stat-val-rank" x-text="stats.rank"></span>
                                             <span class="lp-stat-lbl">HIGHEST RANK</span>
                                         </div>
@@ -1164,29 +1166,32 @@
             height: 64px;
             box-sizing: border-box;
             display: grid;
-            grid-template-columns: repeat(5, minmax(0, 1fr));
-            align-items: stretch;
+            grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.9fr) minmax(0, 0.9fr) minmax(0, 0.9fr) minmax(0, 1.4fr);
+            align-items: center;
             background: rgba(18,18,18,0.92);
             border: 2px solid #fff;
             border-radius: 10px;
             color: #fff;
-            padding: 4px 4px;
+            padding: 0 2px;
             overflow: hidden;
         }
         .lp-stat {
             min-width: 0;
-            height: 100%;
+            width: 100%;
+            max-width: 100%;
+            height: 52px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             text-align: center;
             border-right: 1px solid #3f3f46;
-            padding: 0 2px;
+            padding: 0 3px;
             overflow: hidden;
-            gap: 2px;
+            gap: 0;
         }
-        .lp-stat:last-child { border-right: 0; }
+        .lp-stat:last-child,
+        .lp-stat.lp-stat-rank { border-right: 0; }
         .lp-stat-line {
             display: inline-flex;
             align-items: center;
@@ -1194,44 +1199,61 @@
             gap: 4px;
             max-width: 100%;
             min-width: 0;
+            height: 22px;
+            line-height: 22px;
         }
         .lp-stat-val {
             display: block;
+            box-sizing: border-box;
+            width: 100%;
+            height: 22px;
             font-weight: 900;
             font-size: 15px;
-            line-height: 1.15;
+            line-height: 22px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
             max-width: 100%;
         }
         .lp-stat-line .lp-stat-val {
-            display: inline;
-            overflow: visible;
-            text-overflow: clip;
+            display: inline-block;
+            width: auto;
+            max-width: calc(100% - 18px);
+            vertical-align: middle;
         }
         .lp-stat-val-sm { font-size: 8px; letter-spacing: 0.04em; }
+        .lp-stat-val-rank {
+            font-size: 12px;
+            letter-spacing: 0;
+            text-transform: uppercase;
+        }
         .lp-stat-lbl {
             display: block;
+            box-sizing: border-box;
+            width: 100%;
+            height: 14px;
             font-size: 7px;
             font-weight: 800;
-            letter-spacing: 0.04em;
+            letter-spacing: 0.03em;
             color: #d4d4d8;
-            margin-top: 0;
-            line-height: 1.15;
+            margin: 0;
+            padding: 0;
+            line-height: 14px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
             max-width: 100%;
-            flex-shrink: 0;
+            flex: 0 0 14px;
         }
         .lp-stat-ico {
             display: inline-block;
+            width: 14px;
+            height: 14px;
             font-size: 12px;
             color: #e5e7eb;
             margin: 0;
-            line-height: 1;
-            flex-shrink: 0;
+            line-height: 14px;
+            flex: 0 0 auto;
         }
         .lp-recalls {
             position: absolute;
@@ -1509,51 +1531,63 @@
         }
         .listing-poster.is-basic .lp-stats {
             left: 10px;
-            top: 276px;
+            top: 278px;
             width: 661px;
-            height: 72px;
+            height: 64px;
             overflow: hidden;
-            padding: 6px 8px;
+            padding: 0 4px;
             box-sizing: border-box;
+            grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.95fr) minmax(0, 0.95fr) minmax(0, 0.95fr) minmax(0, 1.55fr);
+            align-items: center;
         }
         .listing-poster.is-basic .lp-stat {
             min-width: 0;
+            width: 100%;
+            height: 52px;
             overflow: hidden;
-            padding: 0 6px;
-            gap: 3px;
+            padding: 0 4px;
+            gap: 0;
         }
         .listing-poster.is-basic .lp-stat-val {
+            height: 24px;
             font-size: 16px;
-            line-height: 1.1;
+            line-height: 24px;
         }
         .listing-poster.is-basic .lp-stat-val-rank {
             font-size: 13px;
-            letter-spacing: 0.02em;
+            letter-spacing: 0;
             text-transform: uppercase;
         }
         .listing-poster.is-basic .lp-stat-val-sm {
             font-size: 8px;
         }
         .listing-poster.is-basic .lp-stat-lbl {
-            font-size: 8px;
-            letter-spacing: 0.06em;
+            height: 16px;
+            flex: 0 0 16px;
+            font-size: 7.5px;
+            letter-spacing: 0.04em;
+            line-height: 16px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            line-height: 1.15;
         }
         .listing-poster.is-basic .lp-stat-ico {
+            width: 14px;
+            height: 14px;
             font-size: 13px;
+            line-height: 14px;
             margin: 0;
         }
         .listing-poster.is-basic .lp-stat-line {
+            height: 24px;
+            line-height: 24px;
             gap: 5px;
         }
         .listing-poster.is-basic .lp-gallery {
             left: 10px;
-            top: 356px;
+            top: 350px;
             width: 661px;
-            height: 554px;
+            height: 560px;
             display: flex;
             flex-wrap: wrap;
             align-content: stretch;
@@ -2795,7 +2829,7 @@
                     }
 
                     const areaW = 661;
-                    const areaH = 554;
+                    const areaH = 560;
                     const gap = n > 48 ? 2 : 4;
                     const maxCols = Math.min(14, n);
                     const maxRows = 14;
