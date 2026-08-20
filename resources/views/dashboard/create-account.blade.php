@@ -785,7 +785,7 @@
                                                         <img x-show="tag.image_url" :src="tag.image_url" :alt="tag.name" class="lp-tag-img" @@error="$event.target.style.display='none'">
                                                     </template>
                                                 </div>
-                                                <div class="lp-skin-meta">
+                                                <div class="lp-skin-meta" x-show="isPremiumLayout">
                                                     <p class="lp-skin-name" x-text="skin.name"></p>
                                                     <p class="lp-hero-name" x-text="skin.hero"></p>
                                                 </div>
@@ -1464,7 +1464,7 @@
             display: flex;
             flex-wrap: wrap;
             align-content: stretch;
-            gap: 4px;
+            gap: 0;
         }
         .listing-poster.is-basic .lp-skin.is-large-tile .lp-skin-name { font-size: 11px; }
         .listing-poster.is-basic .lp-skin.is-large-tile .lp-hero-name { font-size: 9px; }
@@ -1476,16 +1476,26 @@
             border-radius: 6px;
         }
         .listing-poster.is-basic .lp-skin-meta {
-            padding: 3px 3px 3px;
+            display: none;
         }
-        .listing-poster.is-basic .lp-skin-name {
-            font-size: 7px;
-        }
-        .listing-poster.is-basic .lp-hero-name {
-            font-size: 6px;
+        .listing-poster.is-basic .lp-skin-tags {
+            top: 2px;
+            right: 2px;
+            max-width: 85%;
         }
         .listing-poster.is-basic .lp-tag-img {
-            height: 12px;
+            height: 10px;
+        }
+        .listing-poster.is-basic .lp-tag-painted {
+            font-size: 5px;
+            padding: 1px 3px;
+        }
+        .listing-poster.is-basic .lp-skin.is-dense-tile {
+            border-width: 1px;
+            border-radius: 3px;
+        }
+        .listing-poster.is-basic .lp-skin.is-dense-tile .lp-tag-img {
+            height: 8px;
         }
         .listing-poster.is-basic .lp-price-slot {
             left: {{ $posterPriceBasic['left'] }}px;
@@ -2519,7 +2529,7 @@
                 previewUseDummyData: false,
                 isPremiumLayout: @json($listingPremiumPoster),
                 posterBg: @json($listingPremiumPoster ? asset('images/listing-poster-bg.png') : asset('images/listing-poster-bg-basic.jpg')),
-                gallerySkinCount: @json($listingPremiumPoster ? 6 : 48),
+                gallerySkinCount: @json($listingPremiumPoster ? 6 : 196),
                 galleryLayout: { cols: 8, rows: 6, count: 0 },
                 imageFrames: {},
                 posterPreviewScale: 1,
@@ -2628,9 +2638,9 @@
                     }
                 },
                 pickGalleryGrid(count) {
-                    const n = Math.max(0, Math.min(48, Number(count) || 0));
+                    const n = Math.max(0, Math.min(196, Number(count) || 0));
                     if (n <= 0) {
-                        return { cols: 8, rows: 6, count: 0 };
+                        return { cols: 14, rows: 14, count: 0 };
                     }
                     if (n === 1) {
                         return { cols: 1, rows: 1, count: 1 };
@@ -2638,16 +2648,17 @@
 
                     const areaW = 661;
                     const areaH = 568;
-                    const maxCols = Math.min(8, n);
-                    const maxRows = 6;
+                    const gap = n > 48 ? 2 : 4;
+                    const maxCols = Math.min(14, n);
+                    const maxRows = 14;
                     let best = null;
 
                     for (let cols = 1; cols <= maxCols; cols++) {
                         const rows = Math.ceil(n / cols);
                         if (rows > maxRows) continue;
 
-                        const cellW = (areaW - (cols - 1) * 4) / cols;
-                        const cellH = (areaH - (rows - 1) * 4) / rows;
+                        const cellW = (areaW - (cols - 1) * gap) / cols;
+                        const cellH = (areaH - (rows - 1) * gap) / rows;
                         const aspect = cellW / Math.max(cellH, 1);
                         const aspectPenalty = Math.abs(Math.log(aspect / 0.78));
                         const emptyPenalty = (cols * rows - n) * 0.4;
@@ -2655,22 +2666,25 @@
                         const score = sizeBonus - aspectPenalty - emptyPenalty;
 
                         if (!best || score > best.score) {
-                            best = { cols, rows, score };
+                            best = { cols, rows, score, gap };
                         }
                     }
 
                     if (!best) {
-                        return { cols: Math.min(8, n), rows: Math.min(6, Math.ceil(n / Math.min(8, n))), count: n };
+                        const cols = Math.min(14, n);
+                        return { cols, rows: Math.min(14, Math.ceil(n / cols)), count: n, gap };
                     }
 
-                    return { cols: best.cols, rows: best.rows, count: n };
+                    return { cols: best.cols, rows: best.rows, count: n, gap: best.gap ?? gap };
                 },
                 galleryStyle() {
                     if (this.isPremiumLayout) return {};
+                    const gap = this.galleryLayout?.gap ?? 4;
                     return {
                         display: 'flex',
                         flexWrap: 'wrap',
                         alignContent: 'stretch',
+                        gap: `${gap}px`,
                     };
                 },
                 gallerySkinClass() {
@@ -2678,6 +2692,7 @@
                     const cols = this.galleryLayout?.cols || 8;
                     if (cols <= 3) return 'is-large-tile';
                     if (cols <= 5) return 'is-medium-tile';
+                    if (cols >= 10) return 'is-dense-tile';
                     return '';
                 },
                 gallerySkinStyle(idx) {
@@ -2686,7 +2701,7 @@
                     const cols = this.galleryLayout?.cols || 1;
                     const rows = this.galleryLayout?.rows || 1;
                     if (!count) return {};
-                    const gap = 4;
+                    const gap = this.galleryLayout?.gap ?? (count > 48 ? 2 : 4);
                     const row = Math.floor(idx / cols);
                     const lastRowCount = count - cols * (rows - 1);
                     const itemsInRow = row === rows - 1 ? lastRowCount : cols;
@@ -2706,7 +2721,10 @@
                     for (let i = 0; i < 2; i++) {
                         frames[`feat-${i}`] = this.cloneFrameState(previous[`feat-${i}`]);
                     }
-                    const botCount = Math.max(this.bottomSkins.length, this.isPremiumLayout ? 6 : 48);
+                    const botCount = Math.max(
+                        this.bottomSkins.length,
+                        this.isPremiumLayout ? 6 : (this.gallerySkinCount || 196)
+                    );
                     for (let i = 0; i < botCount; i++) {
                         frames[`bot-${i}`] = this.cloneFrameState(previous[`bot-${i}`]);
                     }
@@ -3955,7 +3973,7 @@
                         return;
                     }
 
-                    const visible = (skins || []).slice(0, 48);
+                    const visible = (skins || []).slice(0, this.gallerySkinCount || 196);
                     this.featuredSkins = [];
                     this.bottomSkins = visible;
                     this.galleryLayout = this.pickGalleryGrid(visible.length);
