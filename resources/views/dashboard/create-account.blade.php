@@ -432,17 +432,27 @@
                             </div>
 
                             {{-- Step 5: Recalls --}}
-                            <div id="accountRecallsPicker" x-show="currentStep === 5 && isMLBB" x-cloak x-transition.opacity.duration.200ms x-data="catalogItemPicker({ endpoint: '/api/mlbb/recalls', itemsKey: 'recalls', inputId: 'highlighted_recalls_input', step: 5 })" x-ref="recallsPicker">
+                            <div id="accountRecallsPicker" x-show="currentStep === 5 && isMLBB" x-cloak x-transition.opacity.duration.200ms x-data="catalogItemPicker({ endpoint: '/api/mlbb/recalls', itemsKey: 'recalls', inputId: 'highlighted_recalls_input', step: 5, uploadUrl: @js(route('account.catalog.recalls.store')), label: 'recall' })" x-ref="recallsPicker">
                                 <h2 class="text-xl font-semibold text-white mb-2 flex items-center justify-between gap-3">
                                     <span class="flex items-center">
                                         <i class="fa-solid fa-rotate mr-3 text-red-600"></i>
                                         Recalls
                                     </span>
-                                    <span class="text-sm text-gray-400" x-show="selected.length > 0">
-                                        <span x-text="selected.length"></span> selected
+                                    <span class="flex items-center gap-3">
+                                        <button
+                                            type="button"
+                                            @click="openUploadModal()"
+                                            class="inline-flex items-center gap-1.5 rounded-md bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700"
+                                        >
+                                            <i class="fa-solid fa-plus"></i>
+                                            Upload new
+                                        </button>
+                                        <span class="text-sm text-gray-400" x-show="selected.length > 0">
+                                            <span x-text="selected.length"></span> selected
+                                        </span>
                                     </span>
                                 </h2>
-                                <p class="text-sm text-gray-400 mb-4">Pick standout recall effects to feature on your listing.</p>
+                                <p class="text-sm text-gray-400 mb-4">Pick standout recall effects to feature on your listing. Missing one? Upload it.</p>
 
                                 <div class="mb-4 relative">
                                     <i class="fa-solid fa-search wizard-field-icon"></i>
@@ -461,7 +471,7 @@
                                         <div>
                                             <h3 class="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-400" x-text="group.group"></h3>
                                             <div class="grid grid-cols-5 gap-3">
-                                                <template x-for="catalogItem in group.items" :key="group.group + '-' + catalogItem.name">
+                                                <template x-for="catalogItem in group.items" :key="group.group + '-' + (catalogItem.id || catalogItem.name)">
                                                     <label
                                                         class="group relative flex cursor-pointer flex-col overflow-hidden rounded-xl ring-1 transition"
                                                         :class="isSelected(catalogItem) ? 'ring-red-500 bg-red-500/10' : 'ring-[#2d2c31] bg-[#1b1a1e] hover:ring-red-500/40'"
@@ -506,20 +516,32 @@
                                 </div>
 
                                 <input type="hidden" id="highlighted_recalls_input" name="attributes[highlighted_recalls]" value="{{ old('attributes.highlighted_recalls', $isEditMode ? ($attributesMap['highlighted_recalls'] ?? '') : '') }}">
+
+                                @include('dashboard.partials.catalog-upload-modal', ['itemLabel' => 'recall'])
                             </div>
 
                             {{-- Step 6: Emotes --}}
-                            <div id="accountEmotesPicker" x-show="currentStep === 6 && isMLBB" x-cloak x-transition.opacity.duration.200ms x-data="catalogItemPicker({ endpoint: '/api/mlbb/emotes', itemsKey: 'emotes', inputId: 'highlighted_emotes_input', step: 6 })" x-ref="emotesPicker">
+                            <div id="accountEmotesPicker" x-show="currentStep === 6 && isMLBB" x-cloak x-transition.opacity.duration.200ms x-data="catalogItemPicker({ endpoint: '/api/mlbb/emotes', itemsKey: 'emotes', inputId: 'highlighted_emotes_input', step: 6, uploadUrl: @js(route('account.catalog.emotes.store')), label: 'emote' })" x-ref="emotesPicker">
                                 <h2 class="text-xl font-semibold text-white mb-2 flex items-center justify-between gap-3">
                                     <span class="flex items-center">
                                         <i class="fa-solid fa-face-smile mr-3 text-red-600"></i>
                                         Emotes
                                     </span>
-                                    <span class="text-sm text-gray-400" x-show="selected.length > 0">
-                                        <span x-text="selected.length"></span> selected
+                                    <span class="flex items-center gap-3">
+                                        <button
+                                            type="button"
+                                            @click="openUploadModal()"
+                                            class="inline-flex items-center gap-1.5 rounded-md bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700"
+                                        >
+                                            <i class="fa-solid fa-plus"></i>
+                                            Upload new
+                                        </button>
+                                        <span class="text-sm text-gray-400" x-show="selected.length > 0">
+                                            <span x-text="selected.length"></span> selected
+                                        </span>
                                     </span>
                                 </h2>
-                                <p class="text-sm text-gray-400 mb-4">Pick standout battle emotes to feature on your listing.</p>
+                                <p class="text-sm text-gray-400 mb-4">Pick standout battle emotes to feature on your listing. Missing one? Upload it.</p>
 
                                 <div class="mb-4 relative">
                                     <i class="fa-solid fa-search wizard-field-icon"></i>
@@ -538,7 +560,7 @@
                                         <div>
                                             <h3 class="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-400" x-text="group.group"></h3>
                                             <div class="grid grid-cols-5 gap-3">
-                                                <template x-for="catalogItem in group.items" :key="group.group + '-' + catalogItem.name">
+                                                <template x-for="catalogItem in group.items" :key="group.group + '-' + (catalogItem.id || catalogItem.name)">
                                                     <label
                                                         class="group relative flex cursor-pointer flex-col overflow-hidden rounded-xl ring-1 transition"
                                                         :class="isSelected(catalogItem) ? 'ring-red-500 bg-red-500/10' : 'ring-[#2d2c31] bg-[#1b1a1e] hover:ring-red-500/40'"
@@ -583,6 +605,8 @@
                                 </div>
 
                                 <input type="hidden" id="highlighted_emotes_input" name="attributes[highlighted_emotes]" value="{{ old('attributes.highlighted_emotes', $isEditMode ? ($attributesMap['highlighted_emotes'] ?? '') : '') }}">
+
+                                @include('dashboard.partials.catalog-upload-modal', ['itemLabel' => 'emote'])
                             </div>
 
                             {{-- Step 7: Images --}}
@@ -2351,12 +2375,14 @@
             };
         }
 
-        function catalogItemPicker({ endpoint, itemsKey, inputId, step }) {
+        function catalogItemPicker({ endpoint, itemsKey, inputId, step, uploadUrl = '', label = 'item' }) {
             return {
                 endpoint,
                 itemsKey,
                 inputId,
                 step,
+                uploadUrl,
+                label,
                 groups: [],
                 searchQuery: '',
                 selected: [],
@@ -2364,6 +2390,12 @@
                 loading: false,
                 loaded: false,
                 error: '',
+                uploadOpen: false,
+                uploadName: '',
+                uploadFile: null,
+                uploadPreviewUrl: '',
+                uploadError: '',
+                uploadSaving: false,
                 init() {
                     const input = document.getElementById(this.inputId);
                     const raw = String(input?.value || '').trim();
@@ -2383,7 +2415,7 @@
                 },
                 get filteredGroups() {
                     const needle = this.searchQuery.trim().toLowerCase();
-                    return this.groups
+                    const groups = this.groups
                         .map((group) => {
                             const items = (group.items || []).filter((item) =>
                                 !needle || String(item.name || '').toLowerCase().includes(needle)
@@ -2391,6 +2423,14 @@
                             return items.length ? { ...group, items } : null;
                         })
                         .filter(Boolean);
+
+                    // Keep uploaded items easy to find at the top.
+                    return groups.sort((a, b) => {
+                        const aUp = String(a.group || '').toLowerCase() === 'uploaded' ? 0 : 1;
+                        const bUp = String(b.group || '').toLowerCase() === 'uploaded' ? 0 : 1;
+                        if (aUp !== bUp) return aUp - bUp;
+                        return String(a.group || '').localeCompare(String(b.group || ''));
+                    });
                 },
                 async load() {
                     this.loading = true;
@@ -2466,6 +2506,99 @@
                     input.value = ids.length === this.selected.length
                         ? ids.join(',')
                         : this.selected.join('|');
+                },
+                openUploadModal() {
+                    this.uploadOpen = true;
+                    this.uploadError = '';
+                    this.uploadName = '';
+                    this.uploadFile = null;
+                    if (this.uploadPreviewUrl) {
+                        URL.revokeObjectURL(this.uploadPreviewUrl);
+                    }
+                    this.uploadPreviewUrl = '';
+                },
+                closeUploadModal() {
+                    this.uploadOpen = false;
+                    this.uploadError = '';
+                    this.uploadSaving = false;
+                    this.uploadFile = null;
+                    if (this.uploadPreviewUrl) {
+                        URL.revokeObjectURL(this.uploadPreviewUrl);
+                    }
+                    this.uploadPreviewUrl = '';
+                },
+                onUploadFileChange(event) {
+                    const file = event.target.files?.[0] || null;
+                    this.uploadFile = file;
+                    if (this.uploadPreviewUrl) {
+                        URL.revokeObjectURL(this.uploadPreviewUrl);
+                    }
+                    this.uploadPreviewUrl = file ? URL.createObjectURL(file) : '';
+                    this.uploadError = '';
+                },
+                insertUploadedItem(item) {
+                    let group = this.groups.find((row) => String(row.group || '').toLowerCase() === 'uploaded');
+                    if (!group) {
+                        group = { group: 'Uploaded', items: [] };
+                        this.groups = [group, ...this.groups];
+                    }
+                    const exists = (group.items || []).some((row) => Number(row.id) === Number(item.id));
+                    if (!exists) {
+                        group.items = [item, ...(group.items || [])];
+                    }
+                    if (!this.isSelected(item)) {
+                        this.toggleItem(item);
+                    }
+                },
+                async submitUpload() {
+                    if (this.uploadSaving) return;
+                    const name = String(this.uploadName || '').trim();
+                    if (!name) {
+                        this.uploadError = 'Enter a name.';
+                        return;
+                    }
+                    if (!this.uploadFile) {
+                        this.uploadError = 'Choose an image.';
+                        return;
+                    }
+                    if (!this.uploadUrl) {
+                        this.uploadError = 'Upload is not available.';
+                        return;
+                    }
+
+                    this.uploadSaving = true;
+                    this.uploadError = '';
+
+                    try {
+                        const formData = new FormData();
+                        formData.append('name', name);
+                        formData.append('image', this.uploadFile);
+
+                        const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+                        const response = await fetch(this.uploadUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': csrf,
+                                'X-Requested-With': 'XMLHttpRequest',
+                            },
+                            credentials: 'same-origin',
+                            body: formData,
+                        });
+                        const payload = await response.json().catch(() => ({}));
+                        if (!response.ok || !payload.success || !payload.item) {
+                            const firstValidation = payload.errors
+                                ? Object.values(payload.errors).flat()[0]
+                                : null;
+                            throw new Error(firstValidation || payload.message || `Failed to upload ${this.label}.`);
+                        }
+
+                        this.insertUploadedItem(payload.item);
+                        this.closeUploadModal();
+                    } catch (error) {
+                        this.uploadError = error.message || `Failed to upload ${this.label}.`;
+                        this.uploadSaving = false;
+                    }
                 },
             };
         }

@@ -88,6 +88,12 @@ Route::prefix('account')->name('account.')->middleware('auth')->group(function (
         Route::post('/wallet/withdrawals', [WithdrawalController::class, 'store'])
             ->middleware('throttle:5,1')
             ->name('wallet.withdrawals.store');
+        Route::post('/catalog/emotes', [App\Http\Controllers\MlbbCatalogController::class, 'storeEmote'])
+            ->middleware('throttle:20,1')
+            ->name('catalog.emotes.store');
+        Route::post('/catalog/recalls', [App\Http\Controllers\MlbbCatalogController::class, 'storeRecall'])
+            ->middleware('throttle:20,1')
+            ->name('catalog.recalls.store');
         Route::get('/listed-accounts', [DashboardController::class, 'listedAccounts'])->name('listed-accounts');
         Route::get('/listed-accounts/create', [DashboardController::class, 'createAccount'])->name('listed-accounts.create');
         Route::post('/listed-accounts', [DashboardController::class, 'storeAccount'])->name('listed-accounts.store');
