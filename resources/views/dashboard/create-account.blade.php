@@ -642,10 +642,23 @@
                                 <div x-show="existingImages.length > 0 || selectedFiles.length > 0" x-cloak class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
                                     <template x-for="(image, index) in existingImages" :key="'exist-' + image.id">
                                         <div class="relative group">
-                                            <div class="aspect-video rounded-lg overflow-hidden ring-2 ring-[#2d2c31]">
+                                            <div
+                                                class="aspect-video rounded-lg overflow-hidden ring-2 transition"
+                                                :class="index === 0 ? 'ring-red-500' : 'ring-[#2d2c31]'"
+                                            >
                                                 <img :src="image.url" :alt="'Existing photo ' + (index + 1)" class="w-full h-full object-cover">
                                             </div>
-                                            <span class="absolute left-2 top-2 rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-black/70 text-gray-200">Saved</span>
+                                            <span
+                                                x-show="index === 0"
+                                                class="absolute left-2 top-2 rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-red-600 text-white"
+                                            >Primary</span>
+                                            <button
+                                                type="button"
+                                                x-show="index !== 0"
+                                                @click="setPrimaryExisting(index)"
+                                                class="absolute left-2 top-2 rounded-md px-2 py-0.5 text-[10px] font-medium bg-black/70 text-gray-200 opacity-0 group-hover:opacity-100 transition-opacity"
+                                            >Set primary</button>
+                                            <span class="absolute left-2 bottom-2 rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-black/70 text-gray-200">Saved</span>
                                             <button type="button" @click="removeExisting(index)" class="absolute top-2 right-2 w-6 h-6 rounded-full bg-red-600 text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <i class="fa-solid fa-xmark"></i>
                                             </button>
@@ -666,7 +679,7 @@
                                             >Primary</span>
                                             <button
                                                 type="button"
-                                                x-show="!(existingImages.length === 0 && index === 0)"
+                                                x-show="existingImages.length === 0 && index !== 0"
                                                 @click="setPrimary(index)"
                                                 class="absolute left-2 top-2 rounded-md px-2 py-0.5 text-[10px] font-medium bg-black/70 text-gray-200 opacity-0 group-hover:opacity-100 transition-opacity"
                                             >Set primary</button>
@@ -2898,8 +2911,13 @@
                 },
                 applyLocalFields() {
                     const imagesData = this.pickerData('imagesPicker');
-                    if (imagesData?.selectedFiles?.[0]) {
-                        this.primaryImageUrl = URL.createObjectURL(imagesData.selectedFiles[0]);
+                    const existing = imagesData?.existingImages || [];
+                    const files = imagesData?.selectedFiles || [];
+                    // Edit mode: first saved gallery photo is primary. New uploads only when there are no existing photos.
+                    if (existing.length > 0 && existing[0]?.url) {
+                        this.primaryImageUrl = existing[0].url;
+                    } else if (files[0]) {
+                        this.primaryImageUrl = URL.createObjectURL(files[0]);
                     } else {
                         this.primaryImageUrl = this.placeholderSkin;
                     }
@@ -4298,6 +4316,11 @@
                     if (index <= 0) return;
                     const [file] = this.selectedFiles.splice(index, 1);
                     this.selectedFiles.unshift(file);
+                },
+                setPrimaryExisting(index) {
+                    if (index <= 0) return;
+                    const [image] = this.existingImages.splice(index, 1);
+                    this.existingImages.unshift(image);
                 },
                 removeFile(index) {
                     this.selectedFiles.splice(index, 1);
