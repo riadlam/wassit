@@ -1076,13 +1076,13 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 70px;
-            height: 70px;
+            width: 98px;
+            height: 98px;
             pointer-events: none;
         }
         .lp-collection-badge-icon {
-            width: 65px;
-            height: 65px;
+            width: 91px;
+            height: 91px;
             object-fit: contain;
             display: block;
             filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.55));
