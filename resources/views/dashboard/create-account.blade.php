@@ -916,7 +916,7 @@
 
     @push('styles')
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@700;800;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Russo+One&display=swap');
         .wizard-input {
             display: block;
             width: 100%;
@@ -1406,31 +1406,34 @@
         }
         .lp-price-value {
             display: inline-block;
-            font-family: "Bebas Neue", "Montserrat", Impact, sans-serif;
+            font-family: "Black Ops One", "Russo One", Impact, system-ui, sans-serif;
             font-size: {{ $posterPricePremium['font_size'] }}px;
-            font-weight: 700;
-            letter-spacing: 0.02em;
+            font-weight: 400;
+            letter-spacing: 0.04em;
             text-align: center;
-            line-height: 1;
+            line-height: 0.95;
             transform: rotate({{ $posterPricePremium['rotate'] }}deg) translate({{ $posterPricePremium['translate_x'] }}px, {{ $posterPricePremium['translate_y'] }}px);
             transform-origin: center center;
-            background: linear-gradient(180deg, #ff8080 0%, #ef4444 28%, #dc2626 62%, #991b1b 100%);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: #dc2626;
-            -webkit-text-fill-color: transparent;
-            filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.95))
-                drop-shadow(0 2px 0 rgba(153, 27, 27, 0.18))
-                drop-shadow(0 4px 8px rgba(127, 29, 29, 0.28));
+            color: #ff2d2d;
+            -webkit-text-fill-color: #ff2d2d;
+            background: none;
+            -webkit-background-clip: border-box;
+            background-clip: border-box;
+            text-shadow:
+                0 0 1px #ffffff,
+                1px 0 0 #ffffff,
+                -1px 0 0 #ffffff,
+                0 1px 0 #ffffff,
+                0 -1px 0 #ffffff,
+                2px 2px 0 #7f1d1d,
+                0 3px 0 #450a0a,
+                0 6px 12px rgba(0, 0, 0, 0.45);
+            filter: none;
         }
         @supports not ((-webkit-background-clip: text) or (background-clip: text)) {
             .lp-price-value {
-                color: #dc2626;
-                -webkit-text-fill-color: #dc2626;
-                text-shadow:
-                    0 1px 0 rgba(255, 255, 255, 0.95),
-                    0 2px 0 rgba(153, 27, 27, 0.18),
-                    0 4px 8px rgba(127, 29, 29, 0.28);
+                color: #ff2d2d;
+                -webkit-text-fill-color: #ff2d2d;
             }
         }
 
@@ -1573,12 +1576,12 @@
             top: {{ $posterPriceBasic['top'] }}px;
             width: {{ $posterPriceBasic['width'] }}px;
             height: {{ $posterPriceBasic['height'] }}px;
-            overflow: hidden;
+            overflow: visible;
         }
         .listing-poster.is-basic .lp-price-value {
             font-size: {{ $posterPriceBasic['font_size'] }}px;
-            letter-spacing: 0.03em;
-            line-height: 1;
+            letter-spacing: 0.05em;
+            line-height: 0.95;
             transform: rotate({{ $posterPriceBasic['rotate'] }}deg) translate({{ $posterPriceBasic['translate_x'] }}px, {{ $posterPriceBasic['translate_y'] }}px);
         }
 
@@ -3987,14 +3990,15 @@
                         node.style.background = 'none';
                         node.style.backgroundClip = 'border-box';
                         node.style.webkitBackgroundClip = 'border-box';
-                        node.style.color = '#dc2626';
-                        node.style.webkitTextFillColor = '#dc2626';
+                        node.style.color = '#ff2d2d';
+                        node.style.webkitTextFillColor = '#ff2d2d';
                         node.style.filter = 'none';
                         node.style.display = 'inline-block';
-                        node.style.lineHeight = '1';
-                        node.style.fontFamily = '"Bebas Neue", "Montserrat", Impact, sans-serif';
-                        node.style.fontWeight = '700';
-                        node.style.letterSpacing = this.isPremiumLayout ? '0.02em' : '0.03em';
+                        node.style.lineHeight = '0.95';
+                        node.style.fontFamily = '"Black Ops One", "Russo One", Impact, system-ui, sans-serif';
+                        node.style.fontWeight = '400';
+                        node.style.letterSpacing = this.isPremiumLayout ? '0.04em' : '0.05em';
+                        node.style.textShadow = '0 0 1px #ffffff, 1px 0 0 #ffffff, -1px 0 0 #ffffff, 0 1px 0 #ffffff, 0 -1px 0 #ffffff, 2px 2px 0 #7f1d1d, 0 3px 0 #450a0a, 0 6px 12px rgba(0,0,0,0.45)';
                         node.style.transformOrigin = 'center center';
                         node.style.opacity = '1';
                         node.style.visibility = 'visible';
@@ -4006,7 +4010,7 @@
                             return;
                         }
 
-                        node.style.fontSize = '50px';
+                        node.style.fontSize = `${Math.max(Number(cfg.font_size) || 44, 48)}px`;
                         node.style.transform = `rotate(${cfg.rotate}deg) translate(${cfg.translate_x}px, -${9 + priceExportLiftPx}px)`;
                     });
                 },
