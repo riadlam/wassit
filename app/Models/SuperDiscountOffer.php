@@ -132,7 +132,8 @@ class SuperDiscountOffer extends Model
 
     public function accountCoverImageUrl(): string
     {
-        $cover = $this->account?->images?->firstWhere('is_cover', true)
+        // Prefer the generated listing poster (is_cover / display index 0), else first gallery image.
+        $cover = $this->account?->coverImage()
             ?? $this->account?->images?->first();
 
         if ($cover) {

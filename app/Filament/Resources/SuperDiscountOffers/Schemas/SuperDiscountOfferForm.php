@@ -95,10 +95,11 @@ class SuperDiscountOfferForm
                     ->directory('super-discounts')
                     ->visibility('public')
                     ->image()
+                    ->nullable()
                     ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
                     ->maxSize(5120)
                     ->columnSpanFull()
-                    ->helperText('Optional. Leave empty to use the account listing poster (generated preview cover) on the homepage card.'),
+                    ->helperText('Optional. If you leave this empty, the listing poster (first/cover image) is used on the homepage card.'),
             ]);
     }
 }

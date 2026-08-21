@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('account_id')->unique()->constrained('accounts_for_sale')->cascadeOnDelete();
             $table->unsignedTinyInteger('discount_percentage');
-            $table->string('image_path');
+            $table->string('image_path')->nullable();
             $table->unsignedInteger('sort_order')->default(0);
             $table->boolean('is_active')->default(true);
             $table->timestamp('starts_at')->nullable();
