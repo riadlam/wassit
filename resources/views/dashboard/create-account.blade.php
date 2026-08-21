@@ -415,11 +415,34 @@
                                 </div>
 
                                 <div x-show="getSelectedCount() > 0" class="mt-4 p-4 rounded-lg" style="background-color: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3);">
+                                    <p class="mb-3 text-[11px] text-gray-400">
+                                        Drag chips to set poster order. Numbers match placement on the listing poster.
+                                    </p>
                                     <div class="flex flex-wrap gap-2">
-                                        <template x-for="item in selectedSkins" :key="item.key">
-                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs text-white" style="background-color: rgba(239, 68, 68, 0.2);">
+                                        <template x-for="(item, index) in selectedSkins" :key="item.key">
+                                            <span
+                                                draggable="true"
+                                                @dragstart="onSkinDragStart(index, $event)"
+                                                @dragover.prevent="onSkinDragOver(index, $event)"
+                                                @drop.prevent="onSkinDrop(index)"
+                                                @dragend="onSkinDragEnd()"
+                                                class="inline-flex cursor-grab items-center gap-1.5 rounded-md px-2 py-1 text-xs text-white active:cursor-grabbing"
+                                                :class="skinDragFrom === index ? 'opacity-40 ring-1 ring-red-400' : (skinDragOver === index ? 'ring-1 ring-red-500' : '')"
+                                                style="background-color: rgba(239, 68, 68, 0.2);"
+                                            >
+                                                <span
+                                                    class="inline-flex h-4 min-w-[1rem] items-center justify-center rounded bg-red-600 px-1 text-[10px] font-bold leading-none text-white"
+                                                    x-text="index + 1"
+                                                ></span>
+                                                <i class="fa-solid fa-grip-vertical text-[10px] text-red-200/80" aria-hidden="true"></i>
                                                 <span x-text="item.hero + ' - ' + item.name"></span>
-                                                <button type="button" @click="removeSelected(item.key)" class="hover:text-red-300">
+                                                <button
+                                                    type="button"
+                                                    @click.stop="removeSelected(item.key)"
+                                                    @mousedown.stop
+                                                    class="hover:text-red-300"
+                                                    title="Remove"
+                                                >
                                                     <i class="fa-solid fa-xmark text-[10px]"></i>
                                                 </button>
                                             </span>
@@ -1966,6 +1989,8 @@
                 skinById: {},
                 selectedSkins: [],
                 pendingSkinIds: [],
+                skinDragFrom: null,
+                skinDragOver: null,
                 initialized: false,
                 loadingList: false,
                 loadingDetail: false,
@@ -2280,6 +2305,47 @@
                 },
                 removeSelected(key) {
                     this.selectedSkins = this.selectedSkins.filter((item) => item.key !== key);
+                    this.updateHiddenInputs();
+                },
+                onSkinDragStart(index, event) {
+                    this.skinDragFrom = index;
+                    this.skinDragOver = index;
+                    if (event?.dataTransfer) {
+                        event.dataTransfer.effectAllowed = 'move';
+                        try {
+                            event.dataTransfer.setData('text/plain', String(index));
+                        } catch (_) {}
+                    }
+                },
+                onSkinDragOver(index, event) {
+                    if (event?.dataTransfer) {
+                        event.dataTransfer.dropEffect = 'move';
+                    }
+                    if (this.skinDragFrom === null || this.skinDragFrom === index) {
+                        this.skinDragOver = index;
+                        return;
+                    }
+                    if (this.skinDragOver === index) {
+                        return;
+                    }
+                    this.skinDragOver = index;
+                    const items = [...this.selectedSkins];
+                    const [moved] = items.splice(this.skinDragFrom, 1);
+                    items.splice(index, 0, moved);
+                    this.selectedSkins = items;
+                    this.skinDragFrom = index;
+                },
+                onSkinDrop(index) {
+                    if (this.skinDragFrom === null) {
+                        return;
+                    }
+                    this.skinDragFrom = null;
+                    this.skinDragOver = null;
+                    this.updateHiddenInputs();
+                },
+                onSkinDragEnd() {
+                    this.skinDragFrom = null;
+                    this.skinDragOver = null;
                     this.updateHiddenInputs();
                 },
                 getSelectedCount() {
