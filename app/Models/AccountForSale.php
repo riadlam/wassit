@@ -90,12 +90,6 @@ class AccountForSale extends Model
 
     public function effectivePrice(): int
     {
-        $offer = $this->currentDiscountOffer();
-
-        if ($offer) {
-            return $offer->discountedPrice((int) $this->price_dzd);
-        }
-
         return (int) $this->price_dzd;
     }
 

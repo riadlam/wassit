@@ -30,9 +30,7 @@ class AccountController extends Controller
             'game' => $game,
             'account' => $account,
             'discountOffer' => $discountOffer,
-            'displayPrice' => $discountOffer
-                ? $discountOffer->discountedPrice((int) $account->price_dzd)
-                : (int) $account->price_dzd,
+            'displayPrice' => (int) $account->price_dzd,
         ]);
     }
 }

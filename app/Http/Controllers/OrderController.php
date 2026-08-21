@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Order;
 use App\Models\AccountForSale;
-use App\Models\SuperDiscountOffer;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -39,15 +38,7 @@ class OrderController extends Controller
                     ];
                 }
 
-                $offer = SuperDiscountOffer::query()
-                    ->where('account_id', $account->id)
-                    ->activeNow()
-                    ->lockForUpdate()
-                    ->first();
-
-                $amount = $offer
-                    ? $offer->discountedPrice((int) $account->price_dzd)
-                    : (int) $account->price_dzd;
+                $amount = (int) $account->price_dzd;
 
                 $existingOrder = Order::query()
                     ->where('buyer_id', $user->id)

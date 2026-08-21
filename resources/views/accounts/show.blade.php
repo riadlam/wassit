@@ -478,12 +478,9 @@ if ($seller && !empty($seller->pfp)) {
                         
                         <!-- Price Section -->
                         <div class="mb-6 pb-6 border-b" style="border-color: #2d2c31;">
-                            @if(!empty($discountOffer))
+                            @if(!empty($discountOffer) && $discountOffer->showsDiscount())
                                 <div class="flex items-center gap-2 mb-2">
-                                    <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold text-white" style="background: linear-gradient(135deg, #ef4444, #b91c1c);">
-                                        {{ __('messages.super_discount_off', ['percent' => $discountOffer->discount_percentage]) }}
-                                    </span>
-                                    <span class="text-sm text-gray-500 line-through">{{ number_format($account->price_dzd, 0, '.', '') }} DA</span>
+                                    <span class="text-sm text-gray-500 line-through">{{ number_format($discountOffer->compareAtPrice(), 0, '.', '') }} DA</span>
                                 </div>
                             @endif
                             <div class="flex items-baseline gap-2 mb-2">

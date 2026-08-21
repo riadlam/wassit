@@ -28,17 +28,13 @@ class SuperDiscountOffersTable
                     ->limit(40),
                 TextColumn::make('account.game.name')
                     ->label('Game'),
-                TextColumn::make('discount_percentage')
-                    ->label('Off')
-                    ->suffix('%')
+                TextColumn::make('compare_at_price')
+                    ->label('Was')
+                    ->suffix(' DA')
+                    ->numeric()
                     ->sortable(),
                 TextColumn::make('account.price_dzd')
-                    ->label('Original')
-                    ->suffix(' DA')
-                    ->numeric(),
-                TextColumn::make('sale_price')
                     ->label('Sale')
-                    ->state(fn (SuperDiscountOffer $record): int => $record->discountedPrice((int) ($record->account?->price_dzd ?? 0)))
                     ->suffix(' DA')
                     ->numeric(),
                 TextColumn::make('sort_order')

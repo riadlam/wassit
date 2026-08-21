@@ -49,14 +49,25 @@ class SuperDiscountOfferForm
                     ->required()
                     ->unique(ignoreRecord: true)
                     ->helperText('Only available listings can be featured. Each account can appear once.'),
-                TextInput::make('discount_percentage')
-                    ->label('Discount %')
+                TextInput::make('compare_at_price')
+                    ->label('Higher price (before discount)')
                     ->numeric()
                     ->required()
                     ->minValue(1)
-                    ->maxValue(99)
-                    ->suffix('%')
-                    ->helperText('Applied to the account’s current DA price at checkout.'),
+                    ->suffix('DA')
+                    ->rule(function ($get) {
+                        return function (string $attribute, $value, $fail) use ($get): void {
+                            $accountId = $get('account_id');
+                            if (! $accountId) {
+                                return;
+                            }
+                            $salePrice = (int) (AccountForSale::query()->whereKey($accountId)->value('price_dzd') ?? 0);
+                            if ((int) $value <= $salePrice) {
+                                $fail("Higher price must be greater than the listing sale price ({$salePrice} DA).");
+                            }
+                        };
+                    })
+                    ->helperText('Buyers see this struck through. The listing’s current price is the sale price they pay — no % is shown.'),
                 TextInput::make('sort_order')
                     ->numeric()
                     ->required()

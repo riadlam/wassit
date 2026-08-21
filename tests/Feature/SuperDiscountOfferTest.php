@@ -64,8 +64,8 @@ class SuperDiscountOfferTest extends TestCase
         Schema::create('super_discount_offers', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('account_id')->unique();
-            $table->unsignedTinyInteger('discount_percentage');
-            $table->string('image_path');
+            $table->unsignedInteger('compare_at_price');
+            $table->string('image_path')->nullable();
             $table->unsignedInteger('sort_order')->default(0);
             $table->boolean('is_active')->default(true);
             $table->timestamp('starts_at')->nullable();
@@ -97,27 +97,30 @@ class SuperDiscountOfferTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_discounted_price_uses_integer_da_rounding(): void
+    public function test_sale_price_is_the_listing_price_not_a_percentage(): void
     {
-        $offer = new SuperDiscountOffer(['discount_percentage' => 30]);
+        $account = new AccountForSale(['price_dzd' => 7500]);
+        $offer = new SuperDiscountOffer(['compare_at_price' => 10000]);
+        $offer->setRelation('account', $account);
 
-        $this->assertSame(7000, $offer->discountedPrice(10000));
-        $this->assertSame(7, $offer->discountedPrice(10));
-        $this->assertSame(1, $offer->discountedPrice(1));
+        $this->assertSame(7500, $offer->salePrice());
+        $this->assertSame(10000, $offer->compareAtPrice());
+        $this->assertTrue($offer->showsDiscount());
+        $this->assertSame(7500, $offer->discountedPrice());
     }
 
     public function test_homepage_shows_active_offers_in_sort_order(): void
     {
         [$buyer, $seller, $game] = $this->seedMarketplace();
-        $first = $this->createAccount($seller, $game, 'Alpha Account', 10000);
-        $second = $this->createAccount($seller, $game, 'Beta Account', 8000);
+        $first = $this->createAccount($seller, $game, 'Alpha Account', 8000);
+        $second = $this->createAccount($seller, $game, 'Beta Account', 4000);
         $sold = $this->createAccount($seller, $game, 'Sold Account', 5000, 'sold');
-        $future = $this->createAccount($seller, $game, 'Future Account', 4000);
+        $future = $this->createAccount($seller, $game, 'Future Account', 3000);
 
-        $this->createOffer($first, 20, 2);
-        $this->createOffer($second, 50, 1);
-        $this->createOffer($sold, 10, 0);
-        $this->createOffer($future, 15, 3, [
+        $this->createOffer($first, 10000, 2);
+        $this->createOffer($second, 8000, 1);
+        $this->createOffer($sold, 6000, 0);
+        $this->createOffer($future, 5000, 3, [
             'starts_at' => now()->addDay(),
         ]);
 
@@ -133,11 +136,11 @@ class SuperDiscountOfferTest extends TestCase
             ->assertSeeInOrder(['Beta Account', 'Alpha Account']);
     }
 
-    public function test_order_creation_snapshots_the_discounted_price(): void
+    public function test_order_creation_uses_listing_price(): void
     {
         [$buyer, $seller, $game] = $this->seedMarketplace();
-        $account = $this->createAccount($seller, $game, 'Deal Account', 10000);
-        $this->createOffer($account, 25, 1);
+        $account = $this->createAccount($seller, $game, 'Deal Account', 7500);
+        $this->createOffer($account, 10000, 1);
 
         $this->actingAs($buyer)
             ->postJson(route('orders.create', $account->id))
@@ -155,8 +158,8 @@ class SuperDiscountOfferTest extends TestCase
     public function test_existing_pending_order_is_repriced_down_but_never_up(): void
     {
         [$buyer, $seller, $game] = $this->seedMarketplace();
-        $account = $this->createAccount($seller, $game, 'Deal Account', 10000);
-        $offer = $this->createOffer($account, 10, 1);
+        $account = $this->createAccount($seller, $game, 'Deal Account', 9000);
+        $this->createOffer($account, 10000, 1);
 
         $order = Order::create([
             'buyer_id' => $buyer->id,
@@ -172,9 +175,7 @@ class SuperDiscountOfferTest extends TestCase
 
         $this->assertSame(9000, (int) $order->fresh()->amount_dzd);
 
-        $offer->update([
-            'is_active' => false,
-        ]);
+        $account->update(['price_dzd' => 9500]);
 
         $this->actingAs($buyer)
             ->postJson(route('orders.create', $account->id))
@@ -184,44 +185,17 @@ class SuperDiscountOfferTest extends TestCase
         $this->assertDatabaseCount('orders', 1);
     }
 
-    public function test_expired_offer_does_not_change_an_existing_snapshot(): void
-    {
-        [$buyer, $seller, $game] = $this->seedMarketplace();
-        $account = $this->createAccount($seller, $game, 'Deal Account', 10000);
-        $this->createOffer($account, 40, 1, [
-            'ends_at' => now()->subMinute(),
-        ]);
-
-        Order::create([
-            'buyer_id' => $buyer->id,
-            'seller_id' => $seller->id,
-            'account_id' => $account->id,
-            'amount_dzd' => 6000,
-            'status' => 'pending',
-        ]);
-
-        $this->actingAs($buyer)
-            ->postJson(route('orders.create', $account->id))
-            ->assertOk();
-
-        $this->assertDatabaseHas('orders', [
-            'account_id' => $account->id,
-            'amount_dzd' => 6000,
-        ]);
-        $this->assertDatabaseCount('orders', 1);
-    }
-
     public function test_an_account_cannot_have_two_offers(): void
     {
         [$buyer, $seller, $game] = $this->seedMarketplace();
-        $account = $this->createAccount($seller, $game, 'Deal Account', 10000);
-        $this->createOffer($account, 10, 1);
+        $account = $this->createAccount($seller, $game, 'Deal Account', 9000);
+        $this->createOffer($account, 10000, 1);
 
         $this->expectException(QueryException::class);
 
         SuperDiscountOffer::create([
             'account_id' => $account->id,
-            'discount_percentage' => 20,
+            'compare_at_price' => 12000,
             'image_path' => 'super-discounts/other.webp',
             'sort_order' => 2,
             'is_active' => true,
@@ -272,11 +246,11 @@ class SuperDiscountOfferTest extends TestCase
         ]);
     }
 
-    private function createOffer(AccountForSale $account, int $percent, int $sort, array $overrides = []): SuperDiscountOffer
+    private function createOffer(AccountForSale $account, int $compareAt, int $sort, array $overrides = []): SuperDiscountOffer
     {
         return SuperDiscountOffer::create(array_merge([
             'account_id' => $account->id,
-            'discount_percentage' => $percent,
+            'compare_at_price' => $compareAt,
             'image_path' => 'super-discounts/'.$account->id.'.webp',
             'sort_order' => $sort,
             'is_active' => true,

@@ -10,7 +10,7 @@ class SuperDiscountOffer extends Model
 {
     protected $fillable = [
         'account_id',
-        'discount_percentage',
+        'compare_at_price',
         'image_path',
         'sort_order',
         'is_active',
@@ -19,7 +19,7 @@ class SuperDiscountOffer extends Model
     ];
 
     protected $casts = [
-        'discount_percentage' => 'integer',
+        'compare_at_price' => 'integer',
         'sort_order' => 'integer',
         'is_active' => 'boolean',
         'starts_at' => 'datetime',
@@ -75,22 +75,43 @@ class SuperDiscountOffer extends Model
         return true;
     }
 
-    public function originalPrice(?int $originalPrice = null): int
+    /**
+     * Higher “was” price shown struck through in the UI.
+     */
+    public function compareAtPrice(): int
     {
-        return $originalPrice ?? (int) ($this->account?->price_dzd ?? 0);
+        return max(0, (int) $this->compare_at_price);
     }
 
+    /**
+     * Current sale price buyers pay (the listing price).
+     */
+    public function salePrice(?int $listingPrice = null): int
+    {
+        return max(0, $listingPrice ?? (int) ($this->account?->price_dzd ?? 0));
+    }
+
+    /**
+     * @deprecated Use compareAtPrice()
+     */
+    public function originalPrice(?int $originalPrice = null): int
+    {
+        $compare = $this->compareAtPrice();
+
+        return $compare > 0 ? $compare : (int) ($originalPrice ?? $this->salePrice());
+    }
+
+    /**
+     * @deprecated Use salePrice()
+     */
     public function discountedPrice(?int $originalPrice = null): int
     {
-        $original = $this->originalPrice($originalPrice);
-        $percentage = max(1, min(99, (int) $this->discount_percentage));
-        $discounted = (int) round($original * (100 - $percentage) / 100);
+        return $this->salePrice();
+    }
 
-        if ($original <= 1) {
-            return max(1, $original);
-        }
-
-        return max(1, min($original - 1, $discounted));
+    public function showsDiscount(): bool
+    {
+        return $this->compareAtPrice() > $this->salePrice();
     }
 
     public function imageUrl(): string

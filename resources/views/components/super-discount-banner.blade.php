@@ -148,8 +148,11 @@
                 @php
                     $account = $offer->account;
                     $game = $account?->game;
-                    $originalPrice = (int) ($account->price_dzd ?? 0);
-                    $salePrice = $offer->discountedPrice($originalPrice);
+                    $salePrice = (int) ($account->price_dzd ?? 0);
+                    $originalPrice = $offer->compareAtPrice();
+                    if ($originalPrice <= $salePrice) {
+                        $originalPrice = $salePrice;
+                    }
                     $accountUrl = $game && $account
                         ? route('accounts.show', ['slug' => $game->publicSlug(), 'id' => $account->id])
                         : '#';
@@ -166,7 +169,9 @@
 
                         <h3 class="mt-3 text-sm font-semibold text-white sm:text-base md:text-lg line-clamp-2">{{ $account->title }}</h3>
 
-                        <p class="my-2 text-xs font-semibold line-through" style="color: #FF2F4E;">{{ number_format($originalPrice, 0, '.', '') }} DA</p>
+                        @if($originalPrice > $salePrice)
+                            <p class="my-2 text-xs font-semibold line-through" style="color: #FF2F4E;">{{ number_format($originalPrice, 0, '.', '') }} DA</p>
+                        @endif
 
                         <p class="text-sm font-semibold text-white sm:text-base md:text-lg">{{ number_format($salePrice, 0, '.', '') }} DA</p>
                     </a>

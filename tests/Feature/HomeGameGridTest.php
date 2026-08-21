@@ -36,8 +36,8 @@ class HomeGameGridTest extends TestCase
         Schema::create('super_discount_offers', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('account_id')->unique();
-            $table->unsignedTinyInteger('discount_percentage');
-            $table->string('image_path');
+            $table->unsignedInteger('compare_at_price')->default(0);
+            $table->string('image_path')->nullable();
             $table->unsignedInteger('sort_order')->default(0);
             $table->boolean('is_active')->default(true);
             $table->timestamp('starts_at')->nullable();
