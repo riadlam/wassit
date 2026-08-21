@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\MlbbEmote;
 use App\Models\MlbbRecall;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
@@ -76,6 +77,8 @@ class MlbbCatalogSyncService
     {
         $remote = $this->fandom->getAllBattleEmotes($fresh);
         $added = [];
+        /** @var array<int, true> $claimed */
+        $claimed = [];
 
         foreach ($remote['emotes'] ?? [] as $item) {
             $name = trim((string) ($item['name'] ?? ''));
@@ -83,21 +86,39 @@ class MlbbCatalogSyncService
                 continue;
             }
 
-            $emote = MlbbEmote::updateOrCreate(
-                ['slug' => $this->slug($name, (string) ($item['group'] ?? ''))],
-                [
-                    'name' => $name,
-                    'group' => $item['group'] ?? null,
-                    'description' => $item['description'] ?? null,
-                    'heroes' => $item['heroes'] ?? [],
-                    'thumbnail_url' => $item['thumbnail_url'] ?? null,
-                    'image_url' => $item['image_url'] ?? null,
-                ]
+            $group = isset($item['group']) ? trim((string) $item['group']) : '';
+            $group = $group !== '' ? $group : null;
+            $imageUrl = $item['image_url'] ?? null;
+            $thumbnailUrl = $item['thumbnail_url'] ?? null;
+            $slug = $this->slug($name, (string) ($group ?? ''), $imageUrl);
+
+            $emote = $this->findCatalogRow(
+                MlbbEmote::class,
+                $name,
+                $group,
+                $imageUrl,
+                $slug,
+                $claimed,
             );
 
-            if ($emote->wasRecentlyCreated) {
-                $added[] = $name;
+            $payload = [
+                'slug' => $this->uniqueSlug(MlbbEmote::class, $slug, $emote?->id),
+                'name' => $name,
+                'group' => $group,
+                'description' => $item['description'] ?? null,
+                'heroes' => $item['heroes'] ?? [],
+                'thumbnail_url' => $thumbnailUrl,
+                'image_url' => $imageUrl,
+            ];
+
+            if ($emote) {
+                $emote->fill($payload)->save();
+            } else {
+                $emote = MlbbEmote::create($payload);
+                $added[] = $group ? "{$name} ({$group})" : $name;
             }
+
+            $claimed[(int) $emote->id] = true;
         }
 
         $result = [
@@ -120,6 +141,8 @@ class MlbbCatalogSyncService
     {
         $remote = $this->fandom->getAllRecallEffects($fresh);
         $added = [];
+        /** @var array<int, true> $claimed */
+        $claimed = [];
 
         foreach ($remote['recalls'] ?? [] as $item) {
             $name = trim((string) ($item['name'] ?? ''));
@@ -127,20 +150,38 @@ class MlbbCatalogSyncService
                 continue;
             }
 
-            $recall = MlbbRecall::updateOrCreate(
-                ['slug' => $this->slug($name, (string) ($item['group'] ?? ''))],
-                [
-                    'name' => $name,
-                    'group' => $item['group'] ?? null,
-                    'description' => $item['description'] ?? null,
-                    'thumbnail_url' => $item['thumbnail_url'] ?? null,
-                    'image_url' => $item['image_url'] ?? null,
-                ]
+            $group = isset($item['group']) ? trim((string) $item['group']) : '';
+            $group = $group !== '' ? $group : null;
+            $imageUrl = $item['image_url'] ?? null;
+            $thumbnailUrl = $item['thumbnail_url'] ?? null;
+            $slug = $this->slug($name, (string) ($group ?? ''), $imageUrl);
+
+            $recall = $this->findCatalogRow(
+                MlbbRecall::class,
+                $name,
+                $group,
+                $imageUrl,
+                $slug,
+                $claimed,
             );
 
-            if ($recall->wasRecentlyCreated) {
-                $added[] = $name;
+            $payload = [
+                'slug' => $this->uniqueSlug(MlbbRecall::class, $slug, $recall?->id),
+                'name' => $name,
+                'group' => $group,
+                'description' => $item['description'] ?? null,
+                'thumbnail_url' => $thumbnailUrl,
+                'image_url' => $imageUrl,
+            ];
+
+            if ($recall) {
+                $recall->fill($payload)->save();
+            } else {
+                $recall = MlbbRecall::create($payload);
+                $added[] = $group ? "{$name} ({$group})" : $name;
             }
+
+            $claimed[(int) $recall->id] = true;
         }
 
         $result = [
@@ -197,13 +238,115 @@ class MlbbCatalogSyncService
         ];
     }
 
-    private function slug(string $name, string $group): string
-    {
-        $slug = Str::slug($name);
-        if ($slug === '') {
-            $slug = Str::slug($group.'-'.$name) ?: md5(mb_strtolower($name));
+    /**
+     * @param  class-string<Model>  $modelClass
+     * @param  array<int, true>  $claimed
+     */
+    private function findCatalogRow(
+        string $modelClass,
+        string $name,
+        ?string $group,
+        ?string $imageUrl,
+        string $slug,
+        array $claimed,
+    ): ?Model {
+        $bySlug = $modelClass::query()->where('slug', $slug)->first();
+        if ($bySlug && ! isset($claimed[(int) $bySlug->id])) {
+            return $bySlug;
         }
 
-        return $slug;
+        $byImage = null;
+        if ($imageUrl) {
+            $byImage = $modelClass::query()
+                ->where('name', $name)
+                ->where('image_url', $imageUrl)
+                ->when(
+                    $group === null,
+                    fn ($q) => $q->whereNull('group'),
+                    fn ($q) => $q->where('group', $group),
+                )
+                ->first();
+        }
+
+        if ($byImage && ! isset($claimed[(int) $byImage->id])) {
+            return $byImage;
+        }
+
+        $sameNameGroup = $modelClass::query()
+            ->where('name', $name)
+            ->when(
+                $group === null,
+                fn ($q) => $q->whereNull('group'),
+                fn ($q) => $q->where('group', $group),
+            )
+            ->get()
+            ->filter(fn (Model $row) => ! isset($claimed[(int) $row->id]))
+            ->values();
+
+        if ($sameNameGroup->count() === 1) {
+            return $sameNameGroup->first();
+        }
+
+        // Legacy rows used name-only slugs and collapsed same titles across years.
+        $legacySlug = Str::slug($name);
+        if ($legacySlug !== '') {
+            $legacy = $modelClass::query()
+                ->where('slug', $legacySlug)
+                ->get()
+                ->filter(fn (Model $row) => ! isset($claimed[(int) $row->id]))
+                ->values();
+
+            if ($legacy->count() === 1) {
+                $row = $legacy->first();
+                $rowGroup = $row->getAttribute('group');
+                if ($rowGroup === null || $rowGroup === $group) {
+                    return $row;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  class-string<Model>  $modelClass
+     */
+    private function uniqueSlug(string $modelClass, string $slug, ?int $ignoreId = null): string
+    {
+        $base = $slug !== '' ? $slug : 'item';
+        $candidate = $base;
+        $i = 2;
+
+        while (
+            $modelClass::query()
+                ->where('slug', $candidate)
+                ->when($ignoreId, fn ($q) => $q->where('id', '!=', $ignoreId))
+                ->exists()
+        ) {
+            $candidate = $base.'-'.$i;
+            $i++;
+        }
+
+        return $candidate;
+    }
+
+    private function slug(string $name, string $group, ?string $imageUrl = null): string
+    {
+        $parts = array_values(array_filter([
+            Str::slug($group),
+            Str::slug($name),
+        ]));
+
+        $base = implode('-', $parts);
+        if ($base === '') {
+            $base = 'item';
+        }
+
+        if ($imageUrl) {
+            $path = (string) (parse_url($imageUrl, PHP_URL_PATH) ?: $imageUrl);
+            $base .= '-'.substr(sha1(mb_strtolower($path)), 0, 8);
+        }
+
+        return $base;
     }
 }
